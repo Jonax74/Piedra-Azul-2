@@ -1,0 +1,275 @@
+# Consumir imágenes pre-publicadas en Docker Hub (sin build local).
+# Uso: docker compose -f docker-compose.hub.yml up -d
+# Requiere .env con DOCKERHUB_USER apuntando al namespace publicado.
+
+name: piedrazul
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: piedrazul-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - piedrazul-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-piedrazul} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - piedrazul-net
+
+  postgres-db-init:
+    image: postgres:16-alpine
+    container_name: piedrazul-postgres-db-init
+    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /scripts/ensure-databases.sh | sh"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      PGHOST: postgres
+    volumes:
+      - ./docker/postgres/ensure-databases.sh:/scripts/ensure-databases.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - piedrazul-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: piedrazul-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - piedrazul-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: piedrazul-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-piedrazul}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/keycloak/piedrazul-realm.json:/opt/keycloak/data/import/piedrazul-realm.json:ro
+    depends_on:
+      postgres-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks:
+      - piedrazul-net
+
+  keycloak-init:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: piedrazul-keycloak-init
+    entrypoint: ["/bin/bash", "-c", "tr -d '\\r' < /scripts/configure-keycloak.sh | bash"]
+    environment:
+      KC_SERVER: http://keycloak:8080
+      KC_REALM: piedrazul
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_ADMIN_CLIENT_ID: piedrazul-admin-cli
+      KC_FRONTEND_CLIENT_ID: piedrazul-frontend
+      PROFILE_FILE: /scripts/user-profile.json
+      SCRIPT_DIR: /scripts
+    volumes:
+      - ./docker/keycloak/configure-keycloak.sh:/scripts/configure-keycloak.sh:ro
+      - ./docker/keycloak/configure-service-account.sh:/scripts/configure-service-account.sh:ro
+      - ./docker/keycloak/configure-user-profile.sh:/scripts/configure-user-profile.sh:ro
+      - ./docker/keycloak/configure-protocol-mappers.sh:/scripts/configure-protocol-mappers.sh:ro
+      - ./docker/keycloak/user-profile.json:/scripts/user-profile.json:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - piedrazul-net
+    restart: "no"
+
+  stack-seed:
+    image: curlimages/curl:8.11.1
+    container_name: piedrazul-stack-seed
+    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /scripts/seed-test-users.sh | sh"]
+    environment:
+      GATEWAY_URL: http://api-gateway:8085
+      KC_SERVER: http://keycloak:8080
+      KC_REALM: piedrazul
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./docker/keycloak/seed-test-users.sh:/scripts/seed-test-users.sh:ro
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
+    networks:
+      - piedrazul-net
+    restart: "no"
+
+  personas-service:
+    image: ${DOCKERHUB_USER}/personas-service:${IMAGE_TAG:-latest}
+    container_name: piedrazul-personas-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres-db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - piedrazul-net
+
+  usuarios-service:
+    image: ${DOCKERHUB_USER}/usuarios-service:${IMAGE_TAG:-latest}
+    container_name: piedrazul-usuarios-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      PIEDRAZUL_KEYCLOAK_ADMIN_CLIENT_SECRET: ${PIEDRAZUL_KEYCLOAK_ADMIN_CLIENT_SECRET:-piedrazul-admin-secret}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres-db-init:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
+      personas-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - piedrazul-net
+
+  citas-service:
+    image: ${DOCKERHUB_USER}/citas-service:${IMAGE_TAG:-latest}
+    container_name: piedrazul-citas-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres-db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - piedrazul-net
+
+  notifications-service:
+    image: ${DOCKERHUB_USER}/notifications-service:${IMAGE_TAG:-latest}
+    container_name: piedrazul-notifications-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_USER: ${POSTGRES_USER:-piedrazul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_piedrazul}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres-db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      citas-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - piedrazul-net
+
+  api-gateway:
+    image: ${DOCKERHUB_USER}/api-gateway:${IMAGE_TAG:-latest}
+    container_name: piedrazul-api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-http://localhost:8080/realms/piedrazul}
+    ports:
+      - "8085:8085"
+    depends_on:
+      usuarios-service:
+        condition: service_healthy
+      personas-service:
+        condition: service_healthy
+      citas-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8085/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - piedrazul-net
+
+networks:
+  piedrazul-net:
+    name: piedrazul-net
+
+volumes:
+  piedrazul-postgres-data:

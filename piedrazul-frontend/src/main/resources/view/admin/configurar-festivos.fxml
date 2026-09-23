@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="18"
+      alignment="TOP_CENTER"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.piedrazul.frontend.controller.ConfigurarFestivosController"
+      stylesheets="@../css/admin.css"
+      styleClass="root">
+
+    <VBox spacing="12" alignment="TOP_CENTER" styleClass="card config-form">
+        <Label text="Configurar festivos" styleClass="section-title"/>
+        <Label text="Seleccione las fechas que se marcarán como días festivos. Esos días no estarán disponibles para agendar citas en ningún horario."
+               styleClass="hint-label" wrapText="true" maxWidth="760"/>
+
+        <Label fx:id="lblEstado"
+               text="Cargando festivos..."
+               styleClass="status-label status-warning"
+               wrapText="true" maxWidth="760"/>
+
+        <HBox spacing="16" alignment="CENTER_LEFT" maxWidth="760">
+            <Label text="Nueva fecha festiva" styleClass="field-label"/>
+            <DatePicker fx:id="dpNuevaFecha"
+                        promptText="Seleccione una fecha"
+                        styleClass="input-field"/>
+            <Button text="Agregar festivo"
+                    fx:id="btnAgregar"
+                    onAction="#handleAgregarFestivo"/>
+        </HBox>
+
+        <Label fx:id="lblFormError"
+               styleClass="field-error"
+               visible="false" managed="false"
+               wrapText="true" maxWidth="760"/>
+
+        <Label text="Festivos configurados"
+               styleClass="field-label"/>
+
+        <TableView fx:id="tablaFestivos"
+                   prefHeight="320"
+                   prefWidth="760">
+            <columns>
+                <TableColumn fx:id="colFecha" text="Fecha" prefWidth="180"/>
+                <TableColumn fx:id="colDiaSemana" text="Día" prefWidth="220"/>
+            </columns>
+        </TableView>
+
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Eliminar seleccionado"
+                    fx:id="btnEliminar"
+                    onAction="#handleEliminarFestivo"
+                    disable="true"/>
+        </HBox>
+    </VBox>
+
+    <Button text="Volver al Dashboard"
+            onAction="#handleVolver"
+            styleClass="dashboard-secondary-button"/>
+
+</VBox>

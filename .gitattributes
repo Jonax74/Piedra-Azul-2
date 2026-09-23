@@ -1,0 +1,2 @@
+docker/keycloak/*.sh text eol=lf
+docker/keycloak/*.json text eol=lf

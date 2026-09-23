@@ -1,0 +1,195 @@
+{
+  "realm": "piedrazul",
+  "displayName": "Pie Drazul",
+  "displayNameHtml": "<b>Pie Drazul</b>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "clientSessionIdleTimeout": 1800,
+  "clientSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMINISTRADOR",
+        "description": "Acceso total al sistema",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "AGENDADOR",
+        "description": "Crea y gestiona citas en nombre de pacientes",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "PACIENTE",
+        "description": "Autoservicio de citas propias",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "MEDICO_TERAPISTA",
+        "description": "Gestiona su agenda y atenciones",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "piedrazul-frontend",
+      "name": "Pie Drazul Frontend (JavaFX)",
+      "description": "Cliente nativo de escritorio JavaFX",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocolMappers": [
+        {
+          "name": "usuario_id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "usuario_id",
+            "claim.name": "usuario_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "persona_id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "persona_id",
+            "claim.name": "persona_id",
+            "jsonType.label": "long",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "piedrazul-admin-cli",
+      "name": "Pie Drazul Admin CLI (usuarios-service)",
+      "description": "Service account para crear usuarios via Admin REST API",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "piedrazul-admin-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "admin.test",
+      "enabled": true,
+      "email": "admin.test@piedrazul.local",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Test",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin.123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMINISTRADOR"
+      ]
+    },
+    {
+      "username": "agendador.test",
+      "enabled": true,
+      "email": "agendador.test@piedrazul.local",
+      "emailVerified": true,
+      "firstName": "Agendador",
+      "lastName": "Test",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Agenda.123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "AGENDADOR"
+      ]
+    },
+    {
+      "username": "paciente.test",
+      "enabled": true,
+      "email": "paciente.test@piedrazul.local",
+      "emailVerified": true,
+      "firstName": "Paciente",
+      "lastName": "Test",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Paciente.123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PACIENTE"
+      ]
+    },
+    {
+      "username": "medico.test",
+      "enabled": true,
+      "email": "medico.test@piedrazul.local",
+      "emailVerified": true,
+      "firstName": "Medico",
+      "lastName": "Test",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Medico.123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MEDICO_TERAPISTA"
+      ]
+    }
+  ]
+}

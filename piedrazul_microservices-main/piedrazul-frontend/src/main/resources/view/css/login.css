@@ -1,0 +1,268 @@
+/* 🌍 ROOT */
+.root {
+    -fx-background-color: #f1ebeb;
+    -fx-font-family: "Segoe UI", "Arial";
+}
+
+/* 🔵 HEADER */
+.header {
+    -fx-background-color: #24c0eb;
+    -fx-padding: 20px 30px;
+    -fx-alignment: CENTER-LEFT;
+}
+
+.logo {
+    -fx-text-fill: white;
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 2px;
+}
+
+/* 📦 CONTENEDOR */
+.container {
+    -fx-padding: 40px;
+}
+
+/* 🏷️ TÍTULO */
+.title {
+    -fx-text-fill: #5cceee;
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+}
+
+/* 🧾 FORMULARIO */
+.form {
+    -fx-alignment: center;
+    -fx-max-width: 800px;
+}
+
+/* LABELS */
+.label {
+    -fx-text-fill: #5cceee;
+    -fx-font-size: 16px;
+}
+
+.form-grid .label {
+    -fx-wrap-text: true;
+    -fx-min-width: 170px;
+    -fx-pref-width: 190px;
+    -fx-max-width: 220px;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-alignment: RIGHT;
+}
+
+.register-container {
+    -fx-max-width: 1200px;
+    -fx-padding: 40 60 40 60;
+}
+
+.especialidades-panel {
+    -fx-background-color: #eee8e8;
+    -fx-background-radius: 8px;
+    -fx-border-color: #24c0eb;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-padding: 12px 14px;
+}
+
+.especialidades-panel .check-box {
+    -fx-text-fill: #333333;
+    -fx-font-size: 14px;
+}
+
+.especialidades-panel .check-box:disabled {
+    -fx-opacity: 0.55;
+}
+
+.especialidades-panel.input-error {
+    -fx-border-color: #e53935;
+    -fx-border-width: 2px;
+}
+
+.form-grid .input {
+    -fx-pref-width: 320px;
+    -fx-max-width: Infinity;
+}
+
+/* INPUTS */
+/* INPUT BASE */
+.input {
+    -fx-background-color: #eee8e8;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #24c0eb;
+    -fx-border-width: 1px;
+    -fx-padding: 10px;
+    -fx-pref-width: 280px;
+    -fx-pref-height: 40px;
+}
+
+/* INPUT DENTRO DE CONTENEDOR (CON ICONO) */
+.input-container .input {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* CONTENEDOR DE INPUT + ICONO */
+.input-container {
+    -fx-background-color: #eee8e8;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #24c0eb;
+    -fx-border-width: 1px;
+    -fx-padding: 5px 10px;
+    -fx-alignment: CENTER-LEFT;
+}
+
+/* FOCUS (cuando el usuario escribe) */
+.input-container:focused {
+    -fx-border-color: #24c0eb;
+    -fx-border-width: 2px;
+}
+
+/* ICONO */
+.input-icon {
+    -fx-font-size: 16px;
+}
+
+/* FOCUS INPUT */
+.input:focused {
+    -fx-border-color: #24c0eb;
+    -fx-border-width: 2px;
+}
+
+/* 🔵 BOTÓN PRINCIPAL */
+.btn-primary {
+    -fx-background-color: #24c0eb;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px 25px;
+    -fx-cursor: hand;
+}
+
+/* HOVER */
+.btn-primary:hover {
+    -fx-background-color: #1aa7cc;
+}
+
+/* BOTÓN SECUNDARIO */
+.btn-secondary {
+    -fx-background-color: #5cceee;
+    -fx-text-fill: white;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 20px;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #4bb8d6;
+}
+
+/* ❌ ERRORES DE CAMPO */
+.field-error {
+    -fx-text-fill: #ff5757;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+}
+
+.input-error {
+    -fx-background-color: #fde8e8;
+    -fx-border-color: #ff5757;
+    -fx-border-width: 1px;
+}
+
+.input-container-error {
+    -fx-background-color: #fde8e8;
+    -fx-border-color: #ff5757;
+    -fx-border-width: 1px;
+}
+
+.hint-label {
+    -fx-text-fill: #888888;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+}
+
+.error-label {
+    -fx-text-fill: #ff5757;
+    -fx-font-size: 13px;
+}
+
+/* TITULOS DE SECCIÓN */
+.section-title {
+    -fx-text-fill: #24c0eb;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* MODALES */
+.piedrazul-dialog {
+    -fx-background-color: #f1ebeb;
+    -fx-border-color: #24c0eb;
+    -fx-border-width: 2px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 8px;
+}
+
+.piedrazul-dialog-content {
+    -fx-background-color: transparent;
+}
+
+.piedrazul-dialog-title {
+    -fx-text-fill: #24c0eb;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+.piedrazul-dialog-message {
+    -fx-text-fill: #444444;
+    -fx-font-size: 14px;
+    -fx-text-alignment: center;
+}
+
+.piedrazul-dialog-icon-info,
+.piedrazul-dialog-icon-warning {
+    -fx-min-width: 48px;
+    -fx-min-height: 48px;
+    -fx-max-width: 48px;
+    -fx-max-height: 48px;
+    -fx-alignment: center;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+}
+
+.piedrazul-dialog-icon-info {
+    -fx-text-fill: white;
+    -fx-background-color: #24c0eb;
+}
+
+.piedrazul-dialog-icon-warning {
+    -fx-text-fill: white;
+    -fx-background-color: #ff9800;
+}
+
+.vincular-banner {
+    -fx-background-color: #e8f7fc;
+    -fx-background-radius: 10px;
+    -fx-border-color: #24c0eb;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-padding: 16px 20px;
+}
+
+.vincular-banner-title {
+    -fx-text-fill: #24c0eb;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.vincular-banner-text {
+    -fx-text-fill: #444444;
+    -fx-font-size: 14px;
+}

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="18"
+      alignment="TOP_CENTER"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.piedrazul.frontend.controller.AdministrarUsuariosController"
+      stylesheets="@../css/admin.css"
+      styleClass="root">
+
+    <VBox spacing="12" alignment="TOP_CENTER" styleClass="card config-form">
+        <Label text="Administrar usuarios" styleClass="section-title"/>
+        <Label text="Seleccione un usuario y modifique los datos personales permitidos."
+               styleClass="hint-label" wrapText="true" maxWidth="900"/>
+
+        <Label fx:id="lblEstadoCarga" styleClass="status-label status-warning"
+               visible="false" managed="false" wrapText="true" maxWidth="900"/>
+        <Label fx:id="lblFormError" styleClass="field-error"
+               visible="false" managed="false" wrapText="true" maxWidth="900"/>
+    </VBox>
+
+    <HBox spacing="18" alignment="TOP_CENTER" maxWidth="1100">
+        <VBox spacing="10" styleClass="card config-form" prefWidth="420">
+            <Label text="Usuarios del sistema" styleClass="section-title"/>
+            <TextField fx:id="txtBuscar"
+                       promptText="Buscar por usuario, nombre o DNI"
+                       styleClass="input-field"/>
+            <TableView fx:id="tablaUsuarios" prefHeight="380">
+                <columns>
+                    <TableColumn fx:id="colUsername" text="Usuario" prefWidth="130"/>
+                    <TableColumn fx:id="colNombre" text="Nombre" prefWidth="180"/>
+                    <TableColumn fx:id="colDni" text="DNI" prefWidth="90"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+        <VBox spacing="12" styleClass="card config-form" prefWidth="520" HBox.hgrow="ALWAYS">
+            <Label text="Datos personales" styleClass="section-title"/>
+            <Label fx:id="lblUsuarioSeleccionado"
+                   text="Seleccione un usuario de la tabla"
+                   styleClass="hint-label" wrapText="true"/>
+
+            <GridPane styleClass="form-grid" hgap="16" vgap="10" maxWidth="500">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="160" prefWidth="170" halignment="RIGHT"/>
+                    <ColumnConstraints minWidth="280" hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="Primer nombre *" styleClass="field-label"/>
+                <VBox spacing="4" GridPane.columnIndex="1">
+                    <TextField fx:id="txtPrimerNombre" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errPrimerNombre" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Segundo nombre" styleClass="field-label" GridPane.rowIndex="1"/>
+                <VBox spacing="4" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                    <TextField fx:id="txtSegundoNombre" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errSegundoNombre" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Primer apellido *" styleClass="field-label" GridPane.rowIndex="2"/>
+                <VBox spacing="4" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                    <TextField fx:id="txtPrimerApellido" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errPrimerApellido" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Segundo apellido" styleClass="field-label" GridPane.rowIndex="3"/>
+                <VBox spacing="4" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                    <TextField fx:id="txtSegundoApellido" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errSegundoApellido" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Fecha nacimiento *" styleClass="field-label" GridPane.rowIndex="4"/>
+                <VBox spacing="4" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                    <DatePicker fx:id="dateNacimiento" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errFechaNacimiento" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Teléfono *" styleClass="field-label" GridPane.rowIndex="5"/>
+                <VBox spacing="4" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                    <TextField fx:id="txtTelefono" styleClass="input-field" disable="true"
+                               promptText="10 dígitos"/>
+                    <Label fx:id="errTelefono" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="DNI" styleClass="field-label" GridPane.rowIndex="6"/>
+                <TextField fx:id="txtDni" styleClass="input-field" disable="true"
+                           GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+                <Label text="Género *" styleClass="field-label" GridPane.rowIndex="7"/>
+                <VBox spacing="4" GridPane.rowIndex="7" GridPane.columnIndex="1">
+                    <ComboBox fx:id="cmbGenero" styleClass="input-field" disable="true"/>
+                    <Label fx:id="errGenero" styleClass="field-error" visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Correo" styleClass="field-label" GridPane.rowIndex="8"/>
+                <TextField fx:id="txtCorreo" styleClass="input-field" disable="true"
+                           GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="btnGuardar" text="Guardar cambios"
+                        onAction="#handleGuardar" disable="true"/>
+                <Button fx:id="btnRecargar" text="Recargar"
+                        onAction="#handleRecargar"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <Button text="Volver al Dashboard"
+            onAction="#handleVolver"
+            styleClass="dashboard-secondary-button"/>
+
+</VBox>

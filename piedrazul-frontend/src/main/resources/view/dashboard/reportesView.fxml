@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.piedrazul.frontend.controller.ReportesController"
+            prefWidth="1200"
+            prefHeight="720"
+            style="-fx-background-color: #f1ebeb;">
+
+    <top>
+        <VBox spacing="14"
+              alignment="CENTER"
+              style="-fx-background-color: #24c0eb;">
+
+            <padding>
+                <Insets top="20" right="24" bottom="20" left="24"/>
+            </padding>
+
+            <Label text="REPORTES DE CITAS"
+                   style="-fx-font-size: 28px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: white;"/>
+
+            <HBox spacing="20" alignment="CENTER">
+
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Año"
+                           style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <ComboBox fx:id="cmbAnio"
+                              prefWidth="140"
+                              style="-fx-background-radius: 8; -fx-font-size: 14px;"/>
+                </VBox>
+
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Mes"
+                           style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <ComboBox fx:id="cmbMes"
+                              prefWidth="180"
+                              style="-fx-background-radius: 8; -fx-font-size: 14px;"/>
+                </VBox>
+
+            </HBox>
+
+            <Label fx:id="lblResumen"
+                   text="Cargando reportes..."
+                   style="-fx-text-fill: white;
+                          -fx-font-size: 14px;
+                          -fx-font-style: italic;"/>
+
+        </VBox>
+    </top>
+
+    <center>
+        <HBox spacing="20" alignment="CENTER">
+
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="CENTER">
+                <Label fx:id="lblBarChartTitulo"
+                       text="Citas por médico y mes"
+                       style="-fx-font-size: 16px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #37474f;"/>
+                <StackPane fx:id="barChartContainer"
+                           VBox.vgrow="ALWAYS"
+                           prefHeight="420"
+                           styleClass="reportes-chart-container"/>
+            </VBox>
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="CENTER">
+                <Label fx:id="lblPieChartTitulo"
+                       text="Distribución por médico"
+                       style="-fx-font-size: 16px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #37474f;"/>
+                <StackPane fx:id="pieChartContainer"
+                           VBox.vgrow="ALWAYS"
+                           prefHeight="420"
+                           styleClass="reportes-chart-container"/>
+            </VBox>
+
+        </HBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_RIGHT"
+              spacing="10"
+              style="-fx-background-color: #f1ebeb;">
+
+            <padding>
+                <Insets top="12" right="20" bottom="18" left="20"/>
+            </padding>
+
+            <Button text="EXPORTAR PDF"
+                    fx:id="btnExportarPdf"
+                    onAction="#exportarPdf"
+                    prefWidth="170"
+                    prefHeight="45"
+                    style="-fx-background-color: #4caf50;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;"/>
+
+            <Button text="Volver"
+                    fx:id="btnVolver"
+                    onAction="#volver"
+                    prefWidth="150"
+                    prefHeight="45"
+                    style="-fx-background-color: #ff5757;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;"/>
+
+        </HBox>
+    </bottom>
+
+</BorderPane>

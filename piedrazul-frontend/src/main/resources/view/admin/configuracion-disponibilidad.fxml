@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="18"
+      alignment="TOP_CENTER"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.piedrazul.frontend.controller.ConfiguracionDisponibilidadController"
+      stylesheets="@../css/admin.css"
+      styleClass="root">
+
+    <VBox spacing="12" alignment="TOP_CENTER" styleClass="card config-form">
+
+        <Label text="Configuración del Sistema" styleClass="section-title"/>
+        <Label text="Define cuántas semanas hacia adelante pueden agendar los pacientes."
+               styleClass="hint-label" wrapText="true" maxWidth="700"/>
+
+        <GridPane styleClass="form-grid" hgap="20" vgap="12" maxWidth="700">
+            <columnConstraints>
+                <ColumnConstraints minWidth="220" prefWidth="240" halignment="RIGHT"/>
+                <ColumnConstraints minWidth="280" hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Semanas disponibles *" styleClass="field-label"/>
+            <VBox spacing="4" GridPane.columnIndex="1">
+                <TextField fx:id="txtSemanas"
+                           promptText="Entero entre 1 y 52. Ej: 4"
+                           styleClass="input-field"/>
+                <Label fx:id="errSemanas" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+        </GridPane>
+
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Guardar"
+                    fx:id="btnGuardarConfiguracion"
+                    onAction="#handleGuardarConfiguracion"/>
+            <Button text="Editar"
+                    fx:id="btnEditarConfiguracion"
+                    onAction="#handleEditarConfiguracion"/>
+        </HBox>
+
+        <Label fx:id="lblEstadoConfiguracion"
+               text="No configurado"
+               styleClass="status-label status-error"/>
+
+    </VBox>
+
+    <VBox fx:id="contenedorDisponibilidad"
+          spacing="12"
+          alignment="TOP_CENTER"
+          styleClass="card config-form">
+
+        <Label text="Configurar Disponibilidad" styleClass="section-title"/>
+        <Label text="Registre los horarios en los que cada médico atiende citas."
+               styleClass="hint-label" wrapText="true" maxWidth="750"/>
+
+        <Label fx:id="lblEstadoEdicionDisponibilidad"
+               text="Modo edición: los datos de la disponibilidad seleccionada se cargaron en el formulario. Actualice los campos y pulse Guardar Cambios."
+               styleClass="status-label status-warning"
+               wrapText="true" maxWidth="750"
+               visible="false" managed="false"/>
+
+        <GridPane styleClass="form-grid" hgap="20" vgap="12" maxWidth="750">
+            <columnConstraints>
+                <ColumnConstraints minWidth="220" prefWidth="240" halignment="RIGHT"/>
+                <ColumnConstraints minWidth="320" hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Médico *" styleClass="field-label"/>
+            <VBox spacing="4" GridPane.columnIndex="1">
+                <ComboBox fx:id="cmbMedicos"
+                          promptText="Seleccione el médico"
+                          styleClass="input-field"/>
+                <Label fx:id="errMedico" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <Label text="Día de la semana *" styleClass="field-label" GridPane.rowIndex="1"/>
+            <VBox spacing="4" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                <ComboBox fx:id="cmbDiaSemana"
+                          promptText="Seleccione el día"
+                          styleClass="input-field"/>
+                <Label fx:id="errDia" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <Label text="Hora de inicio *" styleClass="field-label" GridPane.rowIndex="2"/>
+            <VBox spacing="4" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                <TextField fx:id="txtHoraInicio"
+                           promptText="Formato 24h. Ej: 08:00"
+                           styleClass="input-field input-small"/>
+                <Label fx:id="errHoraInicio" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <Label text="Hora de fin *" styleClass="field-label" GridPane.rowIndex="3"/>
+            <VBox spacing="4" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                <TextField fx:id="txtHoraFin"
+                           promptText="Debe ser posterior al inicio. Ej: 12:00"
+                           styleClass="input-field input-small"/>
+                <Label fx:id="errHoraFin" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <Label text="Intervalo entre citas (min) *" styleClass="field-label" GridPane.rowIndex="4"/>
+            <VBox spacing="4" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                <TextField fx:id="txtIntervalo"
+                           promptText="Entero positivo. Ej: 30"
+                           styleClass="input-field input-small"/>
+                <Label fx:id="errIntervalo" styleClass="field-error"
+                       visible="false" managed="false"/>
+            </VBox>
+        </GridPane>
+
+        <Label text="* Campo obligatorio" styleClass="hint-label"/>
+
+        <Label fx:id="lblFormError" styleClass="field-error"
+               visible="false" managed="false" wrapText="true" maxWidth="750"/>
+
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Agregar Disponibilidad"
+                    fx:id="btnAgregarDisponibilidad"
+                    onAction="#handleAgregar"/>
+            <Button text="Guardar Cambios"
+                    fx:id="btnGuardarCambiosDisponibilidad"
+                    onAction="#handleGuardarCambiosDisponibilidad"
+                    visible="false" managed="false"/>
+            <Button text="Cancelar"
+                    fx:id="btnCancelarEdicionDisponibilidad"
+                    onAction="#handleCancelarEdicionDisponibilidad"
+                    visible="false" managed="false"/>
+        </HBox>
+
+        <Label fx:id="lblFiltroTabla"
+               text="Mostrando todas las disponibilidades registradas."
+               styleClass="hint-label" wrapText="true" maxWidth="750"/>
+
+        <TableView fx:id="tablaDisponibilidad"
+                   prefHeight="250"
+                   prefWidth="750">
+
+            <columns>
+                <TableColumn fx:id="colMedico" text="Médico" prefWidth="180"/>
+                <TableColumn fx:id="colDia" text="Día" prefWidth="120"/>
+                <TableColumn fx:id="colHoraInicio" text="Inicio" prefWidth="100"/>
+                <TableColumn fx:id="colHoraFin" text="Fin" prefWidth="100"/>
+                <TableColumn fx:id="colIntervalo" text="Intervalo (min)" prefWidth="120"/>
+            </columns>
+
+        </TableView>
+
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Editar seleccionada"
+                    fx:id="btnEditarDisponibilidad"
+                    onAction="#handleEditarDisponibilidad"
+                    disable="true"/>
+            <Button text="Eliminar seleccionada"
+                    fx:id="btnEliminarDisponibilidad"
+                    onAction="#handleEliminarDisponibilidad"
+                    disable="true"/>
+        </HBox>
+
+    </VBox>
+
+    <Button text="Volver al Dashboard"
+            onAction="#handleVolver"
+            styleClass="dashboard-secondary-button"/>
+
+</VBox>

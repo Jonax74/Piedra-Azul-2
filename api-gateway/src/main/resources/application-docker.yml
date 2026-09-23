@@ -1,0 +1,86 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # El frontend en el host obtiene tokens con iss=http://localhost:8080/...
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/piedrazul}
+          # JWKS se resuelve por red interna de Docker
+          jwk-set-uri: http://keycloak:8080/realms/piedrazul/protocol/openid-connect/certs
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns:
+                  - "*"
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - PATCH
+                  - OPTIONS
+                allowed-headers:
+                  - "*"
+                allow-credentials: true
+                max-age: 3600
+          routes:
+            - id: usuarios
+              uri: http://usuarios-service:8081
+              predicates:
+                - Path=/api/usuarios/**
+            - id: personas
+              uri: http://personas-service:8082
+              predicates:
+                - Path=/api/personas/**
+            - id: pacientes
+              uri: http://personas-service:8082
+              predicates:
+                - Path=/api/pacientes/**
+            - id: medicos
+              uri: http://personas-service:8082
+              predicates:
+                - Path=/api/medicos/**
+            - id: disponibilidad
+              uri: http://personas-service:8082
+              predicates:
+                - Path=/api/disponibilidad/**
+            - id: citas
+              uri: http://citas-service:8083
+              predicates:
+                - Path=/api/citas/**
+            - id: configuracion
+              uri: http://citas-service:8083
+              predicates:
+                - Path=/api/configuracion/**
+            - id: notificaciones
+              uri: http://notifications-service:8084
+              predicates:
+                - Path=/api/notificaciones/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - gateway
+  endpoint:
+    health:
+      show-details: when-authorized
+    gateway:
+      access: read-only
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.piedrazul.gateway: INFO

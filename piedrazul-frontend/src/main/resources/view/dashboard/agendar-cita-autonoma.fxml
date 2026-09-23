@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.piedrazul.frontend.controller.AgendarCitaAutonomaController"
+            stylesheets="@../css/dashboard.css"
+            styleClass="dashboard-root"
+            prefWidth="1200"
+            prefHeight="720">
+
+    <top>
+        <HBox styleClass="top-bar" alignment="CENTER_LEFT">
+            <Label text="PIEDRAZUL" styleClass="logo-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnVolver" text="Volver" onAction="#handleVolver" styleClass="logout-button"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="agendar-scroll">
+            <VBox styleClass="dashboard-content agendar-container"
+                  spacing="22"
+                  alignment="TOP_CENTER">
+
+                <VBox styleClass="agendar-card agendar-welcome-card"
+                      spacing="8"
+                      alignment="CENTER"
+                      maxWidth="560">
+                    <Label fx:id="lblBienvenida"
+                           text="Bienvenido al panel de agendamiento"
+                           styleClass="agendar-welcome-title"/>
+                    <Label text="Para agendar su cita, complete los datos requeridos en cada paso."
+                           styleClass="agendar-guide-text"
+                           wrapText="true"
+                           textAlignment="CENTER"/>
+                    <Label fx:id="lblPasoActual"
+                           text="Paso 1 de 5: Seleccione el tipo de consulta"
+                           styleClass="agendar-step-indicator"
+                           wrapText="true"
+                           textAlignment="CENTER"/>
+                </VBox>
+
+                <VBox styleClass="agendar-card"
+                      spacing="14"
+                      maxWidth="560">
+                    <Label text="1. Datos requeridos"
+                           styleClass="agendar-section-title"/>
+
+                    <VBox spacing="18">
+                        <VBox spacing="4">
+                            <Label text="Tipo de consulta *"
+                                   styleClass="agendar-field-label"/>
+                            <Label text="Seleccione la especialidad que necesita"
+                                   styleClass="agendar-field-hint"/>
+                            <ComboBox fx:id="cmbEspecialidad"
+                                      promptText="— Elija una especialidad —"
+                                      prefWidth="360"
+                                      maxWidth="360"
+                                      styleClass="agendar-input"/>
+                            <Label fx:id="errEspecialidad"
+                                   styleClass="agendar-field-error"
+                                   visible="false"
+                                   managed="false"/>
+                        </VBox>
+
+                        <VBox spacing="4">
+                            <Label text="Médico *"
+                                   styleClass="agendar-field-label"/>
+                            <Label text="Solo se muestran médicos que atienden esa especialidad"
+                                   styleClass="agendar-field-hint"/>
+                            <ComboBox fx:id="cmbMedicos"
+                                      promptText="— Elija un médico —"
+                                      prefWidth="360"
+                                      maxWidth="360"
+                                      styleClass="agendar-input"/>
+                            <Label fx:id="errMedico"
+                                   styleClass="agendar-field-error"
+                                   visible="false"
+                                   managed="false"/>
+                        </VBox>
+
+                        <VBox spacing="4">
+                            <Label text="Fecha *"
+                                   styleClass="agendar-field-label"/>
+                            <Label text="Seleccione el día de su consulta"
+                                   styleClass="agendar-field-hint"/>
+                            <DatePicker fx:id="dpFecha"
+                                        promptText="— Elija una fecha —"
+                                        prefWidth="360"
+                                        maxWidth="360"
+                                        styleClass="agendar-input"/>
+                            <Label fx:id="errFecha"
+                                   styleClass="agendar-field-error"
+                                   visible="false"
+                                   managed="false"/>
+                        </VBox>
+                    </VBox>
+                </VBox>
+
+                <VBox styleClass="agendar-card agendar-slots-card"
+                      spacing="10"
+                      alignment="TOP_CENTER"
+                      maxWidth="300">
+                    <Label text="2. Seleccione la hora"
+                           styleClass="agendar-section-title"/>
+                    <Label fx:id="lblSlotsGuia"
+                           text="Los horarios aparecerán cuando elija médico y fecha."
+                           styleClass="agendar-field-hint"
+                           wrapText="true"
+                           textAlignment="CENTER"/>
+
+                    <TableView fx:id="tablaSlots"
+                               prefHeight="180"
+                               maxHeight="200"
+                               minHeight="70"
+                               prefWidth="260"
+                               maxWidth="260"
+                               styleClass="agendar-slots-table">
+                        <columns>
+                            <TableColumn fx:id="colSlot"
+                                         text="Horarios disponibles"
+                                         prefWidth="240"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+
+                    <Label fx:id="errSlot"
+                           styleClass="agendar-field-error"
+                           visible="false"
+                           managed="false"
+                           wrapText="true"
+                           textAlignment="CENTER"/>
+                    <Label fx:id="lblSlotsEstado"
+                           styleClass="agendar-status-info"
+                           visible="false"
+                           managed="false"
+                           wrapText="true"
+                           textAlignment="CENTER"/>
+                </VBox>
+
+                <VBox styleClass="agendar-card"
+                      spacing="10"
+                      maxWidth="560">
+                    <Label text="2.1 Motivo de la consulta (opcional)"
+                           styleClass="agendar-section-title"/>
+                    <Label text="Indique brevemente por qué solicita la cita. Puede omitir este paso."
+                           styleClass="agendar-field-hint"
+                           wrapText="true"/>
+                    <TextArea fx:id="txtMotivoAgendamiento"
+                              promptText="Ej: Dolor lumbar, control rutinario, seguimiento..."
+                              wrapText="true"
+                              prefRowCount="3"
+                              prefWidth="360"
+                              maxWidth="360"
+                              styleClass="agendar-textarea"/>
+                    <Label fx:id="errMotivo"
+                           styleClass="agendar-field-error"
+                           visible="false"
+                           managed="false"
+                           wrapText="true"/>
+                </VBox>
+
+                <Label fx:id="lblEstadoGeneral"
+                       styleClass="agendar-status-banner"
+                       wrapText="true"
+                       maxWidth="560"
+                       textAlignment="CENTER"
+                       visible="false"
+                       managed="false"/>
+
+                <VBox spacing="10"
+                      alignment="CENTER">
+                    <Label text="3. Confirme su cita"
+                           styleClass="agendar-section-title"/>
+                    <Button fx:id="btnAgendar"
+                            text="Agendar cita"
+                            onAction="#handleAgendar"
+                            styleClass="agendar-btn-primary"
+                            disable="true"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.piedrazul.frontend.controller.MisCitasMedicoController"
+            prefWidth="1100"
+            prefHeight="650"
+            style="-fx-background-color: #f1ebeb;">
+
+        <top>
+                <VBox spacing="12"
+                      alignment="CENTER"
+                      style="-fx-background-color: #24c0eb;">
+
+                        <padding>
+                                <Insets top="20" right="20" bottom="20" left="20"/>
+                        </padding>
+
+                        <Label text="MIS CITAS"
+                               style="-fx-font-size: 28px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: white;"/>
+
+                        <Label fx:id="lblProximaCita"
+                               text="Cargando citas..."
+                               wrapText="true"
+                               style="-fx-font-size: 16px;
+                          -fx-text-fill: white;
+                          -fx-font-weight: bold;"/>
+
+                        <HBox spacing="15" alignment="CENTER">
+
+                                <VBox spacing="5">
+                                        <Label text="Paciente"
+                                               style="-fx-text-fill: white;
+                                  -fx-font-weight: bold;"/>
+                                        <ComboBox fx:id="cmbPacientes"
+                                                  prefWidth="220"
+                                                  style="-fx-background-radius: 8;
+                                     -fx-font-size: 14px;"/>
+                                </VBox>
+
+                                <VBox spacing="5">
+                                        <Label text="Fecha inicial"
+                                               style="-fx-text-fill: white;
+                                  -fx-font-weight: bold;"/>
+                                        <DatePicker fx:id="dpFechaInicio"
+                                                    prefWidth="180"
+                                                    promptText="Seleccione fecha"
+                                                    style="-fx-background-radius: 8;
+                                       -fx-font-size: 14px;"/>
+                                </VBox>
+
+                                <VBox spacing="5">
+                                        <Label text="Fecha final"
+                                               style="-fx-text-fill: white;
+                                  -fx-font-weight: bold;"/>
+                                        <DatePicker fx:id="dpFechaFin"
+                                                    prefWidth="180"
+                                                    promptText="Seleccione fecha"
+                                                    style="-fx-background-radius: 8;
+                                       -fx-font-size: 14px;"/>
+                                </VBox>
+
+                                <VBox alignment="BOTTOM_CENTER">
+                                        <Button text="LISTAR"
+                                                onAction="#buscarCitas"
+                                                prefWidth="150"
+                                                prefHeight="45"
+                                                style="-fx-background-color: #5cceee;
+                                   -fx-text-fill: white;
+                                   -fx-font-weight: bold;
+                                   -fx-font-size: 16px;
+                                   -fx-background-radius: 10;
+                                   -fx-border-radius: 10;
+                                   -fx-border-color: #24c0eb;
+                                   -fx-border-width: 2;
+                                   -fx-cursor: hand;"/>
+                                </VBox>
+
+                        </HBox>
+
+                </VBox>
+        </top>
+
+        <center>
+                <VBox spacing="10">
+
+                        <padding>
+                                <Insets top="20" right="20" bottom="20" left="20"/>
+                        </padding>
+
+                        <Label text="Citas asignadas"
+                               style="-fx-font-size: 18px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: #37474f;"/>
+
+                        <Label fx:id="lblLeyendaProxima"
+                               text="La fila resaltada en amarillo es tu cita más próxima o pendiente."
+                               visible="false"
+                               managed="false"
+                               styleClass="cita-leyenda-hint"/>
+
+                        <VBox spacing="10" styleClass="cita-gestion-panel">
+                                <Label text="Gestionar cita seleccionada"
+                                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #37474f;"/>
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                        <Button fx:id="btnMarcarAtendida"
+                                                text="MARCAR ATENDIDA"
+                                                onAction="#marcarAtendida"
+                                                disable="true"
+                                                prefHeight="40"
+                                                style="-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
+                                        <Button fx:id="btnMarcarNoAsistida"
+                                                text="MARCAR NO ASISTIDA"
+                                                onAction="#marcarNoAsistida"
+                                                disable="true"
+                                                prefHeight="40"
+                                                style="-fx-background-color: #6a1b9a; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
+                                        <Button fx:id="btnReagendar"
+                                                text="REAGENDAR"
+                                                onAction="#reagendarCita"
+                                                disable="true"
+                                                prefHeight="40"
+                                                style="-fx-background-color: #f57f17; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
+                                        <Button fx:id="btnCancelar"
+                                                text="CANCELAR"
+                                                onAction="#cancelarCita"
+                                                disable="true"
+                                                prefHeight="40"
+                                                style="-fx-background-color: #c62828; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
+                                </HBox>
+                                <Label fx:id="lblGestionHint"
+                                       text="Seleccione una cita para ver las acciones disponibles."
+                                       styleClass="cita-gestion-hint"
+                                       wrapText="true"/>
+                        </VBox>
+
+                        <TableView fx:id="tablaCitas"
+                                   VBox.vgrow="ALWAYS"
+                                   style="-fx-background-radius: 12;
+                              -fx-border-radius: 12;
+                              -fx-border-color: #d0d0d0;
+                              -fx-border-width: 1;
+                              -fx-font-size: 13px;">
+
+                                <columns>
+                                        <TableColumn fx:id="colId" text="ID" prefWidth="60"/>
+                                        <TableColumn fx:id="colFecha" text="Fecha" prefWidth="140"/>
+                                        <TableColumn fx:id="colPaciente" text="Paciente" prefWidth="200"/>
+                                        <TableColumn fx:id="colTipo" text="Especialidad" prefWidth="100"/>
+                                        <TableColumn fx:id="colEstado" text="Estado" prefWidth="120"/>
+                                        <TableColumn fx:id="colMotivo" text="Motivo consulta" prefWidth="280"/>
+                                </columns>
+
+                        </TableView>
+
+                </VBox>
+        </center>
+
+        <bottom>
+                <HBox alignment="CENTER_RIGHT"
+                      spacing="10"
+                      style="-fx-background-color: #f1ebeb;">
+
+                        <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                        </padding>
+
+                        <Button text="EXPORTAR EXCEL"
+                                fx:id="btnExportarExcel"
+                                onAction="#exportarCitasExcel"
+                                prefWidth="170"
+                                prefHeight="45"
+                                style="-fx-background-color: #217346;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;"/>
+
+                        <Button text="EXPORTAR CSV"
+                                fx:id="btnExportarCsv"
+                                onAction="#exportarCitasCsv"
+                                prefWidth="170"
+                                prefHeight="45"
+                                style="-fx-background-color: #1565c0;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;"/>
+
+                        <Button text="Volver"
+                                fx:id="btnVolver"
+                                onAction="#volver"
+                                prefWidth="150"
+                                prefHeight="45"
+                                style="-fx-background-color: #ff5757;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;"/>
+
+                </HBox>
+        </bottom>
+
+</BorderPane>

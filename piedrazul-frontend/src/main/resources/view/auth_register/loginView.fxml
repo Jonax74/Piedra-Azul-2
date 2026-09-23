@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.piedrazul.frontend.controller.LoginController"
+            stylesheets="@../css/login.css"
+            styleClass="root">
+
+    <top>
+        <HBox styleClass="header">
+            <Label text="PIEDRAZUL" styleClass="logo"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox alignment="CENTER" spacing="25" styleClass="container">
+
+            <Label text="INICIAR SESIÓN" styleClass="title"/>
+
+            <GridPane hgap="20" vgap="20" styleClass="form">
+
+                <Label text="Usuario *" styleClass="label"
+                       GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+
+                <VBox spacing="4" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                    <HBox fx:id="boxUsername" spacing="10" styleClass="input-container">
+                        <Label text="👤" styleClass="input-icon"/>
+                        <TextField fx:id="txtUsername"
+                                   promptText="Ej: juan.perez"
+                                   styleClass="input"/>
+                    </HBox>
+                    <Label fx:id="errUsername" styleClass="field-error"
+                           visible="false" managed="false"/>
+                </VBox>
+
+                <Label text="Contraseña *" styleClass="label"
+                       GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+
+                <VBox spacing="4" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                    <HBox fx:id="boxPassword" spacing="10" styleClass="input-container">
+                        <Label text="🔒" styleClass="input-icon"/>
+                        <PasswordField fx:id="txtPassword"
+                                       promptText="Ingrese su contraseña"
+                                       styleClass="input"/>
+                    </HBox>
+                    <Label fx:id="errPassword" styleClass="field-error"
+                           visible="false" managed="false"/>
+                </VBox>
+
+            </GridPane>
+
+            <Button text="Iniciar Sesión"
+                    onAction="#handleLogin"
+                    styleClass="btn-primary"/>
+
+            <Button text="Registrar"
+                    onAction="#onGoRegister"
+                    styleClass="btn-secondary"/>
+
+        </VBox>
+    </center>
+
+</BorderPane>
