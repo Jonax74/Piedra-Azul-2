@@ -152,3 +152,13 @@ MAILERS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
 ]
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "config.security.keycloak_authentication.KeycloakJWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}

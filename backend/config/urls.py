@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import path
 from django.db import connection
+from config.api_views import MeView
 
 def health_check(request):
     try:
@@ -34,7 +35,9 @@ def health_check(request):
         "service": "piedra-azul-backend",
         "database": database_status,
     })
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health_check),
+    path("api/me/", MeView.as_view()),
 ]
