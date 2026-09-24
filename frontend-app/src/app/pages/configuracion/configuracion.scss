@@ -1,1 +1,108 @@
-.system-settings { min-height: 450px; }
+.system-settings {
+  min-height: 450px;
+}
+
+.system-settings .setting-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  border-top: 1px solid #e3eeed;
+}
+
+.system-settings .setting-line:first-of-type {
+  border-top: 0;
+}
+
+.system-settings .setting-line > div {
+  flex: 1;
+}
+
+.system-settings .setting-line strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.system-settings .setting-line small {
+  color: #71898b;
+  line-height: 1.6;
+}
+
+.system-settings .setting-line .number-input {
+  max-width: 110px;
+}
+
+.system-settings .setting-line span {
+  color: #627d7f;
+  font-size: 0.8rem;
+}
+
+.system-settings .switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+}
+
+.system-settings .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.system-settings .switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #dbe7e6;
+  transition: 0.2s ease;
+}
+
+.system-settings .switch span::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 4px;
+  top: 4px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: 0.2s ease;
+}
+
+.system-settings .switch input:checked + span {
+  background: var(--teal);
+}
+
+.system-settings .switch input:checked + span::before {
+  transform: translateX(20px);
+}
+
+.system-settings .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.system-settings .secondary-button {
+  border: 1px solid #c9d9d8;
+  background: white;
+  color: var(--ink);
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.system-settings .secondary-button:hover {
+  background: #f7fbf9;
+}
+
+.system-settings .primary-button {
+  min-height: 42px;
+}

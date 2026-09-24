@@ -1,2 +1,72 @@
-.table-section { min-height: 360px; }
-.search-input { min-width: 190px; }
+.table-section {
+  min-height: 360px;
+}
+
+.search-input {
+  min-width: 190px;
+}
+
+.professional-list {
+  display: grid;
+  gap: 4px;
+}
+
+.professional-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid #e3eceb;
+}
+
+.professional-row:first-child {
+  border-top: 0;
+}
+
+.professional-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #d8efe9;
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.professional-avatar.blue {
+  background: #ddeef5;
+  color: #3f7f9a;
+}
+
+.professional-row strong,
+.professional-row small {
+  display: block;
+}
+
+.professional-row small {
+  margin-top: 4px;
+  color: #758e90;
+  font-size: 0.74rem;
+}
+
+.active-tag {
+  color: #2a835d;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.row-action {
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.medicos-page .primary-button {
+  min-height: 40px;
+}

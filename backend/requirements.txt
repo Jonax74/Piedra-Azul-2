@@ -3,4 +3,4 @@ djangorestframework
 django-cors-headers
 psycopg[binary]
 python-dotenv
-PyJWT
+PyJWT[crypto]

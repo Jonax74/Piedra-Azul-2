@@ -1,1 +1,23 @@
-.appointment-list .empty-state { min-height: 260px; }
+.appointment-list {
+  min-height: 320px;
+}
+
+.appointment-list .empty-state {
+  min-height: 260px;
+}
+
+.appointment-list .status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #ebf4f2;
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.mis-citas-page .primary-button {
+  min-height: 40px;
+}

@@ -1,3 +1,59 @@
-.booking-page .booking-form { min-height: 470px; }
-.booking-page .slots-panel { min-height: 470px; }
-.booking-page .step-indicator { white-space: nowrap; }
+.booking-page {
+  min-height: 100%;
+}
+
+.booking-page .booking-form {
+  min-height: 470px;
+}
+
+.booking-page .slots-panel {
+  min-height: 470px;
+}
+
+.booking-page .step-indicator {
+  white-space: nowrap;
+}
+
+.booking-page .booking-form label {
+  margin-top: 20px;
+}
+
+.booking-page .primary-button {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.booking-page .slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.booking-page .slot-grid button {
+  min-height: 46px;
+  border: 1px solid #bdcfc9;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.booking-page .slot-grid button:hover {
+  border-color: var(--teal);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.booking-page .muted-text {
+  margin-top: 8px;
+  color: #7d9697;
+  line-height: 1.6;
+}
+
+.booking-page .surface {
+  box-shadow: 0 18px 34px rgba(24, 56, 59, 0.04);
+}
