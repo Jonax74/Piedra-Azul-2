@@ -29,4 +29,5 @@ urlpatterns = [
     path("api/me/", MeView.as_view()),
     path("api/me/profile/", ProfileView.as_view()),
     path("api/", include("persons.urls")),
+    path("api/", include("appointments.urls")),
 ]
