@@ -6,6 +6,11 @@ from persons.models import Medico, Paciente
 from users.models import Usuario
 from persons.models import Disponibilidad, MedicoDisponibilidad
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from appointments.services import validar_cita_programable
+
+
+
 
 class CitaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,37 +75,20 @@ class CitaSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         medico = attrs["medico"]
-        fecha_hora = timezone.localtime(attrs["fecha_hora"])
-
-        dia_semana = [
-            "LUNES",
-            "MARTES",
-            "MIERCOLES",
-            "JUEVES",
-            "VIERNES",
-            "SABADO",
-            "DOMINGO",
-        ][fecha_hora.weekday()]
-
-        tiene_disponibilidad = MedicoDisponibilidad.objects.filter(
-            medico=medico,
-            disponibilidad__dia_semana=dia_semana,
-            disponibilidad__hora_inicio__lte=fecha_hora.time(),
-            disponibilidad__hora_fin__gte=fecha_hora.time(),
-        ).exists()
-
-        if not tiene_disponibilidad:
-            raise serializers.ValidationError(
-                "El médico no tiene disponibilidad en ese horario."
+        fecha_hora = attrs["fecha_hora"]
+    
+        try:
+            validar_cita_programable(
+                medico_id=medico.pk,
+                fecha_hora=fecha_hora,
             )
-
-        if Cita.objects.filter(
-            medico=medico,
-            fecha_hora=fecha_hora,
-            estado__in=["PROGRAMADA", "CONFIRMADA"],
-        ).exists():
+        except DjangoValidationError as error:
             raise serializers.ValidationError(
-                "El médico ya tiene una cita en ese horario."
-            )
-
-        return attrs    
+                error.messages,
+            ) from error
+    
+        return attrs
+class FranjaDisponibleSerializer(serializers.Serializer):
+    fecha = serializers.DateField()
+    hora = serializers.TimeField(format="%H:%M")
+    fecha_hora = serializers.DateTimeField()
