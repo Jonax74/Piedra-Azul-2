@@ -19,25 +19,14 @@ from django.http import JsonResponse
 from django.urls import path
 from django.db import connection
 from config.api_views import MeView
+from config.api_views import MeView, ProfileView
+from django.urls import include, path
 
-def health_check(request):
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-            cursor.fetchone()
 
-        database_status = "connected"
-    except Exception:
-        database_status = "error"
-
-    return JsonResponse({
-        "status": "ok",
-        "service": "piedra-azul-backend",
-        "database": database_status,
-    })
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/health/", health_check),
     path("api/me/", MeView.as_view()),
+    path("api/me/profile/", ProfileView.as_view()),
+    path("api/", include("persons.urls")),
 ]
