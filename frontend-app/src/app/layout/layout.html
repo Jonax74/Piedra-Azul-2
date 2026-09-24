@@ -1,0 +1,29 @@
+<p>layout works!</p>
+<div class="app-shell">
+	<aside class="sidebar">
+		<a class="brand" routerLink="/dashboard" aria-label="Piedrazul, ir al resumen">
+			<span class="brand-mark">P</span>
+			<span><strong>Piedrazul</strong><small>Salud integral</small></span>
+		</a>
+		<nav class="main-nav" aria-label="Navegación principal">
+			@for (item of navigation; track item.path) {
+				@if (isVisible(item.roles)) {
+					<a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }">
+						<span class="nav-dot"></span>{{ item.label }}
+					</a>
+				}
+			}
+		</nav>
+		<div class="sidebar-user">
+			<div class="avatar">{{ auth.username().charAt(0).toUpperCase() }}</div>
+			<div><strong>{{ auth.username() }}</strong><small>{{ auth.roles()[0] || 'Usuario' }}</small></div>
+		</div>
+	</aside>
+	<main class="workspace">
+		<header class="topbar">
+			<div><span class="eyebrow">Piedrazul / Espacio de trabajo</span><h1>Tu salud, a tu ritmo</h1></div>
+			<button class="logout-button" type="button" (click)="logout()">Cerrar sesión</button>
+		</header>
+		<section class="page-content"><router-outlet /></section>
+	</main>
+</div>

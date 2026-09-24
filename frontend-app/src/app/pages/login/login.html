@@ -1,0 +1,24 @@
+<main class="login-page">
+	<section class="login-visual">
+		<div class="visual-brand"><span class="brand-mark">P</span><strong>Piedrazul</strong></div>
+		<div class="visual-copy">
+			<span class="eyebrow">Cuidado que acompaña</span>
+			<h1>Tu bienestar empieza con una conversación.</h1>
+			<p>Encuentra el momento adecuado para cuidar de ti y de los tuyos.</p>
+		</div>
+		<div class="visual-line"></div>
+	</section>
+	<section class="login-panel">
+		<div class="login-card">
+			<span class="eyebrow">Portal Piedrazul</span>
+			<h2>Bienvenido</h2>
+			<p class="login-intro">Inicia sesión para gestionar tus citas de forma sencilla y segura.</p>
+			@if (errorMessage) { <div class="alert alert-danger" role="alert">{{ errorMessage }}</div> }
+			<button class="primary-button" type="button" [disabled]="isLoading" (click)="login()">
+				{{ isLoading ? 'Conectando...' : 'Iniciar sesión' }}
+			</button>
+			<p class="login-note">Serás dirigido al portal seguro de Piedrazul para autenticarte.</p>
+		</div>
+		<small class="login-footer">Piedrazul Clínica de bienestar</small>
+	</section>
+</main>
