@@ -8,6 +8,7 @@ from persons.models import Disponibilidad, MedicoDisponibilidad
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from appointments.services import validar_cita_programable
+from appointments.models import ConfiguracionSistema
 
 
 
@@ -88,7 +89,32 @@ class CitaSerializer(serializers.ModelSerializer):
             ) from error
     
         return attrs
+    
 class FranjaDisponibleSerializer(serializers.Serializer):
     fecha = serializers.DateField()
     hora = serializers.TimeField(format="%H:%M")
     fecha_hora = serializers.DateTimeField()
+
+class ConfiguracionSistemaSerializer(
+    serializers.ModelSerializer,
+):
+    class Meta:
+        model = ConfiguracionSistema
+        fields = [
+            "id",
+            "semanas_agendamiento",
+            "activo",
+            "actualizado_en",
+        ]
+        read_only_fields = [
+            "id",
+            "actualizado_en",
+        ]
+
+    def validate_semanas_agendamiento(self, value):
+        if value < 1 or value > 52:
+            raise serializers.ValidationError(
+                "La ventana debe estar entre 1 y 52 semanas."
+            )
+
+        return value    

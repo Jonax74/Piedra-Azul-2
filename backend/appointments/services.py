@@ -1,32 +1,30 @@
 from datetime import datetime, timedelta
 
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from appointments.models import Cita, Festivo
+from appointments.models import Cita, ConfiguracionSistema, Festivo
 from persons.models import MedicoDisponibilidad
-
-from datetime import date, datetime
-
-from django.core.exceptions import ValidationError
-
 
 
 ESTADOS_OCUPADOS = ["PROGRAMADA", "CONFIRMADA"]
+
+DIAS_SEMANA = [
+    "LUNES",
+    "MARTES",
+    "MIERCOLES",
+    "JUEVES",
+    "VIERNES",
+    "SABADO",
+    "DOMINGO",
+]
 
 
 def obtener_franjas_disponibles(medico_id, fecha):
     if Festivo.objects.filter(fecha=fecha).exists():
         return []
 
-    dia_semana = [
-        "LUNES",
-        "MARTES",
-        "MIERCOLES",
-        "JUEVES",
-        "VIERNES",
-        "SABADO",
-        "DOMINGO",
-    ][fecha.weekday()]
+    dia_semana = DIAS_SEMANA[fecha.weekday()]
 
     relaciones = (
         MedicoDisponibilidad.objects
@@ -57,7 +55,11 @@ def obtener_franjas_disponibles(medico_id, fecha):
                 estado__in=ESTADOS_OCUPADOS,
             ).exists()
 
-            if not ocupado and fecha_hora > timezone.now():
+            if (
+                not ocupado
+                and fecha_hora > timezone.now()
+                and fecha_dentro_de_ventana(fecha_hora)
+            ):
                 franjas.append(
                     {
                         "fecha": fecha.isoformat(),
@@ -75,21 +77,32 @@ def obtener_franjas_disponibles(medico_id, fecha):
 
     return franjas
 
+
+def fecha_dentro_de_ventana(fecha_hora):
+    configuracion = (
+        ConfiguracionSistema.objects
+        .filter(activo=True)
+        .order_by("-actualizado_en")
+        .first()
+    )
+
+    if configuracion is None:
+        return True
+
+    ahora = timezone.localtime(timezone.now())
+    limite = ahora + timedelta(
+        weeks=configuracion.semanas_agendamiento,
+    )
+
+    return fecha_hora <= limite
+
+
 def esta_dentro_de_disponibilidad(
     medico_id: int,
     fecha_hora: datetime,
 ) -> bool:
     fecha_hora_local = timezone.localtime(fecha_hora)
-
-    dia_semana = [
-        "LUNES",
-        "MARTES",
-        "MIERCOLES",
-        "JUEVES",
-        "VIERNES",
-        "SABADO",
-        "DOMINGO",
-    ][fecha_hora_local.weekday()]
+    dia_semana = DIAS_SEMANA[fecha_hora_local.weekday()]
 
     return MedicoDisponibilidad.objects.filter(
         medico_id=medico_id,
@@ -99,19 +112,72 @@ def esta_dentro_de_disponibilidad(
     ).exists()
 
 
+def esta_en_intervalo_disponible(
+    medico_id: int,
+    fecha_hora: datetime,
+) -> bool:
+    fecha_hora_local = timezone.localtime(fecha_hora)
+    dia_semana = DIAS_SEMANA[fecha_hora_local.weekday()]
+
+    disponibilidades = (
+        MedicoDisponibilidad.objects
+        .filter(
+            medico_id=medico_id,
+            disponibilidad__dia_semana=dia_semana,
+        )
+        .select_related("disponibilidad")
+    )
+
+    minutos_cita = (
+        fecha_hora_local.hour * 60
+        + fecha_hora_local.minute
+    )
+
+    for relacion in disponibilidades:
+        disponibilidad = relacion.disponibilidad
+
+        inicio = (
+            disponibilidad.hora_inicio.hour * 60
+            + disponibilidad.hora_inicio.minute
+        )
+        fin = (
+            disponibilidad.hora_fin.hour * 60
+            + disponibilidad.hora_fin.minute
+        )
+
+        if (
+            inicio <= minutos_cita < fin
+            and (
+                minutos_cita - inicio
+            ) % disponibilidad.intervalo == 0
+        ):
+            return True
+
+    return False
+
+
 def validar_cita_programable(
     medico_id: int,
     fecha_hora: datetime,
     cita_id: int | None = None,
 ) -> None:
     fecha_hora_local = timezone.localtime(fecha_hora)
+    ahora = timezone.localtime(timezone.now())
 
-    if fecha_hora_local <= timezone.localtime(timezone.now()):
+    if fecha_hora_local <= ahora:
         raise ValidationError(
             "La cita debe programarse en una fecha futura."
         )
 
-    if Festivo.objects.filter(fecha=fecha_hora_local.date()).exists():
+    if not fecha_dentro_de_ventana(fecha_hora_local):
+        raise ValidationError(
+            "La fecha supera la ventana permitida "
+            "para agendar citas."
+        )
+
+    if Festivo.objects.filter(
+        fecha=fecha_hora_local.date(),
+    ).exists():
         raise ValidationError(
             "No se pueden agendar citas en días festivos."
         )
@@ -130,7 +196,7 @@ def validar_cita_programable(
     ):
         raise ValidationError(
             "La hora no coincide con un intervalo disponible."
-        )       
+        )
 
     citas_ocupadas = Cita.objects.filter(
         medico_id=medico_id,
@@ -145,48 +211,3 @@ def validar_cita_programable(
         raise ValidationError(
             "El médico ya tiene una cita en ese horario."
         )
-
-def esta_en_intervalo_disponible(
-    medico_id: int,
-    fecha_hora: datetime,
-) -> bool:
-    fecha_hora_local = timezone.localtime(fecha_hora)
-
-    dia_semana = [
-        "LUNES",
-        "MARTES",
-        "MIERCOLES",
-        "JUEVES",
-        "VIERNES",
-        "SABADO",
-        "DOMINGO",
-    ][fecha_hora_local.weekday()]
-
-    disponibilidades = MedicoDisponibilidad.objects.filter(
-        medico_id=medico_id,
-        disponibilidad__dia_semana=dia_semana,
-    ).select_related("disponibilidad")
-
-    minutos_cita = (
-        fecha_hora_local.hour * 60
-        + fecha_hora_local.minute
-    )
-
-    for relacion in disponibilidades:
-        disponibilidad = relacion.disponibilidad
-        inicio = (
-            disponibilidad.hora_inicio.hour * 60
-            + disponibilidad.hora_inicio.minute
-        )
-        fin = (
-            disponibilidad.hora_fin.hour * 60
-            + disponibilidad.hora_fin.minute
-        )
-
-        if (
-            inicio <= minutos_cita < fin
-            and (minutos_cita - inicio) % disponibilidad.intervalo == 0
-        ):
-            return True
-
-    return False    

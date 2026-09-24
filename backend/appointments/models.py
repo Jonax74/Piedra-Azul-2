@@ -122,3 +122,23 @@ class Festivo(models.Model):
 
     def __str__(self):
         return str(self.fecha)
+
+class ConfiguracionSistema(models.Model):
+    semanas_agendamiento = models.PositiveIntegerField(
+        default=4,
+    )
+    activo = models.BooleanField(
+        default=True,
+    )
+    actualizado_en = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        db_table = "configuracionsistema"
+
+    def __str__(self):
+        return (
+            f"Ventana de agendamiento: "
+            f"{self.semanas_agendamiento} semanas"
+        )    

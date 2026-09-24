@@ -5,9 +5,15 @@ from appointments.views import (
     CitaDetailView,
     CitaListCreateView,
     FranjasDisponiblesView,
+    ConfiguracionSistemaView,
 )
 
 urlpatterns = [
+    path(
+        "configuracion/",
+        ConfiguracionSistemaView.as_view(),
+        name="configuracion-sistema",
+    ),
     path(
         "citas/agenda/",
         AgendaCitasView.as_view(),

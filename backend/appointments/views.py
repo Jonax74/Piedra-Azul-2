@@ -22,6 +22,29 @@ from appointments.serializers import FranjaDisponibleSerializer
 from appointments.services import obtener_franjas_disponibles
 from persons.models import Medico
 
+from appointments.models import ConfiguracionSistema
+from appointments.serializers import (
+    ConfiguracionSistemaSerializer,
+)
+from config.security.permissions import IsAdminRole
+
+
+class ConfiguracionSistemaView(generics.RetrieveUpdateAPIView):
+    serializer_class = ConfiguracionSistemaSerializer
+    permission_classes = [IsAdminRole]
+
+    def get_object(self):
+        configuracion, _ = (
+            ConfiguracionSistema.objects.get_or_create(
+                activo=True,
+                defaults={
+                    "semanas_agendamiento": 4,
+                },
+            )
+        )
+
+        return configuracion
+
 
 class CitaListCreateView(generics.ListCreateAPIView):
     queryset = (
