@@ -7,6 +7,7 @@ interface PiedrazulToken {
 	preferred_username?: string;
 	name?: string;
 	email?: string;
+	exp?: number;
 	realm_access?: { roles?: string[] };
 }
 
@@ -52,7 +53,7 @@ export class Auth {
 			this.isAuthenticated.set(authenticated);
 			this.isInitialized.set(true);
 			if (authenticated) {
-				await this.loadProfile();
+				void this.loadProfile();
 			}
 			return authenticated;
 		}).catch(() => {
@@ -83,6 +84,10 @@ export class Auth {
 		}
 
 		try {
+			const token = this.keycloak.tokenParsed as PiedrazulToken | undefined;
+			if (this.keycloak.token && token?.exp && token.exp - Math.floor(Date.now() / 1000) > 30) {
+				return this.keycloak.token;
+			}
 			await this.keycloak.updateToken(30);
 			return this.keycloak.token ?? null;
 		} catch {

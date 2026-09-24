@@ -8,6 +8,11 @@
 .page-heading h2 { margin: 9px 0 7px; color: var(--ink); font-family: var(--display-font); font-size: clamp(2rem, 4vw, 3rem); font-weight: 400; letter-spacing: -.04em; }
 .page-heading p { margin: 0; color: #647c7d; line-height: 1.6; }
 .surface { border: 1px solid #dce9e8; border-radius: 8px; background: rgba(255,255,255,.78); box-shadow: 0 15px 35px rgba(25, 67, 69, .035); }
+.feedback-message { margin: 14px 0 20px; padding: 12px 14px; border: 1px solid #cfe3df; border-radius: 6px; background: #edf8f5; color: #2b6d69; font-size: .82rem; }
+.appointment-rows { display: grid; gap: 4px; }
+.appointment-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 0; border-top: 1px solid #e3edec; color: var(--ink); }
+.appointment-row strong, .appointment-row small { display: block; }
+.appointment-row small { margin-top: 4px; color: #7c9293; font-size: .74rem; }
 .filter-bar { display: flex; align-items: end; gap: 18px; padding: 22px; margin-bottom: 22px; }
 .filter-bar label, .settings-form label, .booking-form label { display: grid; gap: 8px; flex: 1; color: #557174; font-size: .73rem; font-weight: 700; letter-spacing: .03em; }
 select, input:not([type='checkbox']) { width: 100%; height: 43px; padding: 0 12px; border: 1px solid #cbdedd; border-radius: 4px; outline: 0; background: white; color: var(--ink); font-size: .82rem; }

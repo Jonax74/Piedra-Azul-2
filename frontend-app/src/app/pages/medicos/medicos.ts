@@ -1,14 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MedicosService } from '../../core/services/medicos.service';
+import { Medico } from '../../shared/models/medico.model';
 
 @Component({
-  imports: [],
+  imports: [FormsModule],
   selector: 'app-medicos',
   styleUrl: './medicos.scss',
   templateUrl: './medicos.html',
 })
 export class Medicos {
-  readonly professionals = [
-    { initials: 'ER', name: 'Dra. Elena Restrepo', specialty: 'Medicina general', tone: '' },
-    { initials: 'CM', name: 'Dr. Carlos Mora', specialty: 'Fisioterapia', tone: 'blue' },
-  ];
+  private readonly medicosService = inject(MedicosService);
+  professionals: Medico[] = [];
+  searchTerm = '';
+  feedback = '';
+
+  ngOnInit(): void {
+    this.medicosService.getMedicos().subscribe({
+      next: (items) => this.professionals = items,
+      error: () => this.feedback = 'No fue posible cargar los profesionales.',
+    });
+  }
+
+  get filteredProfessionals(): Medico[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    return term ? this.professionals.filter((item) => `${item.tipo_profesional} ${item.persona}`.toLowerCase().includes(term)) : this.professionals;
+  }
 }

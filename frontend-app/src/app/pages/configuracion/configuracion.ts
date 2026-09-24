@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfiguracionService } from '../../core/services/configuracion.service';
 
 @Component({
   imports: [FormsModule],
@@ -8,7 +9,42 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './configuracion.html',
 })
 export class Configuracion {
+  private readonly configuracionService = inject(ConfiguracionService);
   bookingWeeks = 4;
   autonomousBooking = true;
   automaticConfirmation = true;
+  isLoading = true;
+  isSaving = false;
+  feedback = '';
+
+  ngOnInit(): void {
+    this.configuracionService.getConfiguracion().subscribe({
+      next: (configuracion) => {
+        this.bookingWeeks = configuracion.semanas_agendamiento;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.feedback = 'No fue posible cargar la configuración.';
+        this.isLoading = false;
+      },
+    });
+  }
+
+  guardar(): void {
+    this.isSaving = true;
+    this.feedback = '';
+    this.configuracionService.actualizarConfiguracion({
+      semanas_agendamiento: this.bookingWeeks,
+      activo: true,
+    }).subscribe({
+      next: () => {
+        this.feedback = 'Configuración guardada correctamente.';
+        this.isSaving = false;
+      },
+      error: () => {
+        this.feedback = 'No fue posible guardar la configuración.';
+        this.isSaving = false;
+      },
+    });
+  }
 }

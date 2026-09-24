@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { inject } from '@angular/core';
 import { Cita } from '../../shared/models/cita.model';
+import { timeout } from 'rxjs';
 
 interface AgendaResponse {
   cantidad: number;
@@ -24,11 +25,11 @@ export class CitasService {
   private readonly api = inject(ApiService);
 
   getAgenda(medicoId: number, fecha: string) {
-    return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha });
+    return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
   }
 
   getFranjasDisponibles(medicoId: number, fecha: string) {
-    return this.api.get<FranjasResponse>('/citas/disponibles/', { medico: medicoId, fecha });
+    return this.api.get<FranjasResponse>('/citas/disponibles/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
   }
 
   getCitas() {

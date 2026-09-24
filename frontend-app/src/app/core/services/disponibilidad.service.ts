@@ -10,11 +10,19 @@ export class DisponibilidadService {
     return this.api.get<Disponibilidad[]>('/disponibilidades/');
   }
 
+  getMedicoDisponibilidades() {
+    return this.api.get<Array<{ medico: number; disponibilidad: number }>>('/medico-disponibilidades/');
+  }
+
   crearDisponibilidad(payload: Partial<Disponibilidad>) {
     return this.api.post<Disponibilidad>('/disponibilidades/', payload);
   }
 
   eliminarDisponibilidad(id: number) {
     return this.api.delete<unknown>(`/disponibilidades/${id}/`);
+  }
+
+  asociarConMedico(payload: { medico: number; disponibilidad: number }) {
+    return this.api.post<{ medico: number; disponibilidad: number }>('/medico-disponibilidades/', payload);
   }
 }
