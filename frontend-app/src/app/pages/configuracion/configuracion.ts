@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
 
@@ -10,6 +10,7 @@ import { ConfiguracionService } from '../../core/services/configuracion.service'
 })
 export class Configuracion {
   private readonly configuracionService = inject(ConfiguracionService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   bookingWeeks = 4;
   autonomousBooking = true;
   automaticConfirmation = true;
@@ -22,10 +23,12 @@ export class Configuracion {
       next: (configuracion) => {
         this.bookingWeeks = configuracion.semanas_agendamiento;
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
       error: () => {
         this.feedback = 'No fue posible cargar la configuración.';
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -40,10 +43,12 @@ export class Configuracion {
       next: () => {
         this.feedback = 'Configuración guardada correctamente.';
         this.isSaving = false;
+        this.changeDetector.markForCheck();
       },
       error: () => {
         this.feedback = 'No fue posible guardar la configuración.';
         this.isSaving = false;
+        this.changeDetector.markForCheck();
       },
     });
   }

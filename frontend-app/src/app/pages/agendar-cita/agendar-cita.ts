@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -19,6 +19,7 @@ export class AgendarCita {
   private readonly personasService = inject(PersonasService);
   private readonly citasService = inject(CitasService);
   private readonly authService = inject(AuthService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   specialties: Especialidad[] = [];
   professionals: Medico[] = [];
   people: Persona[] = [];
@@ -39,8 +40,8 @@ export class AgendarCita {
 
   ngOnInit(): void {
     this.feedback = 'Cargando pacientes, profesionales y especialidades...';
-    this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => this.people = people }); }, error: () => this.feedback = 'No fue posible cargar los profesionales.' });
-    this.medicosService.getEspecialidades().subscribe({ next: (items) => this.specialties = items, error: () => this.feedback = 'No fue posible cargar las especialidades.' });
+    this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => { this.people = people; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los nombres de los profesionales.'; this.changeDetector.markForCheck(); } }); this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); } });
+    this.medicosService.getEspecialidades().subscribe({ next: (items) => { this.specialties = items; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar las especialidades.'; this.changeDetector.markForCheck(); } });
     this.authService.getProfile().subscribe({
       next: (profile) => {
         const elevatedRoles = ['ADMIN', 'AGENDADOR', 'MEDICO'];
@@ -48,8 +49,9 @@ export class AgendarCita {
           && !profile.roles.some((role) => elevatedRoles.includes(role));
         this.currentPersonaId = profile.persona_id;
         this.loadPatients();
+        this.changeDetector.markForCheck();
       },
-      error: () => this.feedback = 'No fue posible cargar tu perfil.',
+      error: () => { this.feedback = 'No fue posible cargar tu perfil.'; this.changeDetector.markForCheck(); },
     });
   }
 
@@ -59,9 +61,12 @@ export class AgendarCita {
       const ownPatient = this.currentPersonaId
         ? items.find((item) => item.persona.id === this.currentPersonaId)
         : undefined;
-      this.selectedPatient = (ownPatient ?? items[0])?.persona.id?.toString() ?? '';
+      this.selectedPatient = this.patientOnly
+        ? ownPatient?.persona.id?.toString() ?? ''
+        : '';
       this.feedback = items.length ? 'Selecciona una fecha y consulta los horarios disponibles.' : 'No hay pacientes registrados para agendar.';
-    }, error: () => this.feedback = 'No fue posible cargar los pacientes.' });
+      this.changeDetector.markForCheck();
+    }, error: () => { this.feedback = 'No fue posible cargar los pacientes.'; this.changeDetector.markForCheck(); } });
   }
 
   patientName(): string {
@@ -93,8 +98,8 @@ export class AgendarCita {
     this.feedback = '';
     this.selectedSlot = '';
     this.citasService.getFranjasDisponibles(Number(this.selectedProfessional), this.selectedDate).subscribe({
-      next: (response) => { this.slots = response.franjas; this.isLoading = false; this.feedback = response.franjas.length ? `Hay ${response.franjas.length} horarios disponibles para el ${this.selectedDate}.` : `No hay horarios disponibles para el ${this.selectedDate}.`; },
-      error: (error: { name?: string; error?: { detail?: string } }) => { this.feedback = error.name === 'TimeoutError' ? 'La consulta de horarios tardó demasiado. Verifica que Django y PostgreSQL estén activos.' : error.error?.detail ?? 'No fue posible consultar los horarios. Verifica el profesional y la fecha.'; this.isLoading = false; },
+      next: (response) => { this.slots = response.franjas; this.isLoading = false; this.feedback = response.franjas.length ? `Hay ${response.franjas.length} horarios disponibles para el ${this.selectedDate}.` : `No hay horarios disponibles para el ${this.selectedDate}.`; this.changeDetector.markForCheck(); },
+      error: (error: { name?: string; error?: { detail?: string } }) => { this.feedback = error.name === 'TimeoutError' ? 'La consulta de horarios tardó demasiado. Verifica que Django y PostgreSQL estén activos.' : error.error?.detail ?? 'No fue posible consultar los horarios. Verifica el profesional y la fecha.'; this.isLoading = false; this.changeDetector.markForCheck(); },
     });
   }
 
@@ -105,8 +110,8 @@ export class AgendarCita {
     }
     this.isSaving = true;
     this.citasService.crearCita({ paciente: Number(this.selectedPatient), medico: Number(this.selectedProfessional), fecha_hora: this.selectedSlot, estado: 'PROGRAMADA' }).subscribe({
-      next: () => { this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`; this.showConfirmation = true; this.feedback = ''; this.isSaving = false; this.selectedSlot = ''; },
-      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving = false; },
+      next: () => { this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`; this.showConfirmation = true; this.feedback = ''; this.isSaving = false; this.selectedSlot = ''; this.changeDetector.markForCheck(); },
+      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving = false; this.changeDetector.markForCheck(); },
     });
   }
 

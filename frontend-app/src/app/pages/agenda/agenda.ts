@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -18,6 +18,7 @@ export class Agenda {
   private readonly medicosService = inject(MedicosService);
   private readonly personasService = inject(PersonasService);
   private readonly citasService = inject(CitasService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   professionals: Medico[] = [];
   people: Persona[] = [];
   appointments: Cita[] = [];
@@ -31,13 +32,15 @@ export class Agenda {
     this.medicosService.getMedicos().subscribe({
       next: (medicos) => {
         this.professionals = medicos.filter((medico) => medico.estado === 'ACTIVO');
+        this.changeDetector.markForCheck();
         this.personasService.getPersonas().subscribe({
-          next: (people) => { this.people = people; this.feedback = 'Puedes consultar todas las citas o aplicar uno o ambos filtros.'; },
-          error: () => this.feedback = 'Los profesionales cargaron, pero no se pudieron cargar sus nombres.',
+          next: (people) => { this.people = people; this.feedback = 'Puedes consultar todas las citas o aplicar uno o ambos filtros.'; this.changeDetector.markForCheck(); },
+          error: () => { this.feedback = 'Los profesionales cargaron, pero no se pudieron cargar sus nombres.'; this.changeDetector.markForCheck(); },
         });
       },
-      error: () => this.feedback = 'No fue posible cargar los profesionales.',
+      error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); },
     });
+    this.search();
   }
 
   professionalName(professional: Medico): string {
@@ -64,10 +67,12 @@ export class Agenda {
           ? `Se encontraron ${response.cantidad} citas para ${filtro}.`
           : `No hay citas registradas para ${filtro}.`;
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
       error: (error: { name?: string; error?: { detail?: string } }) => {
         this.feedback = error.name === 'TimeoutError' ? 'La consulta tardó demasiado. Revisa que Django y PostgreSQL estén activos e inténtalo nuevamente.' : error.error?.detail ?? 'No fue posible consultar la agenda. Verifica el médico y la fecha.';
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
     });
   }

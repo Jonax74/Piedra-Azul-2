@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { inject } from '@angular/core';
@@ -13,13 +13,21 @@ import { Cita } from '../../shared/models/cita.model';
 })
 export class MisCitas {
   private readonly citasService = inject(CitasService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   appointments: Cita[] = [];
   feedback = '';
 
+  professionalName(appointment: Cita): string {
+    const persona = appointment.medico_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Profesional #${appointment.medico}`;
+  }
+
   ngOnInit(): void {
     this.citasService.getCitas().subscribe({
-      next: (items) => this.appointments = items,
-      error: () => this.feedback = 'No fue posible cargar tus citas.',
+      next: (items) => { this.appointments = items; this.changeDetector.markForCheck(); },
+      error: () => { this.feedback = 'No fue posible cargar tus citas.'; this.changeDetector.markForCheck(); },
     });
   }
 }
