@@ -1,0 +1,121 @@
+.booking-page {
+  min-height: 100%;
+}
+
+.booking-page .booking-form {
+  min-height: 470px;
+}
+
+.booking-page .slots-panel {
+  min-height: 470px;
+}
+
+.booking-page .step-indicator {
+  white-space: nowrap;
+}
+
+.booking-page .booking-form label {
+  margin-top: 20px;
+}
+
+.booking-page .primary-button {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.booking-page .slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.booking-page .slot-grid button {
+  min-height: 46px;
+  border: 1px solid #bdcfc9;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.booking-page .slot-grid button:hover {
+  border-color: var(--teal);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.booking-page .muted-text {
+  margin-top: 8px;
+  color: #7d9697;
+  line-height: 1.6;
+}
+
+.booking-page .surface {
+  box-shadow: 0 18px 34px rgba(24, 56, 59, 0.04);
+}
+
+.booking-page .selected-slot {
+  border-color: var(--teal) !important;
+  background: var(--teal) !important;
+  color: white !important;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(23, 56, 59, 0.48);
+}
+
+.confirmation-modal {
+  width: min(100%, 430px);
+  padding: 34px;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 24px 70px rgba(23, 56, 59, 0.24);
+  text-align: center;
+  animation: modal-in .2s ease both;
+}
+
+.confirmation-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #dff3e9;
+  color: #267b59;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.confirmation-modal h3 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+.confirmation-modal p {
+  margin: 12px 0 24px;
+  color: #668082;
+  line-height: 1.65;
+}
+
+.confirmation-modal .primary-button {
+  width: 100%;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}

@@ -1,1 +1,15 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+	<div class="page-heading">
+		<div><span class="eyebrow">Resumen de hoy</span><h2>Buenos días, {{ auth.username() }}</h2><p>Todo lo que necesitas para organizar tu atención.</p></div>
+		<a class="primary-button compact" routerLink="/agendar-cita">Agendar una cita</a>
+	</div>
+	<div class="stat-grid">
+		<article class="stat-card"><span class="stat-label">Próxima cita</span><strong>Sin citas próximas</strong><small>Tu agenda está disponible</small></article>
+		<article class="stat-card accent"><span class="stat-label">Disponibilidad</span><strong>Consulta horarios</strong><small>Encuentra el espacio ideal</small></article>
+		<article class="stat-card"><span class="stat-label">Atención</span><strong>Personalizada</strong><small>Profesionales que te acompañan</small></article>
+	</div>
+	<section class="welcome-section">
+		<div><span class="eyebrow">Siguiente paso</span><h3>Agenda tu espacio de bienestar</h3><p>Selecciona un profesional, revisa las franjas disponibles y confirma tu cita en pocos pasos.</p></div>
+		<a routerLink="/agendar-cita" class="text-link">Ver disponibilidad <span>→</span></a>
+	</section>
+</div>

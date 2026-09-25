@@ -1,0 +1,158 @@
+# =============================
+# General / editor files
+# =============================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*.pid
+*.seed
+*.bak
+*.orig
+*.rej
+*.local
+*.local.*
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+*.code-workspace
+
+# =============================
+# OS / environment
+# =============================
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+
+# =============================
+# Python / Django backend
+# =============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+venv/
+.venv/
+ENV/
+env/
+venv.bak/
+backend/venv/
+backend/.venv/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/*.sqlite3
+backend/*.db
+backend/.env
+backend/.env.*
+
+# Django specific
+backend/**/migrations/__pycache__/
+backend/**/migrations/*.py
+!backend/**/migrations/__init__.py
+backend/staticfiles/
+backend/media/
+backend/uploads/
+backend/logs/
+backend/tmp/
+
+# =============================
+# Node / Angular / frontend
+# =============================
+node_modules/
+frontend-app/node_modules/
+frontend-app/dist/
+frontend-app/.angular/
+frontend-app/.cache/
+frontend-app/.vite/
+frontend-app/.parcel-cache/
+frontend-app/coverage/
+frontend-app/.nyc_output/
+frontend-app/.sass-cache/
+frontend-app/npm-debug.log*
+frontend-app/yarn-debug.log*
+frontend-app/yarn-error.log*
+frontend-app/pnpm-debug.log*
+
+# Build outputs
+build/
+dist/
+out/
+*.tsbuildinfo
+
+# =============================
+# Java / JVM (extra safety)
+# =============================
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+.gradle-cache/
+
+# =============================
+# Docker / infra / local services
+# =============================
+.docker/
+*.override.yml
+compose.override.yml
+docker/data/
+postgres-data/
+volumes/
+*.sqlite
+*.db
+
+# =============================
+# Test / coverage / reports
+# =============================
+coverage/
+coverage-final.json
+junit.xml
+test-results/
+playwright-report/
+playwright/.cache/
+
+# =============================
+# Misc / generated files
+# =============================
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.dump
+*.sql.local
+*.dump.sql
+
+# =============================
+# Keep essential config examples
+# =============================
+!.gitignore
+!*.example
+!*.sample
+!docker-compose.yml
+!frontend-app/angular.json
+!frontend-app/package.json
+!backend/requirements.txt

@@ -45,7 +45,6 @@ class ConfiguracionSistemaView(generics.RetrieveUpdateAPIView):
 
         return configuracion
 
-
 class CitaListCreateView(generics.ListCreateAPIView):
     queryset = (
         Cita.objects

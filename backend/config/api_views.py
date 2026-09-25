@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from users.services import sincronizar_usuario_keycloak
 
 
@@ -12,6 +13,8 @@ class MeView(APIView):
                 "roles": request.user.roles,
             }
         )
+
+    
 
 class ProfileView(APIView):
     def get(self, request):

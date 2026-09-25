@@ -1,0 +1,54 @@
+.availability-page {
+  min-height: 100%;
+}
+
+.settings-form {
+  min-height: 540px;
+}
+
+.schedule-preview {
+  min-height: 300px;
+}
+
+.availability-page .field-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.availability-page .field-row label {
+  flex: 1;
+}
+
+.availability-page .week-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #e2edeb;
+  color: var(--ink);
+}
+
+.availability-page .week-row strong {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.availability-page .week-row small {
+  color: #718a8d;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.availability-page .muted-row {
+  opacity: 0.7;
+}
+
+.availability-page .primary-button {
+  margin-top: 24px;
+}
+
+.availability-page .settings-form label {
+  margin-top: 18px;
+}

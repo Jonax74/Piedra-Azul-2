@@ -1,0 +1,36 @@
+.agenda-page {
+  min-height: 100%;
+}
+
+.agenda-page .filter-bar {
+  align-items: end;
+}
+
+.agenda-page .table-section {
+  min-height: 350px;
+}
+
+.agenda-page .section-header {
+  margin-bottom: 18px;
+}
+
+.agenda-page .count-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #e8f5f3;
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.agenda-page .empty-state {
+  min-height: 210px;
+}
+
+.agenda-page select,
+.agenda-page input {
+  width: 100%;
+}
