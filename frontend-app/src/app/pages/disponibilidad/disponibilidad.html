@@ -1,10 +1,10 @@
 <div class="page-shell availability-page">
-	<div class="page-heading"><div><span class="eyebrow">Reglas de atención</span><h2>Disponibilidad</h2><p>Define cuándo puede atender cada profesional.</p></div><button class="primary-button compact" type="button" (click)="loadSchedules()">Actualizar horarios</button></div>
+	<div class="page-heading"><div><span class="eyebrow">Reglas de atención</span><h2>Disponibilidad</h2><p>Define cuándo puede atender cada profesional.</p></div><button class="primary-button compact" type="button" (click)="refreshSchedules()">Actualizar horarios</button></div>
 	<div class="availability-grid">
 		<section class="surface settings-form">
 			<span class="eyebrow">Profesional</span><h3>Configurar horario</h3>
 			<label>Médico o terapeuta
-				<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''"><option value="">Selecciona un profesional</option>@for (professional of professionals; track professional.persona) {<option [value]="professional.persona">Profesional #{{ professional.persona }}</option>}</select>
+				<select [(ngModel)]="selectedProfessional" (ngModelChange)="professionalChanged()"><option value="">Selecciona un profesional</option>@for (professional of professionals; track professional.persona) {<option [value]="professional.persona">{{ professionalName(professional) }}</option>}</select>
 				@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
 			</label>
 			<label>Día de atención
@@ -21,7 +21,7 @@
 			</label>
 			<button class="primary-button" type="button" [disabled]="isSaving" (click)="saveSchedule()">{{ isSaving ? 'Guardando...' : 'Guardar horario' }}</button>
 		</section>
-		<section class="surface schedule-preview"><div class="section-header"><div><span class="eyebrow">Vista semanal</span><h3>Horarios configurados</h3></div></div>@for (schedule of schedules; track schedule.id) {<div class="week-row"><span>{{ schedule.dia_semana }}</span><strong>{{ schedule.hora_inicio }} - {{ schedule.hora_fin }}</strong><small>{{ schedule.intervalo }} min</small></div>} @empty {<div class="empty-state"><strong>No hay horarios configurados</strong><p>Los horarios guardados aparecerán aquí.</p></div>}</section>
+		<section class="surface schedule-preview"><div class="section-header"><div><span class="eyebrow">Vista semanal</span><h3>Horarios configurados</h3></div><span class="count-badge">{{ filteredSchedules.length }} horarios</span></div>@for (schedule of paginatedSchedules; track schedule.id) {<div class="week-row"><div class="day-badge">{{ schedule.dia_semana.slice(0, 3) }}</div><div><strong>{{ schedule.hora_inicio }} - {{ schedule.hora_fin }}</strong><small>{{ professionalNames(schedule) }}</small></div><small>{{ schedule.intervalo }} min</small></div>} @empty {<div class="empty-state"><strong>{{ selectedProfessional ? 'Este profesional no tiene horarios configurados' : 'No hay horarios configurados' }}</strong><p>{{ selectedProfessional ? 'Selecciona otro profesional o crea una nueva disponibilidad.' : 'Los horarios guardados aparecerán aquí.' }}</p></div>}@if (filteredSchedules.length > pageSize) {<nav class="pagination" aria-label="Paginación de disponibilidades"><button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">Anterior</button>@for (page of pageNumbers; track page) {<button type="button" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>}<button type="button" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Siguiente</button></nav>}</section>
 	</div>
 	@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
 </div>

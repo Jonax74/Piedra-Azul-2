@@ -30,6 +30,76 @@
   color: var(--ink);
 }
 
+.availability-page .day-badge {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 34px;
+  border-radius: 6px;
+  background: #e5f3f0;
+  color: var(--teal);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.availability-page .week-row strong,
+.availability-page .week-row small {
+  display: block;
+}
+
+.availability-page .week-row div small {
+  margin-top: 4px;
+  color: #718a8d;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.availability-page .count-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 0 10px;
+  border-radius: 20px;
+  background: #e5f3f0;
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.availability-page .pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e2edeb;
+}
+
+.availability-page .pagination button {
+  min-width: 32px;
+  min-height: 31px;
+  padding: 0 8px;
+  border: 1px solid #cbded9;
+  border-radius: 4px;
+  background: white;
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.availability-page .pagination button.active,
+.availability-page .pagination button:hover:not(:disabled) {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: white;
+}
+
+.availability-page .pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .availability-page .week-row strong {
   font-size: 0.85rem;
   font-weight: 700;
