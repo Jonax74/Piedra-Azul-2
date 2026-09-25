@@ -8,11 +8,14 @@ from persons.models import (
     Paciente,
     Persona,
 )
+from users.models import Usuario
 
 from persons.models import Disponibilidad, MedicoDisponibilidad
 
 
 class PersonaSerializer(serializers.ModelSerializer):
+    usuario = serializers.SerializerMethodField()
+
     class Meta:
         model = Persona
         fields = [
@@ -26,8 +29,25 @@ class PersonaSerializer(serializers.ModelSerializer):
             "telefono",
             "dni",
             "correo",
+            "usuario",
         ]
         read_only_fields = ["id"]
+
+    def get_usuario(self, persona):
+        usuario = getattr(persona, "usuario", None)
+        if usuario is None:
+            return None
+
+        return {
+            "id": usuario.id,
+            "username": usuario.username,
+            "roles": list(
+                usuario.relaciones_rol.values_list(
+                    "rol__nombre",
+                    flat=True,
+                ),
+            ),
+        }
 
     def validate_fecha_nacimiento(self, value):
         if value > timezone.localdate():
@@ -40,15 +60,50 @@ class PersonaSerializer(serializers.ModelSerializer):
 
 class PacienteSerializer(serializers.ModelSerializer):
     persona = PersonaSerializer()
+    usuario_id = serializers.PrimaryKeyRelatedField(
+        source="_usuario",
+        queryset=Usuario.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Paciente
-        fields = ["persona"]
+        fields = ["persona", "usuario_id"]
+
+    def validate_usuario_id(self, usuario):
+        if usuario is not None and not usuario.relaciones_rol.filter(
+            rol__nombre="PACIENTE",
+        ).exists():
+            raise serializers.ValidationError(
+                "El usuario vinculado debe tener el rol PACIENTE."
+            )
+        current_persona_id = (
+            self.instance.persona_id
+            if self.instance is not None
+            else None
+        )
+        if (
+            usuario is not None
+            and usuario.persona_id is not None
+            and usuario.persona_id != current_persona_id
+        ):
+            raise serializers.ValidationError(
+                "El usuario ya está vinculado a otra persona."
+            )
+
+        return usuario
 
     @transaction.atomic
     def create(self, validated_data):
         persona_data = validated_data.pop("persona")
+        usuario = validated_data.pop("_usuario", None)
         persona = Persona.objects.create(**persona_data)
+
+        if usuario is not None:
+            usuario.persona = persona
+            usuario.save(update_fields=["persona"])
 
         return Paciente.objects.create(
             persona=persona,
@@ -59,6 +114,28 @@ class PacienteSerializer(serializers.ModelSerializer):
         return {
             "persona": PersonaSerializer(instance.persona).data,
         }
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        usuario = validated_data.pop("_usuario", serializers.empty)
+        persona_data = validated_data.pop("persona", None)
+
+        if persona_data:
+            persona = instance.persona
+            for field, value in persona_data.items():
+                setattr(persona, field, value)
+            persona.save()
+
+        if usuario is not serializers.empty:
+            actual = getattr(instance.persona, "usuario", None)
+            if actual is not None and actual != usuario:
+                actual.persona = None
+                actual.save(update_fields=["persona"])
+            if usuario is not None:
+                usuario.persona = instance.persona
+                usuario.save(update_fields=["persona"])
+
+        return instance
 
 
 class EspecialidadSerializer(serializers.ModelSerializer):
@@ -82,6 +159,14 @@ class MedicoSerializer(serializers.ModelSerializer):
         required=False,
     )
 
+    usuario_id = serializers.PrimaryKeyRelatedField(
+        source="_usuario",
+        queryset=Usuario.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Medico
         fields = [
@@ -90,7 +175,31 @@ class MedicoSerializer(serializers.ModelSerializer):
             "estado",
             "especialidades",
             "especialidad_ids",
+            "usuario_id",
         ]
+
+    def validate_usuario_id(self, usuario):
+        if usuario is not None and not usuario.relaciones_rol.filter(
+            rol__nombre="MEDICO",
+        ).exists():
+            raise serializers.ValidationError(
+                "El usuario vinculado debe tener el rol MEDICO."
+            )
+        current_persona_id = (
+            self.instance.persona_id
+            if self.instance is not None
+            else None
+        )
+        if (
+            usuario is not None
+            and usuario.persona_id is not None
+            and usuario.persona_id != current_persona_id
+        ):
+            raise serializers.ValidationError(
+                "El usuario ya está vinculado a otra persona."
+            )
+
+        return usuario
 
     def get_especialidades(self, medico):
         especialidades = Especialidad.objects.filter(
@@ -108,8 +217,13 @@ class MedicoSerializer(serializers.ModelSerializer):
             "especialidad_ids",
             [],
         )
+        usuario = validated_data.pop("_usuario", None)
 
         medico = Medico.objects.create(**validated_data)
+
+        if usuario is not None:
+            usuario.persona = medico.persona
+            usuario.save(update_fields=["persona"])
 
         for especialidad in especialidades:
             medico.especialidades.create(
@@ -124,11 +238,21 @@ class MedicoSerializer(serializers.ModelSerializer):
             "especialidad_ids",
             None,
         )
+        usuario = validated_data.pop("_usuario", serializers.empty)
 
         for field, value in validated_data.items():
             setattr(instance, field, value)
 
         instance.save()
+
+        if usuario is not serializers.empty:
+            actual = getattr(instance.persona, "usuario", None)
+            if actual is not None and actual != usuario:
+                actual.persona = None
+                actual.save(update_fields=["persona"])
+            if usuario is not None:
+                usuario.persona = instance.persona
+                usuario.save(update_fields=["persona"])
 
         if especialidades is not None:
             instance.especialidades.all().delete()

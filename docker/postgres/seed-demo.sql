@@ -6,6 +6,7 @@ BEGIN;
 DO $$
 DECLARE
     v_paciente_id INTEGER;
+    v_paciente_ana_id INTEGER;
     v_medico_id INTEGER;
     v_terapeuta_id INTEGER;
     medicina_id INTEGER;
@@ -34,8 +35,31 @@ BEGIN
 
     UPDATE usuario
     SET per_id = v_paciente_id
-    WHERE username = 'paciente.prueba'
-      AND per_id IS NULL;
+        WHERE username = 'paciente.prueba';
+
+    SELECT per_id INTO v_paciente_ana_id
+    FROM persona
+    WHERE per_dni = 10000002;
+
+    IF v_paciente_ana_id IS NULL THEN
+        INSERT INTO persona (
+            per_primer_nombre, per_segundo_nombre, per_primer_apellido,
+            per_segundo_apellido, per_genero, per_fecha_nac,
+            per_telefono, per_dni, per_correo
+        ) VALUES (
+            'Ana', NULL, 'Torres', NULL, 'MUJER',
+            '1992-11-03', '3000000004', 10000002,
+            'ana.torres@demo.piedrazul'
+        ) RETURNING per_id INTO v_paciente_ana_id;
+    END IF;
+
+    INSERT INTO paciente (per_id)
+    VALUES (v_paciente_ana_id)
+    ON CONFLICT (per_id) DO NOTHING;
+
+    UPDATE usuario
+    SET per_id = v_paciente_ana_id
+        WHERE username = 'paciente.ana';
 
     INSERT INTO especialidad (esp_nombre)
     VALUES ('Medicina General')
@@ -108,6 +132,10 @@ BEGIN
     ON CONFLICT (per_id) DO UPDATE
     SET med_tipo_profesional = EXCLUDED.med_tipo_profesional,
         med_estado = EXCLUDED.med_estado;
+
+    UPDATE usuario
+    SET per_id = v_terapeuta_id
+    WHERE username = 'medico.carlos';
 
     INSERT INTO medicoespecialidad (per_id, esp_id)
     VALUES (v_terapeuta_id, fisioterapia_id)
