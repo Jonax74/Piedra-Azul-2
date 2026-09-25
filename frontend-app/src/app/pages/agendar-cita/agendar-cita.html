@@ -57,19 +57,17 @@
 				<small class="date-hint">Disponible desde hoy hasta {{ maxBookingDate }}. Los días sin atención aparecen bloqueados.</small>
 				@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }
 			</div>
-			<button class="primary-button" type="button" [disabled]="isLoading || !selectedDate || !selectedProfessional" (click)="loadSlots()">
-				{{ isLoading ? 'Consultando horarios...' : 'Consultar disponibilidad' }}
-			</button>
+			@if (isLoading) { <p class="loading-message" role="status">Consultando horarios disponibles...</p> }
 		</section>
 		<section class="surface slots-panel">
 			<span class="eyebrow">Horarios disponibles</span>
 			<h3>Selecciona una franja</h3>
-			<p class="muted-text">Elige una fecha para ver los horarios habilitados.</p>
+			@if (isLoading) { <p class="muted-text">Estamos buscando los horarios para la fecha seleccionada...</p> } @else if (!selectedDate) { <p class="muted-text">Elige una fecha para ver los horarios habilitados.</p> } @else { <p class="muted-text">Selecciona el horario que prefieras.</p> }
 			<div class="slot-grid">
 				@for (slot of slots; track slot.fecha_hora) {
 					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora; fieldErrors.slot = ''">{{ slot.hora }}</button>
 				} @empty {
-					<p class="muted-text">No hay horarios cargados todavía.</p>
+					<p class="muted-text">{{ selectedDate ? 'No hay horarios disponibles para esta fecha.' : 'No hay horarios cargados todavía.' }}</p>
 				}
 			</div>
 			@if (fieldErrors.slot) { <small class="field-error">{{ fieldErrors.slot }}</small> }

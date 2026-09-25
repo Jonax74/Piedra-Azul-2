@@ -161,6 +161,7 @@ export class AgendarCita {
     if (!this.isDateSelectable(date)) return;
     this.selectedDate = date;
     this.dateChanged();
+    this.loadSlots();
   }
 
   previousMonth(): void {
