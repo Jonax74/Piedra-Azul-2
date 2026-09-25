@@ -14,6 +14,9 @@ from appointments.models import ConfiguracionSistema
 
 
 class CitaSerializer(serializers.ModelSerializer):
+    paciente_detalle = serializers.SerializerMethodField()
+    medico_detalle = serializers.SerializerMethodField()
+
     class Meta:
         model = Cita
         fields = [
@@ -24,12 +27,34 @@ class CitaSerializer(serializers.ModelSerializer):
             "fecha_hora",
             "estado",
             "observacion",
+            "paciente_detalle",
+            "medico_detalle",
         ]
         read_only_fields = [
             "id",
             "usuario",
             "estado",
         ]
+
+    def get_paciente_detalle(self, cita):
+        persona = cita.paciente.persona
+        return {
+            "persona": {
+                "id": persona.id,
+                "primer_nombre": persona.primer_nombre,
+                "primer_apellido": persona.primer_apellido,
+            },
+        }
+
+    def get_medico_detalle(self, cita):
+        persona = cita.medico.persona
+        return {
+            "persona": {
+                "id": persona.id,
+                "primer_nombre": persona.primer_nombre,
+                "primer_apellido": persona.primer_apellido,
+            },
+        }
 
     def validate_fecha_hora(self, value):
         if value <= timezone.now():

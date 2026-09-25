@@ -1,11 +1,13 @@
-from datetime import date, timedelta
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from appointments.models import Cita
 from appointments.serializers import CitaSerializer
+from appointments.views import AgendaCitasView
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 
@@ -89,3 +91,43 @@ class CitaPacienteScopeTests(TestCase):
 			"Un paciente solo puede agendar citas para sí mismo.",
 			serializer.errors["non_field_errors"],
 		)
+
+	def test_cita_includes_patient_and_medico_names(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+
+		data = CitaSerializer(cita).data
+
+		self.assertEqual(
+			data["paciente_detalle"]["persona"]["primer_nombre"],
+			"Ana",
+		)
+		self.assertEqual(
+			data["medico_detalle"]["persona"]["primer_nombre"],
+			"Carlos",
+		)
+
+	def test_agenda_accepts_no_filters(self):
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().get("/api/citas/agenda/")
+		force_authenticate(
+			request,
+			user=SimpleNamespace(
+				roles=["AGENDADOR"],
+				user_id="agendador-test",
+			),
+		)
+
+		response = AgendaCitasView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["cantidad"], 1)

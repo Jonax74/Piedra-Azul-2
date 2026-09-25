@@ -22,7 +22,7 @@ export class Agenda {
   people: Persona[] = [];
   appointments: Cita[] = [];
   selectedProfessional = '';
-  selectedDate = new Date().toISOString().slice(0, 10);
+  selectedDate = '';
   isLoading = false;
   feedback = '';
 
@@ -32,7 +32,7 @@ export class Agenda {
       next: (medicos) => {
         this.professionals = medicos.filter((medico) => medico.estado === 'ACTIVO');
         this.personasService.getPersonas().subscribe({
-          next: (people) => { this.people = people; this.feedback = 'Selecciona un profesional y una fecha para consultar la agenda.'; },
+          next: (people) => { this.people = people; this.feedback = 'Puedes consultar todas las citas o aplicar uno o ambos filtros.'; },
           error: () => this.feedback = 'Los profesionales cargaron, pero no se pudieron cargar sus nombres.',
         });
       },
@@ -46,17 +46,23 @@ export class Agenda {
   }
 
   search(): void {
-    if (!this.selectedProfessional || !this.selectedDate) {
-      this.feedback = 'Selecciona un profesional y una fecha.';
-      return;
-    }
-
     this.isLoading = true;
     this.feedback = '';
-    this.citasService.getAgenda(Number(this.selectedProfessional), this.selectedDate).subscribe({
+    const medicoId = this.selectedProfessional
+      ? Number(this.selectedProfessional)
+      : undefined;
+    const fecha = this.selectedDate || undefined;
+
+    this.citasService.getAgenda(medicoId, fecha).subscribe({
       next: (response) => {
         this.appointments = response.resultados;
-        this.feedback = response.cantidad ? `Se encontraron ${response.cantidad} citas para el ${this.selectedDate}.` : `No hay citas registradas para el ${this.selectedDate}.`;
+        const filtro = [
+          this.selectedDate ? `el ${this.selectedDate}` : 'todas las fechas',
+          this.selectedProfessional ? 'el profesional seleccionado' : 'todos los profesionales',
+        ].join(' y ');
+        this.feedback = response.cantidad
+          ? `Se encontraron ${response.cantidad} citas para ${filtro}.`
+          : `No hay citas registradas para ${filtro}.`;
         this.isLoading = false;
       },
       error: (error: { name?: string; error?: { detail?: string } }) => {
@@ -64,5 +70,19 @@ export class Agenda {
         this.isLoading = false;
       },
     });
+  }
+
+  patientName(appointment: Cita): string {
+    const persona = appointment.paciente_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Paciente #${appointment.paciente}`;
+  }
+
+  professionalNameFromAppointment(appointment: Cita): string {
+    const persona = appointment.medico_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Profesional #${appointment.medico}`;
   }
 }

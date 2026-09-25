@@ -92,43 +92,43 @@ class AgendaCitasView(APIView):
         medico_id = request.query_params.get("medico")
         fecha_texto = request.query_params.get("fecha")
 
-        if not medico_id or not fecha_texto:
-            return Response(
-                {
-                    "detail": (
-                        "Los parámetros medico y fecha son obligatorios."
-                    ),
-                },
-                status=400,
+        filtros = {}
+        fecha = None
+
+        if medico_id:
+            try:
+                filtros["medico_id"] = int(medico_id)
+            except ValueError:
+                return Response(
+                    {"detail": "medico debe ser numérico."},
+                    status=400,
+                )
+
+        if fecha_texto:
+            try:
+                fecha = datetime.strptime(
+                    fecha_texto,
+                    "%Y-%m-%d",
+                ).date()
+            except ValueError:
+                return Response(
+                    {
+                        "detail": (
+                            "fecha debe usar el formato YYYY-MM-DD."
+                        ),
+                    },
+                    status=400,
+                )
+
+            zona_horaria = timezone.get_current_timezone()
+            filtros["fecha_hora__gte"] = timezone.make_aware(
+                datetime.combine(fecha, time.min),
+                zona_horaria,
             )
-
-        try:
-            fecha = datetime.strptime(
-                fecha_texto,
-                "%Y-%m-%d",
-            ).date()
-            medico_id = int(medico_id)
-        except ValueError:
-            return Response(
-                {
-                    "detail": (
-                        "medico debe ser numérico y fecha debe usar "
-                        "el formato YYYY-MM-DD."
-                    ),
-                },
-                status=400,
+            filtros["fecha_hora__lte"] = timezone.make_aware(
+                datetime.combine(fecha, time.max),
+                zona_horaria,
             )
-
-        zona_horaria = timezone.get_current_timezone()
-
-        inicio = timezone.make_aware(
-            datetime.combine(fecha, time.min),
-            zona_horaria,
-        )
-        fin = timezone.make_aware(
-            datetime.combine(fecha, time.max),
-            zona_horaria,
-        )
 
         citas = (
             Cita.objects
@@ -137,11 +137,7 @@ class AgendaCitasView(APIView):
                 "medico__persona",
                 "usuario",
             )
-            .filter(
-                medico_id=medico_id,
-                fecha_hora__gte=inicio,
-                fecha_hora__lte=fin,
-            )
+            .filter(**filtros)
             .order_by("fecha_hora")
         )
 

@@ -34,3 +34,41 @@
 .agenda-page input {
   width: 100%;
 }
+
+.agenda-page .appointment-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) minmax(160px, 1.2fr) auto;
+  align-items: center;
+}
+
+.agenda-page .appointment-header {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) minmax(160px, 1.2fr) auto;
+  gap: 18px;
+  padding: 0 0 10px;
+  color: #718a8a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.agenda-page .appointment-row time {
+  color: #718a8a;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 720px) {
+  .agenda-page .appointment-header {
+    display: none;
+  }
+
+  .agenda-page .appointment-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+  }
+
+  .agenda-page .appointment-row small {
+    justify-self: start;
+  }
+}

@@ -24,7 +24,7 @@ interface FranjasResponse {
 export class CitasService {
   private readonly api = inject(ApiService);
 
-  getAgenda(medicoId: number, fecha: string) {
+  getAgenda(medicoId?: number, fecha?: string) {
     return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
   }
 

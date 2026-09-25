@@ -8,12 +8,14 @@ export interface Cita {
   observacion?: string | null;
   paciente_detalle?: {
     persona?: {
+      id?: number;
       primer_nombre?: string;
       primer_apellido?: string;
     };
   };
   medico_detalle?: {
     persona?: {
+      id?: number;
       primer_nombre?: string;
       primer_apellido?: string;
     };
