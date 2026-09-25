@@ -57,12 +57,12 @@ class CitaSerializer(serializers.ModelSerializer):
 
         return value
 
-    def create(self, validated_data):
+    def _usuario_autenticado(self):
         request = self.context["request"]
         keycloak_user_id = request.user.user_id
 
         try:
-            usuario = Usuario.objects.get(
+            return Usuario.objects.get(
                 keycloak_user_id=keycloak_user_id,
             )
         except Usuario.DoesNotExist as error:
@@ -70,11 +70,46 @@ class CitaSerializer(serializers.ModelSerializer):
                 "El usuario autenticado no está sincronizado con Django."
             ) from error
 
+    def _validar_alcance_del_paciente(self, paciente, usuario):
+        roles = set(getattr(self.context["request"].user, "roles", []))
+        roles_ampliados = {"ADMIN", "AGENDADOR", "MEDICO"}
+
+        if roles.intersection(roles_ampliados):
+            return
+
+        if "PACIENTE" not in roles:
+            raise serializers.ValidationError(
+                "El usuario no tiene un rol autorizado para agendar citas."
+            )
+
+        if (
+            usuario.persona_id is None
+            or not Paciente.objects.filter(
+                persona_id=usuario.persona_id,
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                "El paciente autenticado no está vinculado a una persona."
+            )
+
+        if paciente.persona_id != usuario.persona_id:
+            raise serializers.ValidationError(
+                "Un paciente solo puede agendar citas para sí mismo."
+            )
+
+    def create(self, validated_data):
+        usuario = self._usuario_autenticado()
         validated_data["usuario"] = usuario
 
         return super().create(validated_data)
 
     def validate(self, attrs):
+        usuario = self._usuario_autenticado()
+        self._validar_alcance_del_paciente(
+            paciente=attrs["paciente"],
+            usuario=usuario,
+        )
+
         medico = attrs["medico"]
         fecha_hora = attrs["fecha_hora"]
     

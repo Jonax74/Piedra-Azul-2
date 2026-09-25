@@ -18,6 +18,27 @@
   margin-top: 20px;
 }
 
+.booking-page .readonly-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid #d7e3df;
+  border-radius: 6px;
+  background: #f4f8f6;
+}
+
+.booking-page .readonly-field span,
+.booking-page .readonly-field small {
+  color: #718a8a;
+  font-size: 0.78rem;
+}
+
+.booking-page .readonly-field strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .booking-page .primary-button {
   width: 100%;
   margin-top: 24px;

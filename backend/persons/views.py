@@ -25,6 +25,19 @@ class PacienteListCreateView(generics.ListCreateAPIView):
     serializer_class = PacienteSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        roles = set(getattr(self.request.user, "roles", []))
+
+        if "PACIENTE" in roles and not roles.intersection(
+            {"ADMIN", "AGENDADOR", "MEDICO"},
+        ):
+            return queryset.filter(
+                persona__usuario__keycloak_user_id=self.request.user.user_id,
+            )
+
+        return queryset
+
 
 class PacienteDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Paciente.objects.select_related("persona").all()

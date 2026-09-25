@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { PersonasService, Paciente } from '../../core/services/personas.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Medico } from '../../shared/models/medico.model';
 import { Especialidad } from '../../shared/models/especialidad.model';
 import { Persona } from '../../shared/models/persona.model';
@@ -17,6 +18,7 @@ export class AgendarCita {
   private readonly medicosService = inject(MedicosService);
   private readonly personasService = inject(PersonasService);
   private readonly citasService = inject(CitasService);
+  private readonly authService = inject(AuthService);
   specialties: Especialidad[] = [];
   professionals: Medico[] = [];
   people: Persona[] = [];
@@ -32,16 +34,43 @@ export class AgendarCita {
   feedback = '';
   showConfirmation = false;
   confirmationMessage = '';
+  patientOnly = false;
+  currentPersonaId: number | null = null;
 
   ngOnInit(): void {
     this.feedback = 'Cargando pacientes, profesionales y especialidades...';
     this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => this.people = people }); }, error: () => this.feedback = 'No fue posible cargar los profesionales.' });
     this.medicosService.getEspecialidades().subscribe({ next: (items) => this.specialties = items, error: () => this.feedback = 'No fue posible cargar las especialidades.' });
+    this.authService.getProfile().subscribe({
+      next: (profile) => {
+        const elevatedRoles = ['ADMIN', 'AGENDADOR', 'MEDICO'];
+        this.patientOnly = profile.roles.includes('PACIENTE')
+          && !profile.roles.some((role) => elevatedRoles.includes(role));
+        this.currentPersonaId = profile.persona_id;
+        this.loadPatients();
+      },
+      error: () => this.feedback = 'No fue posible cargar tu perfil.',
+    });
+  }
+
+  private loadPatients(): void {
     this.personasService.getPacientes().subscribe({ next: (items) => {
       this.patients = items;
-      this.selectedPatient = items[0]?.persona.id?.toString() ?? '';
+      const ownPatient = this.currentPersonaId
+        ? items.find((item) => item.persona.id === this.currentPersonaId)
+        : undefined;
+      this.selectedPatient = (ownPatient ?? items[0])?.persona.id?.toString() ?? '';
       this.feedback = items.length ? 'Selecciona una fecha y consulta los horarios disponibles.' : 'No hay pacientes registrados para agendar.';
     }, error: () => this.feedback = 'No fue posible cargar los pacientes.' });
+  }
+
+  patientName(): string {
+    const patient = this.patients.find(
+      (item) => item.persona.id?.toString() === this.selectedPatient,
+    );
+    return patient
+      ? `${patient.persona.primer_nombre} ${patient.persona.primer_apellido}`
+      : 'Paciente no vinculado';
   }
 
   get filteredProfessionals(): Medico[] {

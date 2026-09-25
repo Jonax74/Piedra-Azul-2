@@ -9,5 +9,6 @@ export interface PerfilUsuario {
   username: string;
   keycloak_user_id: string;
   estado: string;
+  persona_id: number | null;
   roles: string[];
 }

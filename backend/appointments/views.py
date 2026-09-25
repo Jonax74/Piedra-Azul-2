@@ -58,6 +58,19 @@ class CitaListCreateView(generics.ListCreateAPIView):
     serializer_class = CitaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        roles = set(getattr(self.request.user, "roles", []))
+
+        if "PACIENTE" in roles and not roles.intersection(
+            {"ADMIN", "AGENDADOR", "MEDICO"},
+        ):
+            return queryset.filter(
+                usuario__keycloak_user_id=self.request.user.user_id,
+            )
+
+        return queryset
+
 
 class CitaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = (

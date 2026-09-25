@@ -36,6 +36,7 @@ class ProfileView(APIView):
                 "username": usuario.username,
                 "keycloak_user_id": usuario.keycloak_user_id,
                 "estado": usuario.estado,
+                "persona_id": usuario.persona_id,
                 "roles": list(
                     usuario.relaciones_rol.values_list(
                         "rol__nombre",
