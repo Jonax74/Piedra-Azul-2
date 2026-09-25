@@ -31,17 +31,29 @@ from config.security.permissions import IsAdminRole
 
 class ConfiguracionSistemaView(generics.RetrieveUpdateAPIView):
     serializer_class = ConfiguracionSistemaSerializer
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        permission_class = (
+            IsAdminRole
+            if self.request.method in {"PUT", "PATCH"}
+            else IsAuthenticated
+        )
+        return [permission_class()]
 
     def get_object(self):
-        configuracion, _ = (
-            ConfiguracionSistema.objects.get_or_create(
-                activo=True,
-                defaults={
-                    "semanas_agendamiento": 4,
-                },
-            )
+        configuracion = (
+            ConfiguracionSistema.objects
+            .filter(activo=True)
+            .order_by("-actualizado_en", "-id")
+            .first()
         )
+
+        if configuracion is None:
+            configuracion = ConfiguracionSistema.objects.create(
+                semanas_agendamiento=4,
+                activo=True,
+            )
 
         return configuracion
 
