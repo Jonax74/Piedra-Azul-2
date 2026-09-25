@@ -1,5 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap');
 
+.primary-button,
+.secondary-button {
+	display: inline-flex;
+	min-height: 44px;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 0 20px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	font-size: 0.82rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.primary-button {
+	background: var(--teal);
+	color: white;
+	box-shadow: 0 8px 18px rgba(11, 133, 130, 0.16);
+}
+
+.secondary-button {
+	border-color: #cbded9;
+	background: white;
+	color: var(--teal);
+}
+
+.primary-button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled) {
+	transform: translateY(-1px);
+}
+
+.primary-button:hover:not(:disabled) {
+	background: #096f6c;
+	box-shadow: 0 10px 22px rgba(11, 133, 130, 0.22);
+}
+
+.secondary-button:hover:not(:disabled) {
+	background: #edf8f5;
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible {
+	outline: 3px solid rgba(11, 133, 130, 0.25);
+	outline-offset: 2px;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+	transform: none;
+}
+
 :root { --ink: #17383b; --teal: #0b8582; --aqua: #a8ded4; --page-bg: #f5f9f8; --display-font: 'DM Sans', sans-serif; }
 * { box-sizing: border-box; } html, body { min-height: 100%; margin: 0; } body { background: var(--page-bg); color: var(--ink); font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; } button, input, select { font: inherit; }
 

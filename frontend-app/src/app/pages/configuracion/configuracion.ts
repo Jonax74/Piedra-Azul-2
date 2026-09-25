@@ -17,6 +17,7 @@ export class Configuracion {
   isLoading = true;
   isSaving = false;
   feedback = '';
+  fieldError = '';
 
   ngOnInit(): void {
     this.configuracionService.getConfiguracion().subscribe({
@@ -34,6 +35,12 @@ export class Configuracion {
   }
 
   guardar(): void {
+    if (!Number.isInteger(this.bookingWeeks) || this.bookingWeeks < 1 || this.bookingWeeks > 52) {
+      this.fieldError = 'Usa un número entero entre 1 y 52.';
+      this.feedback = '';
+      return;
+    }
+    this.fieldError = '';
     this.isSaving = true;
     this.feedback = '';
     this.configuracionService.actualizarConfiguracion({

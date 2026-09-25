@@ -106,3 +106,14 @@
 .system-settings .primary-button {
   min-height: 42px;
 }
+
+.system-settings .input-with-error {
+  display: grid;
+  gap: 5px;
+}
+
+.system-settings .field-error {
+  color: #2b6d69;
+  font-size: 0.74rem;
+  font-weight: 600;
+}

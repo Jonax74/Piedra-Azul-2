@@ -23,12 +23,13 @@
 				</div>
 			} @else {
 				<label>Paciente
-					<select [(ngModel)]="selectedPatient">
+					<select [(ngModel)]="selectedPatient" (ngModelChange)="fieldErrors.patient = ''">
 						<option value="">Selecciona un paciente</option>
 						@for (patient of patients; track patient.persona.id) {
 							<option [value]="patient.persona.id">{{ patient.persona.primer_nombre }} {{ patient.persona.primer_apellido }}</option>
 						}
 					</select>
+					@if (fieldErrors.patient) { <small class="field-error">{{ fieldErrors.patient }}</small> }
 				</label>
 			}
 			<label>Especialidad
@@ -40,14 +41,15 @@
 				</select>
 			</label>
 			<label>Profesional
-				<select [(ngModel)]="selectedProfessional">
+					<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''">
 					<option value="">Selecciona un profesional</option>
 					@for (professional of filteredProfessionals; track professional.persona) {
 						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
 					}
 				</select>
+					@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
 			</label>
-			<label>Fecha<input type="date" [(ngModel)]="selectedDate"></label>
+				<label>Fecha<input type="date" [(ngModel)]="selectedDate" (ngModelChange)="fieldErrors.date = ''">@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }</label>
 			<button class="primary-button" type="button" [disabled]="isLoading" (click)="loadSlots()">
 				{{ isLoading ? 'Consultando horarios...' : 'Consultar disponibilidad' }}
 			</button>
@@ -58,11 +60,12 @@
 			<p class="muted-text">Elige una fecha para ver los horarios habilitados.</p>
 			<div class="slot-grid">
 				@for (slot of slots; track slot.fecha_hora) {
-					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora">{{ slot.hora }}</button>
+					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora; fieldErrors.slot = ''">{{ slot.hora }}</button>
 				} @empty {
 					<p class="muted-text">No hay horarios cargados todavía.</p>
 				}
 			</div>
+			@if (fieldErrors.slot) { <small class="field-error">{{ fieldErrors.slot }}</small> }
 			<button class="primary-button" type="button" [disabled]="isSaving" (click)="book()">
 				{{ isSaving ? 'Agendando cita...' : 'Confirmar cita' }}
 			</button>

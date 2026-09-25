@@ -1,1 +1,27 @@
-<div class="page-shell availability-page"><div class="page-heading"><div><span class="eyebrow">Reglas de atención</span><h2>Disponibilidad</h2><p>Define cuándo puede atender cada profesional.</p></div><button class="primary-button compact" type="button" (click)="loadSchedules()">Actualizar horarios</button></div><div class="availability-grid"><section class="surface settings-form"><span class="eyebrow">Profesional</span><h3>Configurar horario</h3><label>Médico o terapeuta<select [(ngModel)]="selectedProfessional"><option value="">Selecciona un profesional</option>@for (professional of professionals; track professional.persona) {<option [value]="professional.persona">Profesional #{{ professional.persona }}</option>}</select></label><label>Día de atención<select [(ngModel)]="selectedDay">@for (day of weekdays; let index = $index; track day) {<option [value]="weekdayValues[index]">{{ day }}</option>}</select></label><div class="field-row"><label>Hora inicial<input type="time" [(ngModel)]="startTime"></label><label>Hora final<input type="time" [(ngModel)]="endTime"></label></div><label>Intervalo entre citas<select [(ngModel)]="interval"><option [ngValue]="30">30 minutos</option><option [ngValue]="45">45 minutos</option><option [ngValue]="60">60 minutos</option></select></label><button class="primary-button" type="button" [disabled]="isSaving" (click)="saveSchedule()">{{ isSaving ? 'Guardando...' : 'Guardar horario' }}</button></section><section class="surface schedule-preview"><div class="section-header"><div><span class="eyebrow">Vista semanal</span><h3>Horarios configurados</h3></div></div>@for (schedule of schedules; track schedule.id) {<div class="week-row"><span>{{ schedule.dia_semana }}</span><strong>{{ schedule.hora_inicio }} - {{ schedule.hora_fin }}</strong><small>{{ schedule.intervalo }} min</small></div>} @empty {<div class="empty-state"><strong>No hay horarios configurados</strong><p>Los horarios guardados aparecerán aquí.</p></div>}</section></div>@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }</div>
+<div class="page-shell availability-page">
+	<div class="page-heading"><div><span class="eyebrow">Reglas de atención</span><h2>Disponibilidad</h2><p>Define cuándo puede atender cada profesional.</p></div><button class="primary-button compact" type="button" (click)="loadSchedules()">Actualizar horarios</button></div>
+	<div class="availability-grid">
+		<section class="surface settings-form">
+			<span class="eyebrow">Profesional</span><h3>Configurar horario</h3>
+			<label>Médico o terapeuta
+				<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''"><option value="">Selecciona un profesional</option>@for (professional of professionals; track professional.persona) {<option [value]="professional.persona">Profesional #{{ professional.persona }}</option>}</select>
+				@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
+			</label>
+			<label>Día de atención
+				<select [(ngModel)]="selectedDay" (ngModelChange)="fieldErrors.day = ''">@for (day of weekdays; let index = $index; track day) {<option [value]="weekdayValues[index]">{{ day }}</option>}</select>
+				@if (fieldErrors.day) { <small class="field-error">{{ fieldErrors.day }}</small> }
+			</label>
+			<div class="field-row">
+				<label>Hora inicial<input type="time" [(ngModel)]="startTime" (ngModelChange)="fieldErrors.startTime = ''">@if (fieldErrors.startTime) { <small class="field-error">{{ fieldErrors.startTime }}</small> }</label>
+				<label>Hora final<input type="time" [(ngModel)]="endTime" (ngModelChange)="fieldErrors.endTime = ''">@if (fieldErrors.endTime) { <small class="field-error">{{ fieldErrors.endTime }}</small> }</label>
+			</div>
+			<label>Intervalo entre citas
+				<select [(ngModel)]="interval" (ngModelChange)="fieldErrors.interval = ''"><option [ngValue]="30">30 minutos</option><option [ngValue]="45">45 minutos</option><option [ngValue]="60">60 minutos</option></select>
+				@if (fieldErrors.interval) { <small class="field-error">{{ fieldErrors.interval }}</small> }
+			</label>
+			<button class="primary-button" type="button" [disabled]="isSaving" (click)="saveSchedule()">{{ isSaving ? 'Guardando...' : 'Guardar horario' }}</button>
+		</section>
+		<section class="surface schedule-preview"><div class="section-header"><div><span class="eyebrow">Vista semanal</span><h3>Horarios configurados</h3></div></div>@for (schedule of schedules; track schedule.id) {<div class="week-row"><span>{{ schedule.dia_semana }}</span><strong>{{ schedule.hora_inicio }} - {{ schedule.hora_fin }}</strong><small>{{ schedule.intervalo }} min</small></div>} @empty {<div class="empty-state"><strong>No hay horarios configurados</strong><p>Los horarios guardados aparecerán aquí.</p></div>}</section>
+	</div>
+	@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
+</div>

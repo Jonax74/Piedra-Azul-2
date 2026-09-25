@@ -5,6 +5,14 @@ import { MedicosService } from '../../core/services/medicos.service';
 import { Medico } from '../../shared/models/medico.model';
 import { Disponibilidad as DisponibilidadModel } from '../../shared/models/disponibilidad.model';
 
+interface AvailabilityFieldErrors {
+  professional?: string;
+  day?: string;
+  startTime?: string;
+  endTime?: string;
+  interval?: string;
+}
+
 @Component({
   imports: [FormsModule],
   selector: 'app-disponibilidad',
@@ -26,6 +34,7 @@ export class Disponibilidad {
   interval = 30;
   isSaving = false;
   feedback = '';
+  fieldErrors: AvailabilityFieldErrors = {};
 
   ngOnInit(): void {
     this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.changeDetector.markForCheck(); } });
@@ -40,8 +49,31 @@ export class Disponibilidad {
   }
 
   saveSchedule(): void {
+    this.fieldErrors = {};
     if (!this.selectedProfessional) {
-      this.feedback = 'Selecciona un profesional.';
+      this.fieldErrors.professional = 'Selecciona un profesional.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.selectedDay) {
+      this.fieldErrors.day = 'Selecciona un día de atención.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.startTime || !this.endTime) {
+      if (!this.startTime) this.fieldErrors.startTime = 'Completa la hora inicial.';
+      if (!this.endTime) this.fieldErrors.endTime = 'Completa la hora final.';
+      this.feedback = '';
+      return;
+    }
+    if (this.startTime >= this.endTime) {
+      this.fieldErrors.endTime = 'Debe ser posterior a la hora inicial.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.interval || this.interval < 1) {
+      this.fieldErrors.interval = 'Selecciona un intervalo válido.';
+      this.feedback = '';
       return;
     }
     this.isSaving = true;

@@ -8,6 +8,13 @@ import { Medico } from '../../shared/models/medico.model';
 import { Especialidad } from '../../shared/models/especialidad.model';
 import { Persona } from '../../shared/models/persona.model';
 
+interface BookingFieldErrors {
+  patient?: string;
+  professional?: string;
+  date?: string;
+  slot?: string;
+}
+
 @Component({
   imports: [FormsModule],
   selector: 'app-agendar-cita',
@@ -37,6 +44,7 @@ export class AgendarCita {
   confirmationMessage = '';
   patientOnly = false;
   currentPersonaId: number | null = null;
+  fieldErrors: BookingFieldErrors = {};
 
   get currentStep(): number {
     if (this.showConfirmation) return 1;
@@ -97,7 +105,13 @@ export class AgendarCita {
 
   loadSlots(): void {
     if (!this.selectedProfessional || !this.selectedDate) {
-      this.feedback = 'Selecciona un profesional y una fecha.';
+      if (!this.selectedProfessional) {
+        this.fieldErrors.professional = 'Selecciona un profesional.';
+      }
+      if (!this.selectedDate) {
+        this.fieldErrors.date = 'Selecciona una fecha.';
+      }
+      this.feedback = '';
       return;
     }
     this.isLoading = true;
@@ -110,8 +124,26 @@ export class AgendarCita {
   }
 
   book(): void {
-    if (!this.selectedPatient || !this.selectedProfessional || !this.selectedSlot) {
-      this.feedback = 'Completa paciente, profesional y horario.';
+    if (!this.selectedPatient) {
+      this.fieldErrors.patient = 'Selecciona un paciente.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.selectedProfessional) {
+      this.fieldErrors.professional = 'Selecciona un profesional.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.selectedDate) {
+      this.fieldErrors.date = 'Selecciona una fecha.';
+      this.feedback = '';
+      return;
+    }
+    if (!this.selectedSlot) {
+      this.fieldErrors.slot = this.slots.length
+        ? 'Selecciona un horario disponible antes de confirmar la cita.'
+        : 'Consulta la disponibilidad y selecciona un horario antes de confirmar.';
+      this.feedback = '';
       return;
     }
     this.isSaving = true;
@@ -119,6 +151,7 @@ export class AgendarCita {
       next: () => {
         this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`;
         this.resetForm();
+        this.fieldErrors = {};
         this.showConfirmation = true;
         this.feedback = '';
         this.isSaving = false;

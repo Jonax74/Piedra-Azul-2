@@ -46,4 +46,17 @@ export class Dashboard {
       ? `${persona.primer_nombre} ${persona.primer_apellido}`
       : `Profesional #${appointment.medico}`;
   }
+
+  patientName(appointment: Cita): string {
+    const persona = appointment.paciente_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Paciente #${appointment.paciente}`;
+  }
+
+  isPatientOnly(): boolean {
+    const roles = this.auth.roles();
+    return roles.includes('PACIENTE')
+      && !roles.some((role) => ['ADMIN', 'AGENDADOR', 'MEDICO'].includes(role));
+  }
 }
