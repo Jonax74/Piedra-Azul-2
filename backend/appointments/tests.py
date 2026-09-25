@@ -4,10 +4,12 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from appointments.models import Cita
 from appointments.serializers import CitaSerializer
 from appointments.views import AgendaCitasView
+from appointments.views import CitaListCreateView
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 
@@ -59,6 +61,7 @@ class CitaPacienteScopeTests(TestCase):
 			user=SimpleNamespace(
 				user_id="paciente-test",
 				roles=["PACIENTE"],
+				is_authenticated=True,
 			),
 		)
 
@@ -131,3 +134,22 @@ class CitaPacienteScopeTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["cantidad"], 1)
+
+	def test_patient_sees_appointment_created_by_scheduler(self):
+		scheduler = Usuario.objects.create(
+			username="agendador.test",
+			keycloak_user_id="agendador-test",
+		)
+		Cita.objects.create(
+			usuario=scheduler,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().get("/api/citas/")
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaListCreateView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), 1)

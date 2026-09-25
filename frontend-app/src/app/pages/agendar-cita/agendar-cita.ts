@@ -38,6 +38,12 @@ export class AgendarCita {
   patientOnly = false;
   currentPersonaId: number | null = null;
 
+  get currentStep(): number {
+    if (this.showConfirmation) return 1;
+    if (this.selectedSlot || this.slots.length) return 2;
+    return 1;
+  }
+
   ngOnInit(): void {
     this.feedback = 'Cargando pacientes, profesionales y especialidades...';
     this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => { this.people = people; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los nombres de los profesionales.'; this.changeDetector.markForCheck(); } }); this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); } });
@@ -110,12 +116,31 @@ export class AgendarCita {
     }
     this.isSaving = true;
     this.citasService.crearCita({ paciente: Number(this.selectedPatient), medico: Number(this.selectedProfessional), fecha_hora: this.selectedSlot, estado: 'PROGRAMADA' }).subscribe({
-      next: () => { this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`; this.showConfirmation = true; this.feedback = ''; this.isSaving = false; this.selectedSlot = ''; this.changeDetector.markForCheck(); },
+      next: () => {
+        this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`;
+        this.resetForm();
+        this.showConfirmation = true;
+        this.feedback = '';
+        this.isSaving = false;
+        this.changeDetector.markForCheck();
+      },
       error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving = false; this.changeDetector.markForCheck(); },
     });
   }
 
   closeConfirmation(): void {
     this.showConfirmation = false;
+    this.changeDetector.markForCheck();
+  }
+
+  private resetForm(): void {
+    this.selectedSpecialty = '';
+    this.selectedProfessional = '';
+    this.selectedPatient = this.patientOnly
+      ? this.currentPersonaId?.toString() ?? ''
+      : '';
+    this.selectedDate = new Date().toISOString().slice(0, 10);
+    this.selectedSlot = '';
+    this.slots = [];
   }
 }

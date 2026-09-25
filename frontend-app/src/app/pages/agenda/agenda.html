@@ -40,7 +40,7 @@
 					<span>Paciente</span>
 					<span>Estado</span>
 				</div>
-				@for (appointment of appointments; track appointment.id) {
+				@for (appointment of paginatedAppointments; track appointment.id) {
 					<article class="appointment-row">
 						<time>{{ appointment.fecha_hora | date:'dd/MM/yyyy' }}</time>
 						<strong>{{ appointment.fecha_hora | date:'shortTime' }}</strong>
@@ -50,6 +50,13 @@
 					</article>
 				}
 			</div>
+			@if (totalPages > 1) {
+				<nav class="pagination-controls" aria-label="Paginación de citas">
+					<button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentPage === 1" (click)="previousPage()">←</button>
+					<span>Página {{ currentPage }} de {{ totalPages }}</span>
+					<button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPage === totalPages" (click)="nextPage()">→</button>
+				</nav>
+			}
 		} @else {
 			<div class="empty-state">
 				<span class="empty-icon">+</span>

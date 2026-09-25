@@ -1,5 +1,5 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
+import { ChangeDetectorRef, Component, inject, PLATFORM_ID } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -19,6 +19,7 @@ export class Agenda {
   private readonly personasService = inject(PersonasService);
   private readonly citasService = inject(CitasService);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly platformId = inject(PLATFORM_ID);
   professionals: Medico[] = [];
   people: Persona[] = [];
   appointments: Cita[] = [];
@@ -26,8 +27,21 @@ export class Agenda {
   selectedDate = '';
   isLoading = false;
   feedback = '';
+  readonly pageSize = 10;
+  currentPage = 1;
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.appointments.length / this.pageSize));
+  }
+
+  get paginatedAppointments(): Cita[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.appointments.slice(start, start + this.pageSize);
+  }
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     this.feedback = 'Cargando profesionales...';
     this.medicosService.getMedicos().subscribe({
       next: (medicos) => {
@@ -59,6 +73,7 @@ export class Agenda {
     this.citasService.getAgenda(medicoId, fecha).subscribe({
       next: (response) => {
         this.appointments = response.resultados;
+        this.currentPage = 1;
         const filtro = [
           this.selectedDate ? `el ${this.selectedDate}` : 'todas las fechas',
           this.selectedProfessional ? 'el profesional seleccionado' : 'todos los profesionales',
@@ -89,5 +104,13 @@ export class Agenda {
     return persona
       ? `${persona.primer_nombre} ${persona.primer_apellido}`
       : `Profesional #${appointment.medico}`;
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) this.currentPage -= 1;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage += 1;
   }
 }

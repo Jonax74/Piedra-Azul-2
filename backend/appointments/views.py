@@ -66,7 +66,7 @@ class CitaListCreateView(generics.ListCreateAPIView):
             {"ADMIN", "AGENDADOR", "MEDICO"},
         ):
             return queryset.filter(
-                usuario__keycloak_user_id=self.request.user.user_id,
+                paciente__persona__usuario__keycloak_user_id=self.request.user.user_id,
             )
 
         return queryset
