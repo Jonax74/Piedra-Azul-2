@@ -79,20 +79,11 @@ export class Auth {
 	}
 
 	async getToken(): Promise<string | null> {
-		if (!isPlatformBrowser(this.platformId)) {
+		if (!this.keycloak || !this.isAuthenticated()) {
 			return null;
 		}
 
 		try {
-			if (!this.keycloak || !this.isInitialized()) {
-				const authenticated = await this.initialize();
-				if (!authenticated) return null;
-			}
-
-			if (!this.keycloak || !this.isAuthenticated()) {
-				return null;
-			}
-
 			const token = this.keycloak.tokenParsed as PiedrazulToken | undefined;
 			if (this.keycloak.token && token?.exp && token.exp - Math.floor(Date.now() / 1000) > 30) {
 				return this.keycloak.token;
