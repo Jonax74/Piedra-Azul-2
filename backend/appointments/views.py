@@ -1,59 +1,35 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-
-from appointments.models import Cita
-from appointments.serializers import CitaSerializer
-
 from datetime import datetime, time
 
-from django.db.models import QuerySet
 from django.utils import timezone
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from config.security.permissions import IsAgendadorOrAdmin
-
-from datetime import datetime
-
-from rest_framework import status
-
-
-from appointments.serializers import FranjaDisponibleSerializer
-from appointments.services import obtener_franjas_disponibles
-from persons.models import Medico
-
-from appointments.models import ConfiguracionSistema
+from appointments.models import Cita, ConfiguracionSistema
 from appointments.serializers import (
+    CitaSerializer,
     ConfiguracionSistemaSerializer,
+    FranjaDisponibleSerializer,
 )
-from config.security.permissions import IsAdminRole
+from appointments.services import obtener_franjas_disponibles
+from config.security.permissions import IsAdminRole, IsAgendadorOrAdmin
+from persons.models import Medico
 
 
 class ConfiguracionSistemaView(generics.RetrieveUpdateAPIView):
     serializer_class = ConfiguracionSistemaSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_permissions(self):
-        permission_class = (
-            IsAdminRole
-            if self.request.method in {"PUT", "PATCH"}
-            else IsAuthenticated
-        )
-        return [permission_class()]
+    permission_classes = [IsAdminRole]
 
     def get_object(self):
-        configuracion = (
-            ConfiguracionSistema.objects
-            .filter(activo=True)
-            .order_by("-actualizado_en", "-id")
-            .first()
-        )
-
-        if configuracion is None:
-            configuracion = ConfiguracionSistema.objects.create(
-                semanas_agendamiento=4,
+        configuracion, _ = (
+            ConfiguracionSistema.objects.get_or_create(
                 activo=True,
+                defaults={
+                    "semanas_agendamiento": 4,
+                },
             )
+        )
 
         return configuracion
 

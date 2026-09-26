@@ -1,20 +1,19 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from persons.models import Paciente
-from persons.serializers import PacienteSerializer
-
-from persons.models import Especialidad, Medico
+from persons.models import (
+    Disponibilidad,
+    Especialidad,
+    Medico,
+    MedicoDisponibilidad,
+    Paciente,
+    Persona,
+)
 from persons.serializers import (
     EspecialidadSerializer,
     MedicoSerializer,
-)
-
-from persons.models import Persona
-from persons.serializers import PersonaSerializer
-
-from persons.models import Disponibilidad, MedicoDisponibilidad
-from persons.serializers import (
+    PacienteSerializer,
+    PersonaSerializer,
     DisponibilidadSerializer,
     MedicoDisponibilidadSerializer,
 )

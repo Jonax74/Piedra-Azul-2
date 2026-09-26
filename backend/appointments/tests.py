@@ -4,12 +4,10 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
-from rest_framework.test import APIRequestFactory, force_authenticate
 
 from appointments.models import Cita
 from appointments.serializers import CitaSerializer
-from appointments.views import AgendaCitasView
-from appointments.views import CitaListCreateView
+from appointments.views import AgendaCitasView, CitaListCreateView
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 

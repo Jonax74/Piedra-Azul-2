@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 
 from persons.models import Paciente, Persona
-from persons.serializers import PacienteSerializer
+from persons.serializers import MedicoSerializer, PacienteSerializer
 from users.models import Rol, Usuario, UsuarioRol
 
 
@@ -56,3 +56,42 @@ class PersonaUsuarioLinkTests(TestCase):
 
 		self.assertFalse(serializer.is_valid())
 		self.assertIn("usuario_id", serializer.errors)
+
+	def test_rejects_medico_link_with_wrong_role(self):
+		persona = Persona.objects.create(**self.persona_data(23456789))
+		serializer = MedicoSerializer(
+			data={
+				"persona": persona.pk,
+				"tipo_profesional": "MEDICO",
+				"usuario_id": self.usuario.pk,
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("usuario_id", serializer.errors)
+
+	def test_updating_patient_user_link_moves_the_relationship(self):
+		persona = Persona.objects.create(**self.persona_data(34567890))
+		paciente = Paciente.objects.create(persona=persona)
+		self.usuario.persona = persona
+		self.usuario.save(update_fields=["persona"])
+		nuevo_usuario = Usuario.objects.create(
+			username="paciente.nuevo",
+			keycloak_user_id="test-paciente-nuevo",
+		)
+		rol = Rol.objects.get(nombre="PACIENTE")
+		UsuarioRol.objects.create(usuario=nuevo_usuario, rol=rol)
+
+		serializer = PacienteSerializer(
+			instance=paciente,
+			data={"usuario_id": nuevo_usuario.pk},
+			partial=True,
+		)
+
+		self.assertTrue(serializer.is_valid(), serializer.errors)
+		serializer.save()
+		self.usuario.refresh_from_db()
+		nuevo_usuario.refresh_from_db()
+
+		self.assertIsNone(self.usuario.persona_id)
+		self.assertEqual(nuevo_usuario.persona_id, persona.pk)

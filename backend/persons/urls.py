@@ -1,26 +1,17 @@
 from django.urls import path
 
 from persons.views import (
-    PacienteDetailView,
-    PacienteListCreateView,
-)
-
-from persons.views import (
-    EspecialidadListCreateView,
-    MedicoDetailView,
-    MedicoListCreateView,
-)
-
-from persons.views import (
-    PersonaDetailView,
-    PersonaListCreateView,
-)
-
-from persons.views import (
     DisponibilidadDetailView,
     DisponibilidadListCreateView,
+    EspecialidadListCreateView,
     MedicoDisponibilidadDetailView,
     MedicoDisponibilidadListCreateView,
+    MedicoDetailView,
+    MedicoListCreateView,
+    PersonaDetailView,
+    PersonaListCreateView,
+    PacienteDetailView,
+    PacienteListCreateView,
 )
 
 urlpatterns = [

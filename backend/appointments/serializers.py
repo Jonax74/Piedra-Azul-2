@@ -1,16 +1,11 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
-from appointments.models import Cita
-from persons.models import Medico, Paciente
-from users.models import Usuario
-from persons.models import Disponibilidad, MedicoDisponibilidad
-
-from django.core.exceptions import ValidationError as DjangoValidationError
+from appointments.models import Cita, ConfiguracionSistema
 from appointments.services import validar_cita_programable
-from appointments.models import ConfiguracionSistema
-
-
+from persons.models import Paciente
+from users.models import Usuario
 
 
 class CitaSerializer(serializers.ModelSerializer):

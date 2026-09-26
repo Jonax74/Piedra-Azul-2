@@ -7,10 +7,41 @@ from persons.models import (
     Medico,
     Paciente,
     Persona,
+    Disponibilidad,
+    MedicoDisponibilidad,
 )
 from users.models import Usuario
 
-from persons.models import Disponibilidad, MedicoDisponibilidad
+
+def _validar_usuario_vinculable(usuario, rol_requerido, persona_actual_id):
+    if usuario is not None and not usuario.relaciones_rol.filter(
+        rol__nombre=rol_requerido,
+    ).exists():
+        raise serializers.ValidationError(
+            f"El usuario vinculado debe tener el rol {rol_requerido}."
+        )
+
+    if (
+        usuario is not None
+        and usuario.persona_id is not None
+        and usuario.persona_id != persona_actual_id
+    ):
+        raise serializers.ValidationError(
+            "El usuario ya está vinculado a otra persona."
+        )
+
+    return usuario
+
+
+def _actualizar_vinculo_usuario(usuario, persona):
+    actual = getattr(persona, "usuario", None)
+    if actual is not None and actual != usuario:
+        actual.persona = None
+        actual.save(update_fields=["persona"])
+
+    if usuario is not None:
+        usuario.persona = persona
+        usuario.save(update_fields=["persona"])
 
 
 class PersonaSerializer(serializers.ModelSerializer):
@@ -73,27 +104,17 @@ class PacienteSerializer(serializers.ModelSerializer):
         fields = ["persona", "usuario_id"]
 
     def validate_usuario_id(self, usuario):
-        if usuario is not None and not usuario.relaciones_rol.filter(
-            rol__nombre="PACIENTE",
-        ).exists():
-            raise serializers.ValidationError(
-                "El usuario vinculado debe tener el rol PACIENTE."
-            )
         current_persona_id = (
             self.instance.persona_id
             if self.instance is not None
             else None
         )
-        if (
-            usuario is not None
-            and usuario.persona_id is not None
-            and usuario.persona_id != current_persona_id
-        ):
-            raise serializers.ValidationError(
-                "El usuario ya está vinculado a otra persona."
-            )
 
-        return usuario
+        return _validar_usuario_vinculable(
+            usuario=usuario,
+            rol_requerido="PACIENTE",
+            persona_actual_id=current_persona_id,
+        )
 
     @transaction.atomic
     def create(self, validated_data):
@@ -127,13 +148,10 @@ class PacienteSerializer(serializers.ModelSerializer):
             persona.save()
 
         if usuario is not serializers.empty:
-            actual = getattr(instance.persona, "usuario", None)
-            if actual is not None and actual != usuario:
-                actual.persona = None
-                actual.save(update_fields=["persona"])
-            if usuario is not None:
-                usuario.persona = instance.persona
-                usuario.save(update_fields=["persona"])
+            _actualizar_vinculo_usuario(
+                usuario=usuario,
+                persona=instance.persona,
+            )
 
         return instance
 
@@ -179,27 +197,17 @@ class MedicoSerializer(serializers.ModelSerializer):
         ]
 
     def validate_usuario_id(self, usuario):
-        if usuario is not None and not usuario.relaciones_rol.filter(
-            rol__nombre="MEDICO",
-        ).exists():
-            raise serializers.ValidationError(
-                "El usuario vinculado debe tener el rol MEDICO."
-            )
         current_persona_id = (
             self.instance.persona_id
             if self.instance is not None
             else None
         )
-        if (
-            usuario is not None
-            and usuario.persona_id is not None
-            and usuario.persona_id != current_persona_id
-        ):
-            raise serializers.ValidationError(
-                "El usuario ya está vinculado a otra persona."
-            )
 
-        return usuario
+        return _validar_usuario_vinculable(
+            usuario=usuario,
+            rol_requerido="MEDICO",
+            persona_actual_id=current_persona_id,
+        )
 
     def get_especialidades(self, medico):
         especialidades = Especialidad.objects.filter(
@@ -246,13 +254,10 @@ class MedicoSerializer(serializers.ModelSerializer):
         instance.save()
 
         if usuario is not serializers.empty:
-            actual = getattr(instance.persona, "usuario", None)
-            if actual is not None and actual != usuario:
-                actual.persona = None
-                actual.save(update_fields=["persona"])
-            if usuario is not None:
-                usuario.persona = instance.persona
-                usuario.save(update_fields=["persona"])
+            _actualizar_vinculo_usuario(
+                usuario=usuario,
+                persona=instance.persona,
+            )
 
         if especialidades is not None:
             instance.especialidades.all().delete()
