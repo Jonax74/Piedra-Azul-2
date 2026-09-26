@@ -12,6 +12,7 @@ export class Configuracion {
   private readonly configuracionService = inject(ConfiguracionService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   bookingWeeks = 4;
+  lastSavedWeeks = 4;
   autonomousBooking = true;
   automaticConfirmation = true;
   isLoading = true;
@@ -23,11 +24,13 @@ export class Configuracion {
     this.configuracionService.getConfiguracion().subscribe({
       next: (configuracion) => {
         this.bookingWeeks = configuracion.semanas_agendamiento;
+        this.lastSavedWeeks = this.bookingWeeks;
+        this.autonomousBooking = configuracion.activo;
         this.isLoading = false;
         this.changeDetector.markForCheck();
       },
       error: () => {
-        this.feedback = 'No fue posible cargar la configuración.';
+        this.feedback = 'No se pudo cargar la configuración actual. Puedes definir las semanas y guardar un nuevo valor.';
         this.isLoading = false;
         this.changeDetector.markForCheck();
       },
@@ -45,15 +48,16 @@ export class Configuracion {
     this.feedback = '';
     this.configuracionService.actualizarConfiguracion({
       semanas_agendamiento: this.bookingWeeks,
-      activo: true,
+      activo: this.autonomousBooking,
     }).subscribe({
       next: () => {
+        this.lastSavedWeeks = this.bookingWeeks;
         this.feedback = 'Configuración guardada correctamente.';
         this.isSaving = false;
         this.changeDetector.markForCheck();
       },
       error: () => {
-        this.feedback = 'No fue posible guardar la configuración.';
+        this.feedback = 'No fue posible guardar la configuración. Verifica tus permisos de administrador.';
         this.isSaving = false;
         this.changeDetector.markForCheck();
       },

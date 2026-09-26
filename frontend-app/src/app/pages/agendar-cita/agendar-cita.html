@@ -41,7 +41,7 @@
 				</select>
 			</label>
 			<label>Profesional
-					<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''">
+					<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''; selectedSlot = ''; slots = []; dateChanged()">
 					<option value="">Selecciona un profesional</option>
 					@for (professional of filteredProfessionals; track professional.persona) {
 						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
@@ -49,20 +49,25 @@
 				</select>
 					@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
 			</label>
-				<label>Fecha<input type="date" [(ngModel)]="selectedDate" (ngModelChange)="fieldErrors.date = ''">@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }</label>
-			<button class="primary-button" type="button" [disabled]="isLoading" (click)="loadSlots()">
-				{{ isLoading ? 'Consultando horarios...' : 'Consultar disponibilidad' }}
-			</button>
+			<div class="calendar-field">
+				<div class="calendar-label"><span>Fecha</span><small>{{ selectedDate || 'Selecciona un día disponible' }}</small></div>
+				<div class="calendar-header"><button type="button" class="calendar-nav" [disabled]="!canPreviousMonth()" (click)="previousMonth()" aria-label="Mes anterior">‹</button><strong>{{ calendarMonthLabel() }}</strong><button type="button" class="calendar-nav" [disabled]="!canNextMonth()" (click)="nextMonth()" aria-label="Mes siguiente">›</button></div>
+				<div class="calendar-weekdays"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+				<div class="calendar-grid">@for (day of calendarCells(); track $index) { @if (day) { <button type="button" class="calendar-day" [class.selected-day]="selectedDate === day.iso" [class.outside-range]="!isDateSelectable(day.iso)" [disabled]="!isDateSelectable(day.iso)" (click)="selectDate(day.iso)">{{ day.number }}</button> } @else { <span class="calendar-empty"></span> } }</div>
+				<small class="date-hint">Disponible desde hoy hasta {{ maxBookingDate }}. Los días sin atención aparecen bloqueados.</small>
+				@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }
+			</div>
+			@if (isLoading) { <p class="loading-message" role="status">Consultando horarios disponibles...</p> }
 		</section>
 		<section class="surface slots-panel">
 			<span class="eyebrow">Horarios disponibles</span>
 			<h3>Selecciona una franja</h3>
-			<p class="muted-text">Elige una fecha para ver los horarios habilitados.</p>
+			@if (isLoading) { <p class="muted-text">Estamos buscando los horarios para la fecha seleccionada...</p> } @else if (!selectedDate) { <p class="muted-text">Elige una fecha para ver los horarios habilitados.</p> } @else { <p class="muted-text">Selecciona el horario que prefieras.</p> }
 			<div class="slot-grid">
 				@for (slot of slots; track slot.fecha_hora) {
 					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora; fieldErrors.slot = ''">{{ slot.hora }}</button>
 				} @empty {
-					<p class="muted-text">No hay horarios cargados todavía.</p>
+					<p class="muted-text">{{ selectedDate ? 'No hay horarios disponibles para esta fecha.' : 'No hay horarios cargados todavía.' }}</p>
 				}
 			</div>
 			@if (fieldErrors.slot) { <small class="field-error">{{ fieldErrors.slot }}</small> }

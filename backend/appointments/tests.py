@@ -5,9 +5,13 @@ from unittest.mock import patch
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from appointments.models import Cita
+from appointments.models import Cita, ConfiguracionSistema
 from appointments.serializers import CitaSerializer
-from appointments.views import AgendaCitasView, CitaListCreateView
+from appointments.views import (
+	AgendaCitasView,
+	CitaListCreateView,
+	ConfiguracionSistemaView,
+)
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 
@@ -151,3 +155,64 @@ class CitaPacienteScopeTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(len(response.data), 1)
+
+
+class ConfiguracionSistemaPermissionTests(TestCase):
+	def setUp(self):
+		self.configuracion = ConfiguracionSistema.objects.create(
+			semanas_agendamiento=8,
+			activo=True,
+		)
+
+	def authenticated_user(self, roles):
+		return SimpleNamespace(
+			roles=roles,
+			is_authenticated=True,
+		)
+
+	def test_authenticated_non_admin_can_read_configuration(self):
+		request = APIRequestFactory().get("/api/configuracion/")
+		force_authenticate(
+			request,
+			user=self.authenticated_user(["PACIENTE"]),
+		)
+
+		response = ConfiguracionSistemaView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			response.data["semanas_agendamiento"],
+			self.configuracion.semanas_agendamiento,
+		)
+
+	def test_only_admin_can_update_configuration(self):
+		factory = APIRequestFactory()
+		request = factory.patch(
+			"/api/configuracion/",
+			{"semanas_agendamiento": 12},
+			format="json",
+		)
+		force_authenticate(
+			request,
+			user=self.authenticated_user(["AGENDADOR"]),
+		)
+
+		response = ConfiguracionSistemaView.as_view()(request)
+
+		self.assertEqual(response.status_code, 403)
+
+		request = factory.patch(
+			"/api/configuracion/",
+			{"semanas_agendamiento": 12},
+			format="json",
+		)
+		force_authenticate(
+			request,
+			user=self.authenticated_user(["ADMIN"]),
+		)
+
+		response = ConfiguracionSistemaView.as_view()(request)
+		self.configuracion.refresh_from_db()
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(self.configuracion.semanas_agendamiento, 12)
