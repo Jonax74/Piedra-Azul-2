@@ -82,6 +82,8 @@ class CitaSerializer(serializers.ModelSerializer):
             validar_cita_programable(
                 medico_id=medico.pk,
                 fecha_hora=fecha_hora,
+                paciente_id=attrs["paciente"].pk,
+                cita_id=self.instance.pk if self.instance else None,
             )
         except DjangoValidationError as error:
             raise serializers.ValidationError(

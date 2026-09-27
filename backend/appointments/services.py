@@ -159,6 +159,7 @@ def esta_en_intervalo_disponible(
 def validar_cita_programable(
     medico_id: int,
     fecha_hora: datetime,
+    paciente_id: int | None = None,
     cita_id: int | None = None,
 ) -> None:
     fecha_hora_local = timezone.localtime(fecha_hora)
@@ -211,3 +212,18 @@ def validar_cita_programable(
         raise ValidationError(
             "El médico ya tiene una cita en ese horario."
         )
+
+    if paciente_id is not None:
+        citas_paciente = Cita.objects.filter(
+            paciente_id=paciente_id,
+            fecha_hora=fecha_hora,
+            estado__in=ESTADOS_OCUPADOS,
+        )
+
+        if cita_id is not None:
+            citas_paciente = citas_paciente.exclude(id=cita_id)
+
+        if citas_paciente.exists():
+            raise ValidationError(
+                "El paciente ya tiene una cita agendada en ese horario."
+            )

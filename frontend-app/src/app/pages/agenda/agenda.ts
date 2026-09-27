@@ -55,8 +55,20 @@ export class Agenda {
     this.feedback = '';
     this.citasService.getAgenda(Number(this.selectedProfessional), this.selectedDate).subscribe({
       next: (response) => {
+<<<<<<< Updated upstream
         this.appointments = response.resultados;
         this.feedback = response.cantidad ? `Se encontraron ${response.cantidad} citas para el ${this.selectedDate}.` : `No hay citas registradas para el ${this.selectedDate}.`;
+=======
+        this.appointments = this.sortAppointments(response.resultados);
+        this.currentPage = 1;
+        const filtro = [
+          this.selectedDate ? `el ${this.selectedDate}` : 'todas las fechas',
+          this.selectedProfessional ? 'el profesional seleccionado' : 'todos los profesionales',
+        ].join(' y ');
+        this.feedback = response.cantidad
+          ? `Se encontraron ${response.cantidad} citas para ${filtro}.`
+          : `No hay citas registradas para ${filtro}.`;
+>>>>>>> Stashed changes
         this.isLoading = false;
       },
       error: (error: { name?: string; error?: { detail?: string } }) => {
@@ -65,4 +77,37 @@ export class Agenda {
       },
     });
   }
+<<<<<<< Updated upstream
+=======
+
+  patientName(appointment: Cita): string {
+    const persona = appointment.paciente_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Paciente #${appointment.paciente}`;
+  }
+
+  professionalNameFromAppointment(appointment: Cita): string {
+    const persona = appointment.medico_detalle?.persona;
+    return persona
+      ? `${persona.primer_nombre} ${persona.primer_apellido}`
+      : `Profesional #${appointment.medico}`;
+  }
+
+  private sortAppointments(appointments: Cita[]): Cita[] {
+    return [...appointments].sort((left, right) => {
+      const leftTime = Date.parse(left.fecha_hora);
+      const rightTime = Date.parse(right.fecha_hora);
+      return leftTime - rightTime || (left.id ?? 0) - (right.id ?? 0);
+    });
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) this.currentPage -= 1;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage += 1;
+  }
+>>>>>>> Stashed changes
 }

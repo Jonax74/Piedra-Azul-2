@@ -35,8 +35,166 @@ export class AgendarCita {
 
   ngOnInit(): void {
     this.feedback = 'Cargando pacientes, profesionales y especialidades...';
+<<<<<<< Updated upstream
     this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => this.people = people }); }, error: () => this.feedback = 'No fue posible cargar los profesionales.' });
     this.medicosService.getEspecialidades().subscribe({ next: (items) => this.specialties = items, error: () => this.feedback = 'No fue posible cargar las especialidades.' });
+=======
+    this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => { this.people = people; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los nombres de los profesionales.'; this.changeDetector.markForCheck(); } }); this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); } });
+    this.medicosService.getEspecialidades().subscribe({ next: (items) => { this.specialties = items; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar las especialidades.'; this.changeDetector.markForCheck(); } });
+    this.loadBookingRules();
+    this.loadAvailabilityRules();
+    this.authService.getProfile().subscribe({
+      next: (profile) => {
+        const elevatedRoles = ['ADMIN', 'AGENDADOR', 'MEDICO'];
+        this.patientOnly = profile.roles.includes('PACIENTE')
+          && !profile.roles.some((role) => elevatedRoles.includes(role));
+        this.currentPersonaId = profile.persona_id;
+        this.loadPatients();
+        this.changeDetector.markForCheck();
+      },
+      error: () => { this.feedback = 'No fue posible cargar tu perfil.'; this.changeDetector.markForCheck(); },
+    });
+  }
+
+  private loadBookingRules(): void {
+    this.configuracionService.getConfiguracion().subscribe({
+      next: (configuracion) => {
+        this.bookingWeeks = configuracion.semanas_agendamiento;
+        this.maxBookingDate = this.addDays(this.minBookingDate, this.bookingWeeks * 7);
+        this.changeDetector.markForCheck();
+      },
+      error: () => { this.feedback = 'Se usará la ventana de agendamiento predeterminada.'; this.changeDetector.markForCheck(); },
+    });
+  }
+
+  private loadAvailabilityRules(): void {
+    this.disponibilidadService.getDisponibilidades().subscribe({
+      next: (disponibilidades) => {
+        const daysById = new Map(disponibilidades.map((item) => [item.id, item.dia_semana]));
+        this.disponibilidadService.getMedicoDisponibilidades().subscribe({
+          next: (relations) => {
+            relations.forEach((relation) => {
+              const day = daysById.get(relation.disponibilidad);
+              if (!day) return;
+              const days = this.availabilityByProfessional.get(relation.medico) ?? new Set<string>();
+              days.add(day);
+              this.availabilityByProfessional.set(relation.medico, days);
+            });
+            this.availabilityRulesLoaded = true;
+            this.changeDetector.markForCheck();
+          },
+          error: () => { this.feedback = 'No fue posible cargar los días disponibles.'; this.changeDetector.markForCheck(); },
+        });
+      },
+      error: () => { this.feedback = 'No fue posible cargar las disponibilidades.'; this.changeDetector.markForCheck(); },
+    });
+  }
+
+  dateChanged(): void {
+    const dateError = this.dateValidationMessage();
+    this.fieldErrors.date = dateError;
+    this.selectedSlot = '';
+    this.slots = [];
+  }
+
+  specialtyChanged(): void {
+    if (this.selectedProfessional && !this.filteredProfessionals.some((professional) => professional.persona === Number(this.selectedProfessional))) {
+      this.selectedProfessional = '';
+      this.selectedSlot = '';
+      this.slots = [];
+    }
+    this.fieldErrors.professional = '';
+    this.fieldErrors.slot = '';
+  }
+
+  dateValidationMessage(): string {
+    if (!this.selectedDate) return 'Selecciona una fecha.';
+    if (this.selectedDate < this.minBookingDate) return 'No puedes seleccionar fechas pasadas.';
+    if (this.selectedDate > this.maxBookingDate) return `Solo puedes agendar dentro de las próximas ${this.bookingWeeks} semanas.`;
+    if (this.selectedProfessional && this.availabilityRulesLoaded && !this.isDateSelectable(this.selectedDate)) {
+      return 'El profesional no atiende en la fecha seleccionada.';
+    }
+    return '';
+  }
+
+  calendarCells(): Array<CalendarDay | null> {
+    const year = this.calendarMonth.getFullYear();
+    const month = this.calendarMonth.getMonth();
+    const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: Array<CalendarDay | null> = Array(firstWeekday).fill(null);
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      cells.push({ iso: this.toIso(new Date(year, month, day)), number: day });
+    }
+    return cells;
+  }
+
+  calendarMonthLabel(): string {
+    return this.calendarMonth.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  }
+
+  isDateSelectable(date: string): boolean {
+    if (!this.selectedProfessional || !this.availabilityRulesLoaded) return false;
+    if (date < this.minBookingDate || date > this.maxBookingDate) return false;
+    const days = this.availabilityByProfessional.get(Number(this.selectedProfessional));
+    if (!days?.size) return false;
+    return days.has(this.weekdayFor(date));
+  }
+
+  selectDate(date: string): void {
+    if (!this.isDateSelectable(date)) return;
+    this.selectedDate = date;
+    this.dateChanged();
+    this.loadSlots();
+  }
+
+  previousMonth(): void {
+    if (this.canPreviousMonth()) {
+      this.calendarMonth = new Date(this.calendarMonth.getFullYear(), this.calendarMonth.getMonth() - 1, 1);
+    }
+  }
+
+  nextMonth(): void {
+    if (this.canNextMonth()) {
+      this.calendarMonth = new Date(this.calendarMonth.getFullYear(), this.calendarMonth.getMonth() + 1, 1);
+    }
+  }
+
+  canPreviousMonth(): boolean {
+    return this.calendarMonth.getFullYear() > this.dateFromIso(this.minBookingDate).getFullYear()
+      || this.calendarMonth.getMonth() > this.dateFromIso(this.minBookingDate).getMonth();
+  }
+
+  canNextMonth(): boolean {
+    const maxMonth = this.dateFromIso(this.maxBookingDate);
+    return this.calendarMonth.getFullYear() < maxMonth.getFullYear()
+      || (this.calendarMonth.getFullYear() === maxMonth.getFullYear() && this.calendarMonth.getMonth() < maxMonth.getMonth());
+  }
+
+  private weekdayFor(date: string): string {
+    return ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'][this.dateFromIso(date).getDay()];
+  }
+
+  private todayIso(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private addDays(date: string, days: number): string {
+    const result = new Date(`${date}T12:00:00`);
+    result.setDate(result.getDate() + days);
+    return result.toISOString().slice(0, 10);
+  }
+
+  private dateFromIso(date: string): Date {
+    return new Date(`${date}T12:00:00`);
+  }
+
+  private toIso(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  private loadPatients(): void {
+>>>>>>> Stashed changes
     this.personasService.getPacientes().subscribe({ next: (items) => {
       this.patients = items;
       this.selectedPatient = items[0]?.persona.id?.toString() ?? '';
@@ -56,8 +214,21 @@ export class AgendarCita {
   }
 
   loadSlots(): void {
+<<<<<<< Updated upstream
     if (!this.selectedProfessional || !this.selectedDate) {
       this.feedback = 'Selecciona un profesional y una fecha.';
+=======
+    this.fieldErrors.professional = this.isSelectedProfessionalValid()
+      ? ''
+      : 'Selecciona un profesional válido.';
+    const dateError = this.dateValidationMessage();
+    this.fieldErrors.date = dateError;
+    if (!this.selectedDate) {
+      this.fieldErrors.date = 'Selecciona una fecha.';
+    }
+    if (this.fieldErrors.professional || this.fieldErrors.date) {
+      this.feedback = '';
+>>>>>>> Stashed changes
       return;
     }
     this.isLoading = true;
@@ -70,8 +241,30 @@ export class AgendarCita {
   }
 
   book(): void {
+<<<<<<< Updated upstream
     if (!this.selectedPatient || !this.selectedProfessional || !this.selectedSlot) {
       this.feedback = 'Completa paciente, profesional y horario.';
+=======
+    this.fieldErrors = {};
+    if (!this.selectedPatient || !this.patients.some((patient) => patient.persona.id?.toString() === this.selectedPatient)) {
+      this.fieldErrors.patient = 'Selecciona un paciente.';
+    }
+    if (!this.isSelectedProfessionalValid()) {
+      this.fieldErrors.professional = 'Selecciona un profesional válido.';
+    }
+    const dateError = this.dateValidationMessage();
+    if (dateError) this.fieldErrors.date = dateError;
+    if (!this.selectedDate) {
+      this.fieldErrors.date = 'Selecciona una fecha.';
+    }
+    if (!this.selectedSlot || !this.slots.some((slot) => slot.fecha_hora === this.selectedSlot)) {
+      this.fieldErrors.slot = this.slots.length
+        ? 'Selecciona un horario disponible antes de confirmar la cita.'
+        : 'Consulta la disponibilidad y selecciona un horario antes de confirmar.';
+    }
+    if (Object.keys(this.fieldErrors).length) {
+      this.feedback = '';
+>>>>>>> Stashed changes
       return;
     }
     this.isSaving = true;
@@ -83,5 +276,9 @@ export class AgendarCita {
 
   closeConfirmation(): void {
     this.showConfirmation = false;
+  }
+
+  private isSelectedProfessionalValid(): boolean {
+    return this.filteredProfessionals.some((professional) => professional.persona === Number(this.selectedProfessional));
   }
 }

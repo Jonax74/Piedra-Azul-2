@@ -1,1 +1,94 @@
+<<<<<<< Updated upstream
 <div class="page-shell booking-page"><div class="page-heading"><div><span class="eyebrow">Tu próxima experiencia</span><h2>Agendar una cita</h2><p>Encuentra el profesional y el horario que mejor se adapten a ti.</p></div><span class="step-indicator">Paso 1 de 3</span></div><div class="booking-grid"><section class="surface booking-form"><div class="section-header"><div><span class="eyebrow">Comienza aquí</span><h3>Elige tu atención</h3></div></div><label>Paciente<select [(ngModel)]="selectedPatient"><option value="">Selecciona un paciente</option>@for (patient of patients; track patient.persona.id) {<option [value]="patient.persona.id">{{ patient.persona.primer_nombre }} {{ patient.persona.primer_apellido }}</option>}</select></label><label>Especialidad<select [(ngModel)]="selectedSpecialty"><option value="">Todas las especialidades</option>@for (specialty of specialties; track specialty.id) {<option [value]="specialty.id">{{ specialty.nombre }}</option>}</select></label><label>Profesional<select [(ngModel)]="selectedProfessional"><option value="">Selecciona un profesional</option>@for (professional of filteredProfessionals; track professional.persona) {<option [value]="professional.persona">{{ professionalName(professional) }}</option>}</select></label><label>Fecha<input type="date" [(ngModel)]="selectedDate"></label><button class="primary-button" type="button" [disabled]="isLoading" (click)="loadSlots()">{{ isLoading ? 'Consultando horarios...' : 'Consultar disponibilidad' }}</button></section><section class="surface slots-panel"><span class="eyebrow">Horarios disponibles</span><h3>Selecciona una franja</h3><p class="muted-text">Elige una fecha para ver los horarios habilitados.</p><div class="slot-grid">@for (slot of slots; track slot.fecha_hora) {<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora">{{ slot.hora }}</button>} @empty {<p class="muted-text">No hay horarios cargados todavía.</p>}</div><button class="primary-button" type="button" [disabled]="isSaving" (click)="book()">{{ isSaving ? 'Agendando cita...' : 'Confirmar cita' }}</button></section></div>@if (feedback) { <p class="feedback-message">{{ feedback }}</p> } @if (showConfirmation) { <div class="modal-backdrop" role="presentation" (click)="closeConfirmation()"><section class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" (click)="$event.stopPropagation()"><span class="confirmation-icon">✓</span><h3 id="confirmation-title">Cita confirmada</h3><p>{{ confirmationMessage }}</p><button class="primary-button" type="button" (click)="closeConfirmation()">Entendido</button></section></div> }</div>
+=======
+<div class="page-shell booking-page">
+	<div class="page-heading">
+		<div>
+			<span class="eyebrow">Tu próxima experiencia</span>
+			<h2>Agendar una cita</h2>
+			<p>Encuentra el profesional y el horario que mejor se adapten a ti.</p>
+		</div>
+		<span class="step-indicator">Paso {{ currentStep }} de 3</span>
+	</div>
+	<div class="booking-grid">
+		<section class="surface booking-form">
+			<div class="section-header">
+				<div>
+					<span class="eyebrow">Comienza aquí</span>
+					<h3>Elige tu atención</h3>
+				</div>
+			</div>
+			@if (patientOnly) {
+				<div class="readonly-field">
+					<span>Paciente</span>
+					<strong>{{ patientName() }}</strong>
+					<small>Las citas se agendan únicamente para ti.</small>
+				</div>
+			} @else {
+				<label>Paciente
+					<select [(ngModel)]="selectedPatient" (ngModelChange)="fieldErrors.patient = ''">
+						<option value="">Selecciona un paciente</option>
+						@for (patient of patients; track patient.persona.id) {
+							<option [value]="patient.persona.id">{{ patient.persona.primer_nombre }} {{ patient.persona.primer_apellido }}</option>
+						}
+					</select>
+					@if (fieldErrors.patient) { <small class="field-error">{{ fieldErrors.patient }}</small> }
+				</label>
+			}
+			<label>Especialidad
+				<select [(ngModel)]="selectedSpecialty" (ngModelChange)="specialtyChanged()">
+					<option value="">Todas las especialidades</option>
+					@for (specialty of specialties; track specialty.id) {
+						<option [value]="specialty.id">{{ specialty.nombre }}</option>
+					}
+				</select>
+			</label>
+			<label>Profesional
+					<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''; selectedSlot = ''; slots = []; dateChanged()">
+					<option value="">Selecciona un profesional</option>
+					@for (professional of filteredProfessionals; track professional.persona) {
+						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
+					}
+				</select>
+					@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
+			</label>
+			<div class="calendar-field">
+				<div class="calendar-label"><span>Fecha</span><small>{{ selectedDate || 'Selecciona un día disponible' }}</small></div>
+				<div class="calendar-header"><button type="button" class="calendar-nav" [disabled]="!canPreviousMonth()" (click)="previousMonth()" aria-label="Mes anterior">‹</button><strong>{{ calendarMonthLabel() }}</strong><button type="button" class="calendar-nav" [disabled]="!canNextMonth()" (click)="nextMonth()" aria-label="Mes siguiente">›</button></div>
+				<div class="calendar-weekdays"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+				<div class="calendar-grid">@for (day of calendarCells(); track $index) { @if (day) { <button type="button" class="calendar-day" [class.selected-day]="selectedDate === day.iso" [class.outside-range]="!isDateSelectable(day.iso)" [disabled]="!isDateSelectable(day.iso)" (click)="selectDate(day.iso)">{{ day.number }}</button> } @else { <span class="calendar-empty"></span> } }</div>
+				<small class="date-hint">Disponible desde hoy hasta {{ maxBookingDate }}. Los días sin atención aparecen bloqueados.</small>
+				@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }
+			</div>
+			@if (isLoading) { <p class="loading-message" role="status">Consultando horarios disponibles...</p> }
+		</section>
+		<section class="surface slots-panel">
+			<span class="eyebrow">Horarios disponibles</span>
+			<h3>Selecciona una franja</h3>
+			@if (isLoading) { <p class="muted-text">Estamos buscando los horarios para la fecha seleccionada...</p> } @else if (!selectedDate) { <p class="muted-text">Elige una fecha para ver los horarios habilitados.</p> } @else { <p class="muted-text">Selecciona el horario que prefieras.</p> }
+			<div class="slot-grid">
+				@for (slot of slots; track slot.fecha_hora) {
+					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora; fieldErrors.slot = ''">{{ slot.hora }}</button>
+				} @empty {
+					<p class="muted-text">{{ selectedDate ? 'No hay horarios disponibles para esta fecha.' : 'No hay horarios cargados todavía.' }}</p>
+				}
+			</div>
+			@if (fieldErrors.slot) { <small class="field-error">{{ fieldErrors.slot }}</small> }
+			<button class="primary-button" type="button" [disabled]="isSaving" (click)="book()">
+				{{ isSaving ? 'Agendando cita...' : 'Confirmar cita' }}
+			</button>
+		</section>
+	</div>
+	@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
+	@if (showConfirmation) {
+		<div class="modal-backdrop" role="presentation" (click)="closeConfirmation()">
+			<section class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" (click)="$event.stopPropagation()">
+				<span class="confirmation-icon">✓</span>
+				<h3 id="confirmation-title">Cita confirmada</h3>
+				<p>{{ confirmationMessage }}</p>
+				<button class="primary-button" type="button" (click)="closeConfirmation()">Entendido</button>
+			</section>
+		</div>
+	}
+</div>
+>>>>>>> Stashed changes
