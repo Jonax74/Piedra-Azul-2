@@ -1,5 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 from persons.models import Medico, Paciente
 from users.models import Usuario
@@ -58,6 +59,11 @@ class Cita(models.Model):
             models.UniqueConstraint(
                 fields=["medico", "fecha_hora"],
                 name="uq_cita_medico_fecha_hora",
+            ),
+            models.UniqueConstraint(
+                fields=["paciente", "fecha_hora"],
+                condition=Q(estado__in=["PROGRAMADA", "CONFIRMADA"]),
+                name="uq_cita_paciente_fecha_hora_ocupada",
             ),
         ]
         indexes = [

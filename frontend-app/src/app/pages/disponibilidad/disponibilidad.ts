@@ -40,6 +40,7 @@ export class Disponibilidad {
   startTime = '08:00';
   endTime = '17:00';
   interval = 30;
+  readonly validIntervals = [30, 45, 60];
   isSaving = false;
   feedback = '';
   fieldErrors: AvailabilityFieldErrors = {};
@@ -65,11 +66,35 @@ export class Disponibilidad {
 
   loadSchedules(): void {
     this.disponibilidadService.getDisponibilidades().subscribe({
+<<<<<<< HEAD
       next: (items) => { this.schedules = items; this.currentPage = 1; this.changeDetector.markForCheck(); },
       error: () => { this.feedback = 'No fue posible cargar los horarios.'; this.changeDetector.markForCheck(); },
     });
   }
 
+=======
+<<<<<<< Updated upstream
+      next: (items) => this.schedules = items,
+      error: () => this.feedback = 'No fue posible cargar los horarios.',
+    });
+  }
+
+=======
+      next: (items) => { this.schedules = [...items].sort((left, right) => this.compareSchedules(left, right)); this.currentPage = 1; this.changeDetector.markForCheck(); },
+      error: () => { this.feedback = 'No fue posible cargar los horarios.'; this.changeDetector.markForCheck(); },
+    });
+  }
+
+  private compareSchedules(left: DisponibilidadModel, right: DisponibilidadModel): number {
+    const leftDay = this.weekdayValues.indexOf(left.dia_semana);
+    const rightDay = this.weekdayValues.indexOf(right.dia_semana);
+    return (leftDay - rightDay)
+      || left.hora_inicio.localeCompare(right.hora_inicio)
+      || left.hora_fin.localeCompare(right.hora_fin)
+      || (left.id ?? 0) - (right.id ?? 0);
+  }
+
+>>>>>>> feature/frontend
   get paginatedSchedules(): DisponibilidadModel[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredSchedules.slice(start, start + this.pageSize);
@@ -116,9 +141,14 @@ export class Disponibilidad {
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : `Profesional #${professional.persona}`;
   }
 
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
   saveSchedule(): void {
     this.fieldErrors = {};
     if (!this.selectedProfessional) {
+<<<<<<< HEAD
       this.fieldErrors.professional = 'Selecciona un profesional.';
       this.feedback = '';
       return;
@@ -127,10 +157,23 @@ export class Disponibilidad {
       this.fieldErrors.day = 'Selecciona un día de atención.';
       this.feedback = '';
       return;
+=======
+<<<<<<< Updated upstream
+      this.feedback = 'Selecciona un profesional.';
+=======
+      this.fieldErrors.professional = 'Selecciona un profesional.';
+    }
+    if (!this.professionals.some((professional) => professional.persona === Number(this.selectedProfessional))) {
+      this.fieldErrors.professional = 'Selecciona un profesional válido.';
+    }
+    if (!this.weekdayValues.includes(this.selectedDay)) {
+      this.fieldErrors.day = 'Selecciona un día de atención.';
+>>>>>>> feature/frontend
     }
     if (!this.startTime || !this.endTime) {
       if (!this.startTime) this.fieldErrors.startTime = 'Completa la hora inicial.';
       if (!this.endTime) this.fieldErrors.endTime = 'Completa la hora final.';
+<<<<<<< HEAD
       this.feedback = '';
       return;
     }
@@ -141,6 +184,26 @@ export class Disponibilidad {
     }
     if (!this.interval || this.interval < 1) {
       this.fieldErrors.interval = 'Selecciona un intervalo válido.';
+=======
+    }
+    if (this.startTime && !this.isValidTime(this.startTime)) {
+      this.fieldErrors.startTime = 'Usa una hora válida.';
+    }
+    if (this.endTime && !this.isValidTime(this.endTime)) {
+      this.fieldErrors.endTime = 'Usa una hora válida.';
+    }
+    if (!this.validIntervals.includes(Number(this.interval))) {
+      this.fieldErrors.interval = 'Selecciona un intervalo válido.';
+    }
+    if (Object.keys(this.fieldErrors).length) {
+      this.feedback = '';
+      return;
+    }
+    const start = this.minutes(this.startTime);
+    const end = this.minutes(this.endTime);
+    if (start >= end) {
+      this.fieldErrors.endTime = 'Debe ser posterior a la hora inicial.';
+>>>>>>> feature/frontend
       this.feedback = '';
       return;
     }
@@ -152,6 +215,10 @@ export class Disponibilidad {
       this.fieldErrors.startTime = 'El horario se cruza con otra disponibilidad de este profesional.';
       this.fieldErrors.endTime = 'Elige una franja que no se cruce con otra del mismo día.';
       this.feedback = '';
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
       return;
     }
     this.isSaving = true;
@@ -170,6 +237,11 @@ export class Disponibilidad {
       error: () => { this.feedback = 'No fue posible guardar el horario.'; this.isSaving = false; this.changeDetector.markForCheck(); },
     });
   }
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> feature/frontend
 
   private overlapsExistingSchedule(): boolean {
     const selectedProfessional = Number(this.selectedProfessional);
@@ -190,6 +262,13 @@ export class Disponibilidad {
     return (hours * 60) + minutes;
   }
 
+<<<<<<< HEAD
+=======
+  private isValidTime(time: string): boolean {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+  }
+
+>>>>>>> feature/frontend
   private resetForm(): void {
     this.selectedProfessional = '';
     this.selectedDay = 'LUNES';
@@ -199,4 +278,8 @@ export class Disponibilidad {
     this.fieldErrors = {};
     this.currentPage = 1;
   }
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
 }

@@ -72,7 +72,14 @@ export class Agenda {
 
     this.citasService.getAgenda(medicoId, fecha).subscribe({
       next: (response) => {
+<<<<<<< Updated upstream
         this.appointments = response.resultados;
+<<<<<<< HEAD
+=======
+        this.feedback = response.cantidad ? `Se encontraron ${response.cantidad} citas para el ${this.selectedDate}.` : `No hay citas registradas para el ${this.selectedDate}.`;
+=======
+        this.appointments = this.sortAppointments(response.resultados);
+>>>>>>> feature/frontend
         this.currentPage = 1;
         const filtro = [
           this.selectedDate ? `el ${this.selectedDate}` : 'todas las fechas',
@@ -81,6 +88,10 @@ export class Agenda {
         this.feedback = response.cantidad
           ? `Se encontraron ${response.cantidad} citas para ${filtro}.`
           : `No hay citas registradas para ${filtro}.`;
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
         this.isLoading = false;
         this.changeDetector.markForCheck();
       },
@@ -91,6 +102,11 @@ export class Agenda {
       },
     });
   }
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> feature/frontend
 
   patientName(appointment: Cita): string {
     const persona = appointment.paciente_detalle?.persona;
@@ -106,6 +122,17 @@ export class Agenda {
       : `Profesional #${appointment.medico}`;
   }
 
+<<<<<<< HEAD
+=======
+  private sortAppointments(appointments: Cita[]): Cita[] {
+    return [...appointments].sort((left, right) => {
+      const leftTime = Date.parse(left.fecha_hora);
+      const rightTime = Date.parse(right.fecha_hora);
+      return leftTime - rightTime || (left.id ?? 0) - (right.id ?? 0);
+    });
+  }
+
+>>>>>>> feature/frontend
   previousPage(): void {
     if (this.currentPage > 1) this.currentPage -= 1;
   }
@@ -113,4 +140,8 @@ export class Agenda {
   nextPage(): void {
     if (this.currentPage < this.totalPages) this.currentPage += 1;
   }
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
 }

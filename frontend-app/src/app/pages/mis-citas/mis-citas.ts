@@ -36,12 +36,30 @@ export class MisCitas {
       : `Profesional #${appointment.medico}`;
   }
 
+  private sortAppointments(appointments: Cita[]): Cita[] {
+    return [...appointments].sort((left, right) => {
+      const leftTime = Date.parse(left.fecha_hora);
+      const rightTime = Date.parse(right.fecha_hora);
+      return leftTime - rightTime || (left.id ?? 0) - (right.id ?? 0);
+    });
+  }
+
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.citasService.getCitas().subscribe({
+<<<<<<< HEAD
       next: (items) => { this.appointments = items; this.currentPage = 1; this.changeDetector.markForCheck(); },
       error: () => { this.feedback = 'No fue posible cargar tus citas.'; this.changeDetector.markForCheck(); },
+=======
+<<<<<<< Updated upstream
+      next: (items) => this.appointments = items,
+      error: () => this.feedback = 'No fue posible cargar tus citas.',
+=======
+      next: (items) => { this.appointments = this.sortAppointments(items); this.currentPage = 1; this.changeDetector.markForCheck(); },
+      error: () => { this.feedback = 'No fue posible cargar tus citas.'; this.changeDetector.markForCheck(); },
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
     });
   }
 

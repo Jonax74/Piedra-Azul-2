@@ -1,12 +1,31 @@
+<<<<<<< HEAD
 from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
+=======
+<<<<<<< Updated upstream
+from django.test import TestCase
+
+# Create your tests here.
+=======
+from datetime import date, datetime
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.utils import timezone
+>>>>>>> feature/frontend
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from appointments.models import Cita, ConfiguracionSistema
 from appointments.serializers import CitaSerializer
+<<<<<<< HEAD
+=======
+from appointments.services import validar_cita_programable
+>>>>>>> feature/frontend
 from appointments.views import (
 	AgendaCitasView,
 	CitaListCreateView,
@@ -156,6 +175,48 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(len(response.data), 1)
 
+<<<<<<< HEAD
+=======
+	@patch("appointments.services.esta_en_intervalo_disponible", return_value=True)
+	@patch("appointments.services.esta_dentro_de_disponibilidad", return_value=True)
+	@patch("appointments.services.fecha_dentro_de_ventana", return_value=True)
+	def test_patient_cannot_have_two_appointments_at_same_time(
+		self,
+		fecha_dentro_de_ventana,
+		esta_dentro_de_disponibilidad,
+		esta_en_intervalo_disponible,
+	):
+		otra_persona_medico = Persona.objects.create(
+			primer_nombre="Valentina",
+			primer_apellido="Medica",
+			genero="MUJER",
+			fecha_nacimiento=date(1988, 1, 1),
+			telefono="3000000003",
+			dni=90000002,
+		)
+		otro_medico = Medico.objects.create(
+			persona=otra_persona_medico,
+			tipo_profesional="MEDICO",
+		)
+		fecha_hora = timezone.make_aware(datetime(2099, 1, 5, 10, 0))
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora=fecha_hora,
+		)
+
+		with self.assertRaisesMessage(
+			ValidationError,
+			"El paciente ya tiene una cita agendada en ese horario.",
+		):
+			validar_cita_programable(
+				medico_id=otro_medico.pk,
+				paciente_id=self.paciente.pk,
+				fecha_hora=fecha_hora,
+			)
+
+>>>>>>> feature/frontend
 
 class ConfiguracionSistemaPermissionTests(TestCase):
 	def setUp(self):
@@ -216,3 +277,7 @@ class ConfiguracionSistemaPermissionTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(self.configuracion.semanas_agendamiento, 12)
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend

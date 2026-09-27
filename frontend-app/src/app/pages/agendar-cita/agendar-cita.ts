@@ -69,6 +69,13 @@ export class AgendarCita {
 
   ngOnInit(): void {
     this.feedback = 'Cargando pacientes, profesionales y especialidades...';
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+    this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => this.people = people }); }, error: () => this.feedback = 'No fue posible cargar los profesionales.' });
+    this.medicosService.getEspecialidades().subscribe({ next: (items) => this.specialties = items, error: () => this.feedback = 'No fue posible cargar las especialidades.' });
+=======
+>>>>>>> feature/frontend
     this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.personasService.getPersonas().subscribe({ next: (people) => { this.people = people; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los nombres de los profesionales.'; this.changeDetector.markForCheck(); } }); this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); } });
     this.medicosService.getEspecialidades().subscribe({ next: (items) => { this.specialties = items; this.changeDetector.markForCheck(); }, error: () => { this.feedback = 'No fue posible cargar las especialidades.'; this.changeDetector.markForCheck(); } });
     this.loadBookingRules();
@@ -121,15 +128,39 @@ export class AgendarCita {
   }
 
   dateChanged(): void {
+<<<<<<< HEAD
     this.fieldErrors.date = this.dateValidationMessage();
+=======
+    const dateError = this.dateValidationMessage();
+    this.fieldErrors.date = dateError;
+>>>>>>> feature/frontend
     this.selectedSlot = '';
     this.slots = [];
   }
 
+<<<<<<< HEAD
+=======
+  specialtyChanged(): void {
+    if (this.selectedProfessional && !this.filteredProfessionals.some((professional) => professional.persona === Number(this.selectedProfessional))) {
+      this.selectedProfessional = '';
+      this.selectedSlot = '';
+      this.slots = [];
+    }
+    this.fieldErrors.professional = '';
+    this.fieldErrors.slot = '';
+  }
+
+>>>>>>> feature/frontend
   dateValidationMessage(): string {
     if (!this.selectedDate) return 'Selecciona una fecha.';
     if (this.selectedDate < this.minBookingDate) return 'No puedes seleccionar fechas pasadas.';
     if (this.selectedDate > this.maxBookingDate) return `Solo puedes agendar dentro de las próximas ${this.bookingWeeks} semanas.`;
+<<<<<<< HEAD
+=======
+    if (this.selectedProfessional && this.availabilityRulesLoaded && !this.isDateSelectable(this.selectedDate)) {
+      return 'El profesional no atiende en la fecha seleccionada.';
+    }
+>>>>>>> feature/frontend
     return '';
   }
 
@@ -210,6 +241,10 @@ export class AgendarCita {
   }
 
   private loadPatients(): void {
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
     this.personasService.getPacientes().subscribe({ next: (items) => {
       this.patients = items;
       const ownPatient = this.currentPersonaId
@@ -244,6 +279,7 @@ export class AgendarCita {
   }
 
   loadSlots(): void {
+<<<<<<< HEAD
     this.fieldErrors.date = this.dateValidationMessage();
     if (!this.selectedProfessional || !this.selectedDate) {
       if (!this.selectedProfessional) {
@@ -257,6 +293,23 @@ export class AgendarCita {
     }
     if (this.fieldErrors.date) {
       this.feedback = '';
+=======
+<<<<<<< Updated upstream
+    if (!this.selectedProfessional || !this.selectedDate) {
+      this.feedback = 'Selecciona un profesional y una fecha.';
+=======
+    this.fieldErrors.professional = this.isSelectedProfessionalValid()
+      ? ''
+      : 'Selecciona un profesional válido.';
+    const dateError = this.dateValidationMessage();
+    this.fieldErrors.date = dateError;
+    if (!this.selectedDate) {
+      this.fieldErrors.date = 'Selecciona una fecha.';
+    }
+    if (this.fieldErrors.professional || this.fieldErrors.date) {
+      this.feedback = '';
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
       return;
     }
     this.isLoading = true;
@@ -269,6 +322,7 @@ export class AgendarCita {
   }
 
   book(): void {
+<<<<<<< HEAD
     this.fieldErrors.date = this.dateValidationMessage();
     if (this.fieldErrors.date) {
       this.feedback = '';
@@ -294,6 +348,32 @@ export class AgendarCita {
         ? 'Selecciona un horario disponible antes de confirmar la cita.'
         : 'Consulta la disponibilidad y selecciona un horario antes de confirmar.';
       this.feedback = '';
+=======
+<<<<<<< Updated upstream
+    if (!this.selectedPatient || !this.selectedProfessional || !this.selectedSlot) {
+      this.feedback = 'Completa paciente, profesional y horario.';
+=======
+    this.fieldErrors = {};
+    if (!this.selectedPatient || !this.patients.some((patient) => patient.persona.id?.toString() === this.selectedPatient)) {
+      this.fieldErrors.patient = 'Selecciona un paciente.';
+    }
+    if (!this.isSelectedProfessionalValid()) {
+      this.fieldErrors.professional = 'Selecciona un profesional válido.';
+    }
+    const dateError = this.dateValidationMessage();
+    if (dateError) this.fieldErrors.date = dateError;
+    if (!this.selectedDate) {
+      this.fieldErrors.date = 'Selecciona una fecha.';
+    }
+    if (!this.selectedSlot || !this.slots.some((slot) => slot.fecha_hora === this.selectedSlot)) {
+      this.fieldErrors.slot = this.slots.length
+        ? 'Selecciona un horario disponible antes de confirmar la cita.'
+        : 'Consulta la disponibilidad y selecciona un horario antes de confirmar.';
+    }
+    if (Object.keys(this.fieldErrors).length) {
+      this.feedback = '';
+>>>>>>> Stashed changes
+>>>>>>> feature/frontend
       return;
     }
     this.isSaving = true;
@@ -325,5 +405,9 @@ export class AgendarCita {
     this.selectedDate = '';
     this.selectedSlot = '';
     this.slots = [];
+  }
+
+  private isSelectedProfessionalValid(): boolean {
+    return this.filteredProfessionals.some((professional) => professional.persona === Number(this.selectedProfessional));
   }
 }
