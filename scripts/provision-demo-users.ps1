@@ -1,4 +1,5 @@
 param(
+    ###Contraseña predeterminada del script para todos los usuarios de prueba. Se puede cambiar después de la provisión.
     [string]$Password = "Piedrazul123!"
 )
 

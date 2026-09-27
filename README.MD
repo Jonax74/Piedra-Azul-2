@@ -281,4 +281,6 @@ docker/        Scripts SQL de inicializacion y datos demo
 frontend-app/  Aplicacion Angular
 scripts/       Automatizacion de usuarios demo en Keycloak
 ```
+
+### Easter egg añadido :D
 >>>>>>> Stashed changes

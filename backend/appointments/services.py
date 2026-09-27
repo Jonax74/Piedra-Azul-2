@@ -6,6 +6,7 @@ from django.utils import timezone
 from appointments.models import Cita, ConfiguracionSistema, Festivo
 from persons.models import MedicoDisponibilidad
 
+unused_var = 1
 
 ESTADOS_OCUPADOS = ["PROGRAMADA", "CONFIRMADA"]
 
