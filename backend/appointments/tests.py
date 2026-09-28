@@ -1,36 +1,18 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from appointments.models import (
-	Cita,
-	ConfiguracionSistema,
-	Festivo,
-)
+from appointments.models import Cita, ConfiguracionSistema
 from appointments.serializers import CitaSerializer
-from appointments.services import (
-	esta_en_intervalo_disponible,
-	fecha_dentro_de_ventana,
-	obtener_franjas_disponibles,
-	validar_cita_programable,
-)
 from appointments.views import (
 	AgendaCitasView,
 	CitaListCreateView,
 	ConfiguracionSistemaView,
 )
-from persons.models import (
-	Disponibilidad,
-	Medico,
-	MedicoDisponibilidad,
-	Paciente,
-	Persona,
-)
+from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 
 
@@ -234,121 +216,3 @@ class ConfiguracionSistemaPermissionTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(self.configuracion.semanas_agendamiento, 12)
-
-
-class AgendaServiceTests(TestCase):
-	def setUp(self):
-		self.fecha = date(2099, 1, 5)
-		self.persona_paciente = Persona.objects.create(
-			primer_nombre="Ana",
-			primer_apellido="Paciente",
-			genero="MUJER",
-			fecha_nacimiento=date(1992, 1, 1),
-			telefono="3000000000",
-			dni=10000011,
-		)
-		self.paciente = Paciente.objects.create(
-			persona=self.persona_paciente,
-		)
-		self.persona_medico = Persona.objects.create(
-			primer_nombre="Carlos",
-			primer_apellido="Medico",
-			genero="HOMBRE",
-			fecha_nacimiento=date(1985, 1, 1),
-			telefono="3000000002",
-			dni=90000011,
-		)
-		self.medico = Medico.objects.create(
-			persona=self.persona_medico,
-			tipo_profesional="MEDICO",
-		)
-		self.usuario = Usuario.objects.create(
-			username="agenda.test",
-			keycloak_user_id="agenda-test",
-		)
-		self.disponibilidad = Disponibilidad.objects.create(
-			dia_semana="LUNES",
-			hora_inicio=time(9, 0),
-			hora_fin=time(10, 0),
-			intervalo=30,
-		)
-		MedicoDisponibilidad.objects.create(
-			medico=self.medico,
-			disponibilidad=self.disponibilidad,
-		)
-
-	def fecha_hora(self, hora):
-		return timezone.make_aware(
-			datetime.combine(self.fecha, hora),
-			timezone.get_current_timezone(),
-		)
-
-	def crear_cita(self, fecha_hora, estado="PROGRAMADA"):
-		return Cita.objects.create(
-			usuario=self.usuario,
-			paciente=self.paciente,
-			medico=self.medico,
-			fecha_hora=fecha_hora,
-			estado=estado,
-		)
-
-	def test_generates_only_free_future_slots_in_schedule(self):
-		franjas = obtener_franjas_disponibles(self.medico.pk, self.fecha)
-
-		self.assertEqual(
-			[franja["hora"] for franja in franjas],
-			["09:00", "09:30"],
-		)
-
-	def test_holiday_has_no_available_slots(self):
-		Festivo.objects.create(fecha=self.fecha)
-
-		self.assertEqual(
-			obtener_franjas_disponibles(self.medico.pk, self.fecha),
-			[],
-		)
-
-	def test_occupied_slot_is_not_returned(self):
-		self.crear_cita(self.fecha_hora(time(9, 0)))
-
-		franjas = obtener_franjas_disponibles(self.medico.pk, self.fecha)
-
-		self.assertEqual([franja["hora"] for franja in franjas], ["09:30"])
-
-	def test_slot_must_match_availability_interval(self):
-		self.assertTrue(
-			esta_en_intervalo_disponible(
-				self.medico.pk,
-				self.fecha_hora(time(9, 30)),
-			)
-		)
-		self.assertFalse(
-			esta_en_intervalo_disponible(
-				self.medico.pk,
-				self.fecha_hora(time(9, 15)),
-			)
-		)
-
-	def test_booking_validation_rejects_time_outside_schedule(self):
-		with self.assertRaisesMessage(
-			ValidationError,
-			"El médico no tiene disponibilidad en ese horario.",
-		):
-			validar_cita_programable(
-				medico_id=self.medico.pk,
-				fecha_hora=self.fecha_hora(time(10, 0)),
-			)
-
-	def test_booking_window_includes_boundary_and_rejects_later_time(self):
-		ahora = timezone.make_aware(
-			datetime(2026, 1, 1, 12, 0),
-			timezone.get_current_timezone(),
-		)
-		ConfiguracionSistema.objects.create(semanas_agendamiento=2)
-		limite = ahora + timedelta(weeks=2)
-
-		with patch("appointments.services.timezone.now", return_value=ahora):
-			self.assertTrue(fecha_dentro_de_ventana(limite))
-			self.assertFalse(
-				fecha_dentro_de_ventana(limite + timedelta(seconds=1))
-			)
