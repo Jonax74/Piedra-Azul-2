@@ -32,7 +32,9 @@ usuarios ni contrasenas):
 ```
 
 El tema mantiene la autenticacion en Keycloak, aplica el logo y la paleta de
-colores de la aplicacion y muestra sus textos en espanol.
+colores de la aplicacion y muestra sus textos en espanol. La pantalla de acceso
+usa un diseno adaptable con el formulario y la marca Piedrazul en paneles
+separados, controles mas claros y mensajes de seguridad.
 
 ## Registro de pacientes
 
