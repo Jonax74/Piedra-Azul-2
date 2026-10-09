@@ -102,6 +102,16 @@
 			}
 		</div>
 	</section>
+	<section class="surface patient-history-entry d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mt-3 p-3">
+		<div>
+			<span class="eyebrow">Historial de citas</span>
+			<h3 class="h5 mb-1">Consultar paciente</h3>
+			<p class="mb-0 small text-muted">Busca por número de cédula para revisar sus datos y citas anteriores.</p>
+		</div>
+		<button class="primary-button compact btn" type="button" (click)="openPatientHistory()">
+			Consultar por cédula
+		</button>
+	</section>
 	@if (feedback()) { <p class="feedback-message">{{ feedback() }}</p> }
 	<section class="surface table-section">
 		<div class="section-header">
@@ -148,4 +158,103 @@
 			</div>
 		}
 	</section>
+	@if (isPatientHistoryOpen()) {
+		<div class="modal-backdrop fade show" role="presentation" (click)="closePatientHistory()"></div>
+		<div
+			class="modal fade show d-block"
+			tabindex="-1"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="patient-history-title"
+			(click)="closePatientHistory()"
+		>
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+				<section class="modal-content" (click)="$event.stopPropagation()">
+					<header class="modal-header">
+						<div>
+							<span class="eyebrow">Historial de citas</span>
+							<h3 class="modal-title fs-5" id="patient-history-title">Consultar paciente</h3>
+						</div>
+						<button
+							class="btn-close"
+							type="button"
+							aria-label="Cerrar consulta"
+							[disabled]="isSearchingPatient()"
+							(click)="closePatientHistory()"
+						></button>
+					</header>
+					<div class="modal-body">
+						<form class="mb-3" (ngSubmit)="searchPatientHistory()">
+							<label class="form-label" for="patient-document">Número de cédula</label>
+							<div class="input-group">
+								<input
+									id="patient-document"
+									class="form-control"
+									type="text"
+									inputmode="numeric"
+									autocomplete="off"
+									maxlength="20"
+									[(ngModel)]="patientDocument"
+									name="patientDocument"
+									placeholder="Escribe la cédula del paciente"
+									[disabled]="isSearchingPatient()"
+								>
+								<button class="primary-button compact btn" type="submit" [disabled]="isSearchingPatient()">
+									{{ isSearchingPatient() ? 'Buscando...' : 'Buscar' }}
+								</button>
+							</div>
+						</form>
+						@if (patientHistoryError()) {
+							<div class="alert alert-danger py-2" role="alert">{{ patientHistoryError() }}</div>
+						}
+						@if (patientHistory(); as history) {
+							<section class="card border-0 bg-light mb-4">
+								<div class="card-body">
+									<h4 class="h5 card-title">{{ history.paciente.nombre }}</h4>
+									<dl class="row mb-0">
+										<dt class="col-sm-4 text-muted">Cédula</dt>
+										<dd class="col-sm-8">{{ history.paciente.cedula }}</dd>
+										<dt class="col-sm-4 text-muted">Fecha de nacimiento</dt>
+										<dd class="col-sm-8">{{ history.paciente.fecha_nacimiento | date:'dd/MM/yyyy' }}</dd>
+										<dt class="col-sm-4 text-muted">Género</dt>
+										<dd class="col-sm-8">{{ history.paciente.genero }}</dd>
+										<dt class="col-sm-4 text-muted">Teléfono</dt>
+										<dd class="col-sm-8">{{ history.paciente.telefono }}</dd>
+										@if (history.paciente.correo) {
+											<dt class="col-sm-4 text-muted">Correo</dt>
+											<dd class="col-sm-8">{{ history.paciente.correo }}</dd>
+										}
+									</dl>
+								</div>
+							</section>
+							<div class="d-flex align-items-center justify-content-between mb-2">
+								<h4 class="h5 mb-0">Historial de citas</h4>
+								<span class="badge rounded-pill text-bg-light">{{ history.cantidad }} {{ history.cantidad === 1 ? 'cita' : 'citas' }}</span>
+							</div>
+							@if (history.citas.length) {
+								<div class="table-responsive">
+									<table class="table table-sm align-middle">
+										<thead>
+											<tr><th>Fecha y hora</th><th>Profesional</th><th>Estado</th></tr>
+										</thead>
+										<tbody>
+											@for (appointment of history.citas; track appointment.id) {
+												<tr>
+													<td>{{ appointment.fecha_hora | date:'dd/MM/yyyy, h:mm a' }}</td>
+													<td>{{ appointment.medico }} · {{ professionalTypeLabel(appointment.tipo_profesional) }}</td>
+													<td>{{ appointment.estado }}</td>
+												</tr>
+											}
+										</tbody>
+									</table>
+								</div>
+							} @else {
+								<p class="text-muted mb-0">Este paciente todavía no tiene citas registradas.</p>
+							}
+						}
+					</div>
+				</section>
+			</div>
+		</div>
+	}
 </div>

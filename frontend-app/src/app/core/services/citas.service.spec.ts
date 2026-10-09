@@ -66,4 +66,34 @@ describe('CitasService', () => {
 		request.flush(new Blob(['Fecha;Hora']));
 	});
 
+	it('requests patient appointment history by national ID', () => {
+		service.getHistorialPaciente('10000001').subscribe((history) => {
+			expect(history.paciente.nombre).toBe('Ana Paciente');
+			expect(history.citas).toHaveLength(1);
+		});
+
+		const request = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/agenda/paciente/?cedula=10000001`,
+		);
+		expect(request.request.method).toBe('GET');
+		request.flush({
+			paciente: {
+				nombre: 'Ana Paciente',
+				cedula: 10000001,
+				fecha_nacimiento: '1992-01-01',
+				genero: 'Mujer',
+				telefono: '3000000000',
+				correo: null,
+			},
+			cantidad: 1,
+			citas: [{
+				id: 1,
+				fecha_hora: '2099-01-05T05:00:00-05:00',
+				medico: 'Carlos Medico',
+				tipo_profesional: 'MEDICO',
+				estado: 'Programada',
+			}],
+		});
+	});
+
 });

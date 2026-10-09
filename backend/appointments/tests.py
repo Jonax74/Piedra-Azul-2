@@ -17,6 +17,7 @@ from appointments.views import (
 	ExportarAgendaCitasView,
 	ExportarAgendaMedicoView,
 	FechasAgendaCitasView,
+	HistorialPacienteView,
 )
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
@@ -142,6 +143,103 @@ class CitaPacienteScopeTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["cantidad"], 1)
+
+	def test_scheduler_can_search_patient_by_document_and_get_all_appointments(self):
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="ATENDIDA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-07T11:00:00Z",
+			estado="CANCELADA",
+		)
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": "10000001"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test"),
+		)
+
+		response = HistorialPacienteView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["paciente"]["nombre"], "Ana Paciente")
+		self.assertEqual(response.data["paciente"]["cedula"], 10000001)
+		self.assertEqual(response.data["cantidad"], 2)
+		self.assertEqual(
+			[appointment["estado"] for appointment in response.data["citas"]],
+			["Cancelada", "Atendida"],
+		)
+		self.assertEqual(response.data["citas"][0]["medico"], "Carlos Medico")
+		self.assertNotIn("observacion", response.data["citas"][0])
+
+	def test_patient_history_rejects_invalid_or_unknown_documents(self):
+		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
+		factory = APIRequestFactory()
+
+		request = factory.get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": "abc"},
+		)
+		force_authenticate(request, user=user)
+		response = HistorialPacienteView.as_view()(request)
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("debe contener", response.data["detail"])
+
+		request = factory.get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": "10999999"},
+		)
+		force_authenticate(request, user=user)
+		response = HistorialPacienteView.as_view()(request)
+		self.assertEqual(response.status_code, 404)
+		self.assertIn("No se encontró", response.data["detail"])
+
+	def test_patient_cannot_search_another_patients_history(self):
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": "10000001"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["PACIENTE"], user_id="paciente-test"),
+		)
+
+		response = HistorialPacienteView.as_view()(request)
+
+		self.assertEqual(response.status_code, 403)
+
+	def test_doctor_can_search_patient_history_by_document(self):
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="ATENDIDA",
+		)
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": "10000001"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["MEDICO"], user_id="medico-test"),
+		)
+
+		response = HistorialPacienteView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["paciente"]["cedula"], 10000001)
+		self.assertEqual(response.data["cantidad"], 1)
+		self.assertEqual(response.data["citas"][0]["estado"], "Atendida")
 
 	def test_scheduler_calendar_dates_filter_by_optional_doctor_and_ignore_cancelled(self):
 		other_persona = Persona.objects.create(

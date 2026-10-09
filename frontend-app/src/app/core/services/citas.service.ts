@@ -14,6 +14,25 @@ interface AgendaDatesResponse {
   fechas: string[];
 }
 
+export interface HistorialPacienteResponse {
+  paciente: {
+    nombre: string;
+    cedula: number;
+    fecha_nacimiento: string;
+    genero: string;
+    telefono: string;
+    correo: string | null;
+  };
+  cantidad: number;
+  citas: Array<{
+    id: number;
+    fecha_hora: string;
+    medico: string;
+    tipo_profesional: string;
+    estado: string;
+  }>;
+}
+
 interface FranjasResponse {
   medico: number;
   fecha: string;
@@ -31,6 +50,11 @@ export class CitasService {
 
   getAgenda(medicoId?: number, fecha?: string) {
     return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
+  }
+
+  getHistorialPaciente(cedula: string) {
+    return this.api.get<HistorialPacienteResponse>('/citas/agenda/paciente/', { cedula })
+      .pipe(timeout({ first: 12000 }));
   }
 
   getFechasAgenda(mes: string, medicoId?: number) {

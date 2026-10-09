@@ -15,6 +15,7 @@ describe('Agenda', () => {
   let getFechasAgenda: ReturnType<typeof vi.fn>;
   let exportarAgenda: ReturnType<typeof vi.fn>;
   let exportarAgendaMedico: ReturnType<typeof vi.fn>;
+  let getHistorialPaciente: ReturnType<typeof vi.fn>;
   let getMedicos: ReturnType<typeof vi.fn>;
   let getPersonas: ReturnType<typeof vi.fn>;
   let roles: string[];
@@ -46,6 +47,24 @@ describe('Agenda', () => {
     getAgenda = vi.fn(() => of({ cantidad: 0, resultados: [] }));
     exportarAgenda = vi.fn(() => of(new Blob(['Fecha,Hora'])));
     exportarAgendaMedico = vi.fn(() => of(new Blob(['Fecha;Hora'])));
+    getHistorialPaciente = vi.fn(() => of({
+      paciente: {
+        nombre: 'Ana Paciente',
+        cedula: 10000001,
+        fecha_nacimiento: '1992-01-01',
+        genero: 'Mujer',
+        telefono: '3000000000',
+        correo: null,
+      },
+      cantidad: 1,
+      citas: [{
+        id: 1,
+        fecha_hora: '2099-01-05T10:00:00-05:00',
+        medico: 'Carlos Medico',
+        tipo_profesional: 'MEDICO',
+        estado: 'Programada',
+      }],
+    }));
     getMedicos = vi.fn(() => of([]));
     getPersonas = vi.fn(() => of([]));
     roles = ['MEDICO'];
@@ -61,6 +80,7 @@ describe('Agenda', () => {
             getFechasAgenda,
             exportarAgenda,
             exportarAgendaMedico,
+            getHistorialPaciente,
           },
         },
         { provide: MedicosService, useValue: { getMedicos } },
@@ -238,5 +258,68 @@ describe('Agenda', () => {
     component.exportAppointments();
     expect(exportarAgenda).toHaveBeenCalledWith(12, `${month}-12`);
     expect(downloadClick).toHaveBeenCalledOnce();
+  });
+
+  it('lets an agendador search a patient by ID and displays appointment history', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Consultar paciente');
+    fixture.nativeElement.querySelector('.patient-history-entry button').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
+
+    component.patientDocument = '10000001';
+    component.searchPatientHistory();
+    fixture.detectChanges();
+
+    expect(getHistorialPaciente).toHaveBeenCalledWith('10000001');
+    expect(fixture.nativeElement.textContent).toContain('Ana Paciente');
+    expect(fixture.nativeElement.textContent).toContain('Carlos Medico');
+    expect(fixture.nativeElement.textContent).toContain('Programada');
+  });
+
+  it('shows a clear message when patient ID contains non-digits', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.openPatientHistory();
+    component.patientDocument = 'ABC123';
+    component.searchPatientHistory();
+    fixture.detectChanges();
+
+    expect(getHistorialPaciente).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Escribe una cédula válida usando solo números.',
+    );
+  });
+
+  it('lets a doctor open patient lookup and view appointment history', async () => {
+    roles = ['MEDICO'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Consultar paciente');
+    fixture.nativeElement.querySelector('.patient-history-entry button').click();
+    fixture.detectChanges();
+    component.patientDocument = '10000001';
+    component.searchPatientHistory();
+    fixture.detectChanges();
+
+    expect(getHistorialPaciente).toHaveBeenCalledWith('10000001');
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Ana Paciente');
+    expect(fixture.nativeElement.textContent).toContain('Carlos Medico');
   });
 });

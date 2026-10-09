@@ -10,6 +10,7 @@ from appointments.views import (
     FechasAgendaCitasView,
     FranjasDisponiblesView,
     ConfiguracionSistemaView,
+    HistorialPacienteView,
 )
 
 urlpatterns = [
@@ -22,6 +23,11 @@ urlpatterns = [
         "citas/agenda/",
         AgendaCitasView.as_view(),
         name="cita-agenda",
+    ),
+    path(
+        "citas/agenda/paciente/",
+        HistorialPacienteView.as_view(),
+        name="cita-agenda-paciente",
     ),
     path(
         "citas/agenda/fechas/",

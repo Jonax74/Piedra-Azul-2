@@ -2,7 +2,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Auth } from '../../core/services/auth';
-import { CitasService } from '../../core/services/citas.service';
+import { CitasService, HistorialPacienteResponse } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { Cita } from '../../shared/models/cita.model';
 import { Medico } from '../../shared/models/medico.model';
@@ -31,6 +31,11 @@ export class Agenda {
   readonly isLoading = signal(false);
   readonly isLoadingDates = signal(false);
   readonly isExporting = signal(false);
+  readonly isPatientHistoryOpen = signal(false);
+  readonly isSearchingPatient = signal(false);
+  readonly patientHistory = signal<HistorialPacienteResponse | null>(null);
+  readonly patientHistoryError = signal('');
+  patientDocument = '';
   isCalendarOpen = false;
   readonly feedback = signal('');
   readonly calendarError = signal('');
@@ -237,6 +242,51 @@ export class Agenda {
         this.changeDetector.markForCheck();
       },
     });
+  }
+
+  openPatientHistory(): void {
+    this.patientDocument = '';
+    this.patientHistory.set(null);
+    this.patientHistoryError.set('');
+    this.isPatientHistoryOpen.set(true);
+  }
+
+  closePatientHistory(): void {
+    if (this.isSearchingPatient()) return;
+    this.isPatientHistoryOpen.set(false);
+  }
+
+  searchPatientHistory(): void {
+    const document = this.patientDocument.trim();
+    this.patientHistory.set(null);
+    this.patientHistoryError.set('');
+    if (!/^\d+$/.test(document)) {
+      this.patientHistoryError.set('Escribe una cédula válida usando solo números.');
+      return;
+    }
+
+    this.isSearchingPatient.set(true);
+    this.citasService.getHistorialPaciente(document).subscribe({
+      next: (history) => {
+        this.patientHistory.set(history);
+        this.isSearchingPatient.set(false);
+        this.changeDetector.markForCheck();
+      },
+      error: (error: { name?: string; error?: { detail?: string } }) => {
+        this.patientHistoryError.set(
+          error.error?.detail
+            ?? (error.name === 'TimeoutError'
+              ? 'La consulta tardó demasiado. Inténtalo de nuevo.'
+              : 'No fue posible consultar el historial del paciente. Inténtalo de nuevo.'),
+        );
+        this.isSearchingPatient.set(false);
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  professionalTypeLabel(type: string): string {
+    return type === 'TERAPISTA' ? 'Terapista' : 'Médico';
   }
 
   private doctorExportFilename(date: string): string {

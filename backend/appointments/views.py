@@ -20,10 +20,11 @@ from appointments.serializers import (
 from appointments.services import obtener_franjas_disponibles
 from config.security.permissions import (
     IsAdminRole,
+    IsAgendadorDoctorOrAdmin,
     IsAgendadorOrAdmin,
     IsDoctorRole,
 )
-from persons.models import Medico
+from persons.models import Medico, Paciente
 
 
 def _safe_spreadsheet_text(value):
@@ -180,7 +181,6 @@ class AgendaCitasView(APIView):
                     {"detail": "medico debe ser numérico."},
                     status=400,
                 )
-
         if fecha_texto:
             try:
                 fecha = datetime.strptime(
@@ -226,7 +226,87 @@ class AgendaCitasView(APIView):
                     many=True,
                 ).data,
             },
-        )    
+        )
+
+
+class HistorialPacienteView(APIView):
+    permission_classes = [IsAgendadorDoctorOrAdmin]
+
+    def get(self, request):
+        documento = request.query_params.get("cedula", "").strip()
+        if not documento.isdigit():
+            return Response(
+                {"detail": "La cédula debe contener únicamente números."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        paciente = (
+            Paciente.objects
+            .select_related("persona")
+            .filter(persona__dni=int(documento))
+            .first()
+        )
+        if paciente is None:
+            return Response(
+                {"detail": "No se encontró un paciente con esa cédula."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        persona = paciente.persona
+        citas = (
+            Cita.objects
+            .select_related("medico__persona")
+            .filter(paciente=paciente)
+            .order_by("-fecha_hora")
+        )
+        zona_horaria = timezone.get_current_timezone()
+
+        return Response(
+            {
+                "paciente": {
+                    "nombre": " ".join(
+                        filter(
+                            None,
+                            [
+                                persona.primer_nombre,
+                                persona.segundo_nombre,
+                                persona.primer_apellido,
+                                persona.segundo_apellido,
+                            ],
+                        ),
+                    ),
+                    "cedula": persona.dni,
+                    "fecha_nacimiento": persona.fecha_nacimiento.isoformat(),
+                    "genero": persona.get_genero_display(),
+                    "telefono": persona.telefono,
+                    "correo": persona.correo,
+                },
+                "cantidad": citas.count(),
+                "citas": [
+                    {
+                        "id": cita.pk,
+                        "fecha_hora": timezone.localtime(
+                            cita.fecha_hora,
+                            zona_horaria,
+                        ).isoformat(),
+                        "medico": " ".join(
+                            filter(
+                                None,
+                                [
+                                    cita.medico.persona.primer_nombre,
+                                    cita.medico.persona.segundo_nombre,
+                                    cita.medico.persona.primer_apellido,
+                                    cita.medico.persona.segundo_apellido,
+                                ],
+                            ),
+                        ),
+                        "tipo_profesional": cita.medico.tipo_profesional,
+                        "estado": cita.get_estado_display(),
+                    }
+                    for cita in citas
+                ],
+            },
+        )
 
 
 class FechasAgendaCitasView(APIView):
