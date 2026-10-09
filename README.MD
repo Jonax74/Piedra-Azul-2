@@ -55,3 +55,14 @@ API administrativa de Keycloak; esas credenciales nunca se envían al navegador.
 En una instalación de producción, configura credenciales de servicio con los
 permisos mínimos necesarios para administrar usuarios y asignar el rol
 `PACIENTE`.
+
+Los usuarios con rol `MEDICO` pueden consultar **Mi agenda** desde la pestaña
+Agenda. La vista muestra exclusivamente citas del perfil médico vinculado y
+permite filtrarlas por fecha.
+
+Los usuarios con rol `AGENDADOR` pueden consultar la agenda por profesional y
+fecha. El calendario solo habilita fechas con citas para el profesional
+seleccionado, o fechas con citas de cualquier profesional cuando no hay uno
+seleccionado. Al elegir ambos filtros aparece **Exportar CSV**, que descarga el
+listado de pacientes con fecha, hora, nombre, documento, teléfono y estado; las
+citas canceladas se excluyen del calendario y del archivo.

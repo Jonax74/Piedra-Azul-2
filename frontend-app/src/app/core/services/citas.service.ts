@@ -9,6 +9,11 @@ interface AgendaResponse {
   resultados: Cita[];
 }
 
+interface AgendaDatesResponse {
+  mes: string;
+  fechas: string[];
+}
+
 interface FranjasResponse {
   medico: number;
   fecha: string;
@@ -26,6 +31,29 @@ export class CitasService {
 
   getAgenda(medicoId?: number, fecha?: string) {
     return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
+  }
+
+  getFechasAgenda(mes: string, medicoId?: number) {
+    return this.api.get<AgendaDatesResponse>('/citas/agenda/fechas/', {
+      mes,
+      medico: medicoId,
+    }).pipe(timeout({ first: 12000 }));
+  }
+
+  exportarAgenda(medicoId: number, fecha: string) {
+    return this.api.getBlob('/citas/agenda/exportar/', {
+      medico: medicoId,
+      fecha,
+    }).pipe(timeout({ first: 12000 }));
+  }
+
+  exportarAgendaMedico(fecha: string) {
+    return this.api.getBlob('/citas/medico/agenda/exportar/', { fecha })
+      .pipe(timeout({ first: 12000 }));
+  }
+
+  getAgendaMedico(fecha?: string) {
+    return this.api.get<AgendaResponse>('/citas/medico/agenda/', { fecha }).pipe(timeout({ first: 12000 }));
   }
 
   getFranjasDisponibles(medicoId: number, fecha: string) {

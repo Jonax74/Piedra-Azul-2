@@ -1,50 +1,133 @@
 <div class="page-shell agenda-page container-fluid px-0">
 	<div class="page-heading">
 		<div>
-			<span class="eyebrow">Operación diaria</span>
-			<h2>Agenda de citas</h2>
-			<p>Consulta todas las citas o filtra por profesional y fecha.</p>
+			<span class="eyebrow">{{ isDoctorOnly ? 'Tu consulta' : 'Operación diaria' }}</span>
+			<h2>{{ isDoctorOnly ? 'Mi agenda' : 'Agenda de citas' }}</h2>
+			<p>{{ isDoctorOnly ? 'Consulta tus citas y filtra por fecha.' : 'Consulta todas las citas o filtra por profesional y fecha.' }}</p>
 		</div>
 		<span class="status-pill">{{ selectedDate || 'Todas las fechas' }}</span>
 	</div>
 	<section class="filter-bar surface row g-3">
-		<label class="col-12 col-md">Profesional
-			<select class="form-select" [(ngModel)]="selectedProfessional">
-				<option value="">Todos los profesionales</option>
-				@for (professional of professionals; track professional.persona) {
-					<option [value]="professional.persona">{{ professionalName(professional) }}</option>
+		@if (!isDoctorOnly) {
+			<label class="col-12 col-md">Profesional
+				<select
+					class="form-select"
+					[(ngModel)]="selectedProfessional"
+					(ngModelChange)="onProfessionalChange()"
+				>
+					<option value="">Todos los profesionales</option>
+					@for (professional of professionals; track professional.persona) {
+						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
+					}
+				</select>
+			</label>
+		}
+		@if (isDoctorOnly || isSchedulerOnly) {
+			<div class="doctor-calendar">
+				<button
+					type="button"
+					class="calendar-trigger"
+					(click)="toggleCalendar()"
+					[attr.aria-expanded]="isCalendarOpen"
+					aria-haspopup="true"
+					aria-controls="doctor-calendar-popup"
+				>
+					<span>Fecha</span>
+					<strong>{{ selectedDate || 'Todas las fechas' }}</strong>
+					<span class="calendar-trigger-icon" aria-hidden="true">▾</span>
+				</button>
+				@if (isCalendarOpen) {
+					<section id="doctor-calendar-popup" class="calendar-popup" [attr.aria-label]="isDoctorOnly ? 'Calendario de mis citas' : 'Calendario de citas del profesional'">
+						<div class="calendar-header">
+							<button type="button" class="calendar-nav" (click)="changeCalendarMonth(-1)" aria-label="Mes anterior">‹</button>
+							<strong>{{ calendarMonthLabel() }}</strong>
+							<button type="button" class="calendar-nav" (click)="changeCalendarMonth(1)" aria-label="Mes siguiente">›</button>
+						</div>
+						<div class="calendar-weekdays" aria-hidden="true">
+							<span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+						</div>
+						<div class="calendar-grid" [attr.aria-busy]="isLoadingDates()">
+							@for (day of calendarCells(); track $index) {
+								@if (day) {
+									<button
+										type="button"
+										class="calendar-day"
+										[class.available-day]="day.hasAppointments"
+										[class.selected-day]="selectedDate === day.iso"
+										[disabled]="!day.hasAppointments || isLoadingDates()"
+										[attr.aria-label]="day.hasAppointments ? day.iso + ', tiene citas' : day.iso + ', sin citas'"
+										[attr.aria-pressed]="selectedDate === day.iso"
+										(click)="selectAppointmentDate(day.iso)"
+									>{{ day.number }}</button>
+								} @else {
+									<span class="calendar-empty"></span>
+								}
+							}
+						</div>
+						@if (isLoadingDates()) {
+							<small class="calendar-feedback" role="status">Cargando citas…</small>
+						} @else if (calendarError()) {
+							<small class="calendar-feedback calendar-error" role="alert">{{ calendarError() }}</small>
+						} @else if (isSchedulerOnly) {
+							<small class="calendar-feedback">Elige un día con citas para el filtro actual.</small>
+						} @else {
+							<small class="calendar-feedback">Elige un día marcado para ver tus citas.</small>
+						}
+					</section>
 				}
-			</select>
-		</label>
-		<label class="col-12 col-md">Fecha
-			<input class="form-control" type="date" [(ngModel)]="selectedDate">
-		</label>
-		<div class="col-12 col-md-auto d-flex align-items-end">
-			<button class="primary-button compact btn" type="button" [disabled]="isLoading" (click)="search()">
-				{{ isLoading ? 'Consultando agenda...' : 'Buscar agenda' }}
+			</div>
+		} @else {
+			<label class="col-12 col-md">Fecha
+				<input class="form-control" type="date" [(ngModel)]="selectedDate">
+			</label>
+		}
+		<div class="col-12 col-md-auto d-flex align-items-end gap-2">
+			<button
+				class="primary-button compact btn"
+				type="button"
+				[disabled]="isLoading()"
+				(click)="isDoctorOnly ? clearDoctorDateFilter() : search()"
+			>
+				{{ isLoading() ? 'Consultando agenda...' : (isDoctorOnly ? 'Ver todas' : 'Buscar agenda') }}
 			</button>
+			@if ((isSchedulerOnly && selectedProfessional && selectedDate) || (isDoctorOnly && selectedDate)) {
+				<button
+					class="primary-button compact btn export-button"
+					type="button"
+					[disabled]="isExporting()"
+					(click)="exportAppointments()"
+				>
+					{{ isExporting() ? 'Exportando...' : (isDoctorOnly ? 'Exportar mi agenda' : 'Exportar CSV') }}
+				</button>
+			}
 		</div>
 	</section>
-	@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
+	@if (feedback()) { <p class="feedback-message">{{ feedback() }}</p> }
 	<section class="surface table-section">
 		<div class="section-header">
 			<div><span class="eyebrow">Resultados</span><h3>Listado de citas</h3></div>
-			<strong class="count-badge">{{ appointments.length }} citas</strong>
+			<strong class="count-badge">{{ appointments().length }} citas</strong>
 		</div>
-		@if (appointments.length) {
+		@if (isLoading() && !appointments().length) {
+			<div class="empty-state">
+				<span class="empty-icon">…</span>
+				<strong>Cargando tus citas</strong>
+				<p>Estamos consultando tu agenda.</p>
+			</div>
+		} @else if (appointments().length) {
 			<div class="appointment-rows">
-				<div class="appointment-header" role="row">
+				<div class="appointment-header" [class.doctor-view]="isDoctorOnly" role="row">
 					<span>Fecha</span>
 					<span>Hora</span>
-					<span>Médico</span>
+					@if (!isDoctorOnly) { <span>Médico</span> }
 					<span>Paciente</span>
 					<span>Estado</span>
 				</div>
 				@for (appointment of paginatedAppointments; track appointment.id) {
-					<article class="appointment-row">
+					<article class="appointment-row" [class.doctor-view]="isDoctorOnly">
 						<time>{{ appointment.fecha_hora | date:'dd/MM/yyyy' }}</time>
 						<strong>{{ appointment.fecha_hora | date:'shortTime' }}</strong>
-						<span>{{ professionalNameFromAppointment(appointment) }}</span>
+						@if (!isDoctorOnly) { <span>{{ professionalNameFromAppointment(appointment) }}</span> }
 						<span>{{ patientName(appointment) }}</span>
 						<small>{{ appointment.estado }}</small>
 					</article>
@@ -61,7 +144,7 @@
 			<div class="empty-state">
 				<span class="empty-icon">+</span>
 				<strong>Aún no hay citas para mostrar</strong>
-				<p>Busca sin filtros o combina un profesional y una fecha.</p>
+				<p>{{ isDoctorOnly ? 'No tienes citas en esta fecha.' : 'Busca sin filtros o combina un profesional y una fecha.' }}</p>
 			</div>
 		}
 	</section>

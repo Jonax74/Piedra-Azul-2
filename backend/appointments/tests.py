@@ -1,4 +1,6 @@
+import csv
 from datetime import date
+from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -9,8 +11,12 @@ from appointments.models import Cita, ConfiguracionSistema
 from appointments.serializers import CitaSerializer
 from appointments.views import (
 	AgendaCitasView,
+	AgendaMedicoView,
 	CitaListCreateView,
 	ConfiguracionSistemaView,
+	ExportarAgendaCitasView,
+	ExportarAgendaMedicoView,
+	FechasAgendaCitasView,
 )
 from persons.models import Medico, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
@@ -137,6 +143,117 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["cantidad"], 1)
 
+	def test_scheduler_calendar_dates_filter_by_optional_doctor_and_ignore_cancelled(self):
+		other_persona = Persona.objects.create(
+			primer_nombre="Mario",
+			primer_apellido="Terapista",
+			genero="HOMBRE",
+			fecha_nacimiento=date(1988, 2, 1),
+			telefono="3000000004",
+			dni=90000003,
+		)
+		other_medico = Medico.objects.create(
+			persona=other_persona,
+			tipo_profesional="TERAPISTA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="PROGRAMADA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-07T10:00:00Z",
+			estado="CANCELADA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=other_medico,
+			fecha_hora="2099-01-07T11:00:00Z",
+			estado="CONFIRMADA",
+		)
+		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
+		factory = APIRequestFactory()
+
+		request = factory.get(
+			"/api/citas/agenda/fechas/",
+			{"mes": "2099-01", "medico": self.medico.pk},
+		)
+		force_authenticate(request, user=user)
+		filtered_response = FechasAgendaCitasView.as_view()(request)
+
+		request = factory.get(
+			"/api/citas/agenda/fechas/",
+			{"mes": "2099-01"},
+		)
+		force_authenticate(request, user=user)
+		all_response = FechasAgendaCitasView.as_view()(request)
+
+		self.assertEqual(filtered_response.status_code, 200)
+		self.assertEqual(filtered_response.data["fechas"], ["2099-01-05"])
+		self.assertEqual(all_response.data["fechas"], ["2099-01-05", "2099-01-07"])
+
+	def test_scheduler_can_export_selected_doctor_and_date_as_csv(self):
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T15:00:00Z",
+			estado="CONFIRMADA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T16:00:00Z",
+			estado="CANCELADA",
+		)
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/exportar/",
+			{"medico": self.medico.pk, "fecha": "2099-01-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test"),
+		)
+
+		response = ExportarAgendaCitasView.as_view()(request)
+		rows = list(csv.reader(
+			StringIO(response.content.decode("utf-8-sig")),
+			delimiter=";",
+		))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+		self.assertIn("attachment;", response["Content-Disposition"])
+		self.assertIn("citas-carlos-medico-2099-01-05.csv", response["Content-Disposition"])
+		self.assertEqual(rows[0], ["Citas médico Carlos Medico - fecha 2099-01-05"])
+		self.assertEqual(rows[1], [])
+		self.assertEqual(rows[2], ["Fecha", "Hora", "Paciente", "Documento", "Teléfono", "Estado"])
+		self.assertEqual(len(rows[3]), 6)
+		self.assertIn("Ana Paciente", rows[3])
+		self.assertIn("Confirmada", rows[3])
+
+	def test_scheduler_csv_export_requires_doctor_and_valid_date(self):
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/exportar/",
+			{"medico": self.medico.pk, "fecha": "no-es-fecha"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test"),
+		)
+
+		response = ExportarAgendaCitasView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("YYYY-MM-DD", response.data["detail"])
+
 	def test_patient_sees_appointment_created_by_scheduler(self):
 		scheduler = Usuario.objects.create(
 			username="agendador.test",
@@ -156,6 +273,203 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(len(response.data), 1)
 
+	def test_doctor_sees_only_own_appointments_and_can_filter_by_date(self):
+		other_persona_medico = Persona.objects.create(
+			primer_nombre="Valentina",
+			primer_apellido="Pabon",
+			genero="MUJER",
+			fecha_nacimiento=date(1990, 1, 1),
+			telefono="3000000003",
+			dni=90000002,
+		)
+		other_medico = Medico.objects.create(
+			persona=other_persona_medico,
+			tipo_profesional="MEDICO",
+		)
+		doctor_user = Usuario.objects.create(
+			username="medico.valentina",
+			keycloak_user_id="medico-valentina",
+			persona=other_persona_medico,
+		)
+		doctor_role = Rol.objects.create(nombre="MEDICO")
+		UsuarioRol.objects.create(usuario=doctor_user, rol=doctor_role)
+		own_appointment = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=other_medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T11:00:00Z",
+		)
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/",
+			{"fecha": "2099-01-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(
+				roles=["MEDICO"],
+				user_id="medico-valentina",
+			),
+		)
+
+		response = AgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["cantidad"], 1)
+		self.assertEqual(response.data["resultados"][0]["id"], own_appointment.id)
+
+	def test_doctor_agenda_rejects_invalid_date(self):
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/",
+			{"fecha": "2026-31-12"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["MEDICO"], user_id="medico-valentina"),
+		)
+
+		response = AgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("YYYY-MM-DD", response.data["detail"])
+
+	def test_non_doctor_cannot_access_doctor_agenda(self):
+		request = APIRequestFactory().get("/api/citas/medico/agenda/")
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["PACIENTE"], user_id="paciente-test"),
+		)
+
+		response = AgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 403)
+
+	def test_doctor_without_linked_profile_gets_clear_not_found(self):
+		request = APIRequestFactory().get("/api/citas/medico/agenda/")
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["MEDICO"], user_id="medico-sin-perfil"),
+		)
+
+		response = AgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 404)
+		self.assertIn("vinculada a un perfil médico", response.data["detail"])
+
+	def test_doctor_can_export_only_own_appointments_in_csv(self):
+		doctor_persona = Persona.objects.create(
+			primer_nombre="Valentina",
+			primer_apellido="Pabon",
+			genero="MUJER",
+			fecha_nacimiento=date(1990, 1, 1),
+			telefono="3000000003",
+			dni=90000002,
+		)
+		doctor = Medico.objects.create(
+			persona=doctor_persona,
+			tipo_profesional="MEDICO",
+		)
+		Usuario.objects.create(
+			username="medico.valentina",
+			keycloak_user_id="medico-valentina-export",
+			persona=doctor_persona,
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=doctor,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="PROGRAMADA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=doctor,
+			fecha_hora="2099-01-05T11:00:00Z",
+			estado="CANCELADA",
+		)
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.otro_paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T12:00:00Z",
+			estado="CONFIRMADA",
+		)
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/exportar/",
+			{"fecha": "2099-01-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(
+				roles=["MEDICO"],
+				user_id="medico-valentina-export",
+			),
+		)
+
+		response = ExportarAgendaMedicoView.as_view()(request)
+		rows = list(csv.reader(
+			StringIO(response.content.decode("utf-8-sig")),
+			delimiter=";",
+		))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			response["Content-Disposition"],
+			'attachment; filename="citas-valentina-pabon-2099-01-05.csv"',
+		)
+		self.assertEqual(rows[0], ["Citas médico Valentina Pabon - fecha 2099-01-05"])
+		self.assertEqual(rows[2], ["Fecha", "Hora", "Paciente", "Documento", "Teléfono", "Estado"])
+		self.assertEqual(len(rows), 4)
+		self.assertIn("Ana Paciente", rows[3])
+		self.assertNotIn("Laura Paciente", rows[3])
+
+	def test_doctor_export_requires_linked_profile_and_valid_date(self):
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/exportar/",
+			{"fecha": "2099-13-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["MEDICO"], user_id="doctor-sin-perfil"),
+		)
+
+		response = ExportarAgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("YYYY-MM-DD", response.data["detail"])
+
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/exportar/",
+			{"fecha": "2099-01-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["MEDICO"], user_id="doctor-sin-perfil"),
+		)
+		response = ExportarAgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 404)
+		self.assertIn("vinculada a un perfil médico", response.data["detail"])
+
+	def test_non_doctor_cannot_export_doctor_agenda(self):
+		request = APIRequestFactory().get(
+			"/api/citas/medico/agenda/exportar/",
+			{"fecha": "2099-01-05"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["PACIENTE"], user_id="paciente-test"),
+		)
+
+		response = ExportarAgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 403)
 
 class ConfiguracionSistemaPermissionTests(TestCase):
 	def setUp(self):
