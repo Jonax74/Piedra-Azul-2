@@ -4,9 +4,11 @@ import { roleGuard } from './core/guards/role-guard';
 import { Layout } from './layout/layout';
 import { Login } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
+import { RegistroPaciente } from './pages/registro-paciente/registro-paciente';
 
 export const routes: Routes = [
 	{ path: 'login', component: Login },
+	{ path: 'registro', component: RegistroPaciente },
 	{
 		path: '',
 		component: Layout,

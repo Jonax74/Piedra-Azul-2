@@ -1,0 +1,150 @@
+:root {
+  --piedrazul-ink: #17383b;
+  --piedrazul-teal: #0b8582;
+  --piedrazul-aqua: #a8ded4;
+  --piedrazul-page: #f5f9f8;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--piedrazul-ink);
+  background:
+    radial-gradient(ellipse at 8% 12%, rgba(168, 222, 212, 0.52), transparent 35%),
+    radial-gradient(ellipse at 92% 88%, rgba(11, 133, 130, 0.13), transparent 34%),
+    var(--piedrazul-page);
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+.login-pf-page,
+.pf-v5-c-login {
+  min-height: 100vh;
+  padding: clamp(28px, 7vh, 76px) 20px;
+  background: transparent;
+}
+
+#kc-header,
+.login-pf-page-header {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+#kc-header-wrapper {
+  display: inline-flex;
+  min-height: 76px;
+  align-items: center;
+  padding-left: 82px;
+  color: var(--piedrazul-ink);
+  background: url("../img/icono.png") left center / 70px 70px no-repeat;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.card-pf,
+.pf-v5-c-login__main {
+  overflow: hidden;
+  border: 1px solid #dce9e8;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--piedrazul-teal), var(--piedrazul-aqua)) top / 100% 5px no-repeat, #fff;
+  box-shadow: 0 24px 70px rgba(23, 56, 59, 0.14);
+}
+
+.card-pf {
+  padding: clamp(24px, 5vw, 42px);
+}
+
+#kc-page-title,
+.pf-v5-c-title {
+  color: var(--piedrazul-ink);
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+label,
+.pf-v5-c-form__label-text {
+  color: #557174;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+.pf-v5-c-form-control {
+  min-height: 44px;
+  border: 1px solid #cbdedd;
+  border-radius: 5px;
+  background-color: #fff;
+  color: var(--piedrazul-ink);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+.pf-v5-c-form-control:focus {
+  border-color: var(--piedrazul-teal);
+  box-shadow: 0 0 0 3px rgba(11, 133, 130, 0.14);
+  outline: 0;
+}
+
+button[type="submit"],
+#kc-login,
+.pf-v5-c-button.pf-m-primary,
+.btn-primary {
+  min-height: 46px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--piedrazul-teal);
+  color: #fff;
+  font-weight: 700;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+button[type="submit"]:hover,
+#kc-login:hover,
+.pf-v5-c-button.pf-m-primary:hover,
+.btn-primary:hover {
+  background: #096f6c;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+a,
+.pf-v5-c-login__main a {
+  color: var(--piedrazul-teal);
+}
+
+a:hover,
+.pf-v5-c-login__main a:hover {
+  color: #096f6c;
+}
+
+.alert,
+.pf-v5-c-alert {
+  border-radius: 5px;
+}
+
+@media (max-width: 480px) {
+  .login-pf-page,
+  .pf-v5-c-login {
+    padding: 24px 14px;
+  }
+
+  #kc-header-wrapper {
+    min-height: 64px;
+    padding-left: 68px;
+    background-size: 58px 58px;
+    font-size: 1.15rem;
+  }
+
+  .card-pf {
+    padding: 24px;
+  }
+}

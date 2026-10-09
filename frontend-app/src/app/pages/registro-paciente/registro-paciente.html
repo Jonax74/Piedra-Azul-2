@@ -1,0 +1,106 @@
+<main class="registration-page">
+	<section class="registration-visual">
+		<a class="visual-brand" routerLink="/login" aria-label="Piedrazul, volver al inicio">
+			<span class="brand-mark">P</span><strong>Piedrazul</strong>
+		</a>
+		<div class="visual-copy">
+			<span class="eyebrow">Cuidado que acompaña</span>
+			<h1>Un espacio para cuidar de ti.</h1>
+			<p>Crea tu cuenta y encuentra atención cuando la necesites.</p>
+		</div>
+		<div class="visual-line"></div>
+	</section>
+
+	<section class="registration-panel">
+		<div class="registration-card">
+			<span class="eyebrow">Portal Piedrazul</span>
+			<h2>Crear cuenta</h2>
+			<p class="registration-intro">Completa tus datos para registrarte como paciente.</p>
+			@if (errorMessage) {
+				<div class="registration-error" role="alert">{{ errorMessage }}</div>
+			}
+
+			<form #registrationForm="ngForm" (ngSubmit)="register()">
+				<fieldset [disabled]="isSubmitting">
+						<legend>Datos de acceso</legend>
+						<div class="form-grid">
+							<label class="full-width">Nombre de usuario
+								<input name="username" [(ngModel)]="form.username" (ngModelChange)="clearError()" required maxlength="20" autocomplete="username" />
+								@if (registrationForm.controls['username']?.touched && registrationForm.controls['username']?.errors?.['required']) {
+									<small class="field-error">Escribe un nombre de usuario.</small>
+								}
+								@if (registrationForm.controls['username']?.touched && registrationForm.controls['username']?.errors?.['maxlength']) {
+									<small class="field-error">El nombre de usuario no puede superar 20 caracteres.</small>
+								}
+							</label>
+							<label>Contraseña
+								<input name="password" [(ngModel)]="form.password" (ngModelChange)="clearError()" #passwordInput="ngModel" type="password" required minlength="8" autocomplete="new-password" />
+								@if (passwordInput.touched && passwordInput.errors?.['required']) {
+									<small class="field-error">La contraseña es obligatoria.</small>
+								}
+								@if (passwordInput.touched && passwordInput.errors?.['minlength']) {
+									<small class="field-error">La contraseña debe tener al menos 8 caracteres.</small>
+								}
+							</label>
+							<label>Confirmar contraseña
+								<input name="passwordConfirmation" [(ngModel)]="form.passwordConfirmation" (ngModelChange)="clearError()" #confirmationInput="ngModel" type="password" required minlength="8" autocomplete="new-password" />
+								@if (confirmationInput.touched && confirmationInput.errors?.['required']) {
+									<small class="field-error">Confirma tu contraseña.</small>
+								}
+								@if (confirmationInput.touched && confirmationInput.errors?.['minlength']) {
+									<small class="field-error">La contraseña debe tener al menos 8 caracteres.</small>
+								}
+								@if (form.passwordConfirmation && form.password !== form.passwordConfirmation) {
+									<small class="field-error">Las contraseñas no coinciden.</small>
+								}
+							</label>
+						</div>
+
+						<h3 class="personal-legend">Datos personales</h3>
+						<div class="form-grid">
+							<label>Primer nombre
+								<input name="primer_nombre" [(ngModel)]="form.persona.primer_nombre" required maxlength="50" autocomplete="given-name" />
+							</label>
+							<label>Segundo nombre <span>(opcional)</span>
+								<input name="segundo_nombre" [(ngModel)]="form.persona.segundo_nombre" maxlength="50" />
+							</label>
+							<label>Primer apellido
+								<input name="primer_apellido" [(ngModel)]="form.persona.primer_apellido" required maxlength="50" autocomplete="family-name" />
+							</label>
+							<label>Segundo apellido <span>(opcional)</span>
+								<input name="segundo_apellido" [(ngModel)]="form.persona.segundo_apellido" maxlength="50" />
+							</label>
+							<label>Género
+								<select name="genero" [(ngModel)]="form.persona.genero" required>
+									<option value="" disabled>Selecciona una opción</option>
+									<option value="HOMBRE">Hombre</option>
+									<option value="MUJER">Mujer</option>
+									<option value="OTRO">Otro</option>
+								</select>
+							</label>
+							<label>Número de documento
+								<input name="dni" [(ngModel)]="form.persona.dni" type="number" required min="1" max="2147483647" step="1" inputmode="numeric" />
+							</label>
+							<label>Fecha de nacimiento
+								<input name="fecha_nacimiento" [(ngModel)]="form.persona.fecha_nacimiento" type="date" required [max]="maxBirthDate" autocomplete="bday" />
+							</label>
+							<label>Teléfono
+								<input name="telefono" [(ngModel)]="form.persona.telefono" type="tel" required maxlength="15" autocomplete="tel" />
+							</label>
+							<label class="full-width">Correo electrónico
+								<input name="correo" [(ngModel)]="form.persona.correo" type="email" required maxlength="70" autocomplete="email" />
+							</label>
+						</div>
+				</fieldset>
+				<button class="primary-button submit-button" type="submit" [disabled]="registrationForm.invalid || form.password !== form.passwordConfirmation || isSubmitting">
+					{{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta de paciente' }}
+				</button>
+				@if (isSubmitting) {
+					<p class="submission-status" role="status">Estamos verificando tus datos y creando tu cuenta. Esto puede tardar unos segundos.</p>
+				}
+			</form>
+			<p class="login-prompt">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+		</div>
+		<small class="registration-footer">Piedrazul Clínica de bienestar</small>
+	</section>
+</main>
