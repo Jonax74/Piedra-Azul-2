@@ -5,11 +5,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from appointments.models import Cita, ConfiguracionSistema
+from appointments.services import obtener_fechas_disponibles
 from appointments.serializers import CitaSerializer
+from appointments.states import ESTADOS_CITA, obtener_estado_cita
 from appointments.views import (
 	AgendaCitasView,
 	AgendaMedicoView,
@@ -30,7 +32,59 @@ from persons.models import (
 	Persona,
 )
 from users.models import Rol, Usuario, UsuarioRol
-from appointments.services import obtener_fechas_disponibles
+
+
+class CitaStatePatternTests(SimpleTestCase):
+	def test_each_persisted_status_has_a_concrete_state(self):
+		self.assertEqual(
+			set(ESTADOS_CITA),
+			{estado for estado, _ in Cita.ESTADO_CHOICES},
+		)
+
+	def test_programmed_appointment_can_be_confirmed(self):
+		cita = SimpleNamespace(estado="PROGRAMADA", fecha_hora="original")
+
+		obtener_estado_cita(cita.estado).transicionar(
+			cita,
+			"CONFIRMADA",
+		)
+
+		self.assertEqual(cita.estado, "CONFIRMADA")
+		self.assertEqual(cita.fecha_hora, "original")
+
+	def test_rescheduled_state_requires_a_different_date(self):
+		cita = SimpleNamespace(estado="PROGRAMADA", fecha_hora="original")
+		estado = obtener_estado_cita(cita.estado)
+
+		with self.assertRaises(DjangoValidationError):
+			estado.transicionar(cita, "REAGENDADA")
+		with self.assertRaises(DjangoValidationError):
+			estado.transicionar(cita, "REAGENDADA", "original")
+
+		estado.transicionar(cita, "REAGENDADA", "nueva")
+		self.assertEqual(cita.estado, "REAGENDADA")
+		self.assertEqual(cita.fecha_hora, "nueva")
+
+	def test_attended_appointment_is_terminal(self):
+		cita = SimpleNamespace(estado="ATENDIDA", fecha_hora="original")
+
+		with self.assertRaises(DjangoValidationError):
+			obtener_estado_cita(cita.estado).transicionar(
+				cita,
+				"CANCELADA",
+			)
+
+		self.assertEqual(cita.estado, "ATENDIDA")
+
+	def test_cancelled_appointment_can_be_restored_using_state_transition(self):
+		cita = SimpleNamespace(estado="CANCELADA", fecha_hora="original")
+
+		obtener_estado_cita(cita.estado).transicionar(
+			cita,
+			"CONFIRMADA",
+		)
+
+		self.assertEqual(cita.estado, "CONFIRMADA")
 
 
 class CitaPacienteScopeTests(TestCase):
@@ -265,6 +319,45 @@ class CitaPacienteScopeTests(TestCase):
 
 		self.assertEqual(response.status_code, 400)
 		self.assertIn("fecha_hora", response.data)
+
+	def test_changing_appointment_date_requires_rescheduled_state(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"fecha_hora": "2099-01-06T10:00:00Z"},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("estado", response.data)
+
+	def test_attended_appointment_cannot_be_reopened(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="ATENDIDA",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"estado": "CONFIRMADA"},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("estado", response.data)
 
 	def test_patient_cannot_reschedule_to_the_current_date_or_another_patient(self):
 		cita = Cita.objects.create(

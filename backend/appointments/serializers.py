@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from appointments.models import ESTADOS_OCUPADOS, Cita, ConfiguracionSistema
 from appointments.services import validar_cita_programable
+from appointments.states import obtener_estado_cita
 from persons.models import Paciente
 from users.models import Usuario
 
@@ -145,25 +146,43 @@ class CitaSerializer(serializers.ModelSerializer):
         )
         fecha_hora = attrs.get("fecha_hora")
 
-        if "estado" in attrs and estado == "REAGENDADA":
-            if fecha_hora is None:
-                raise serializers.ValidationError(
-                    {
-                        "fecha_hora": (
-                            "Debe indicar la nueva fecha y hora para "
-                            "reagendar la cita."
-                        ),
-                    },
+        if (
+            self.instance is not None
+            and fecha_hora is not None
+            and fecha_hora != self.instance.fecha_hora
+            and "estado" not in attrs
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": (
+                        "Debe indicar el estado REAGENDADA para cambiar "
+                        "la fecha de una cita."
+                    ),
+                },
+            )
+
+        if self.instance is not None and (
+            "estado" in attrs
+            or (
+                fecha_hora is not None
+                and fecha_hora != self.instance.fecha_hora
+            )
+        ):
+            try:
+                obtener_estado_cita(
+                    self.instance.estado,
+                ).validar_transicion(
+                    cita=self.instance,
+                    nuevo_estado=estado,
+                    fecha_hora=fecha_hora,
                 )
-            if fecha_hora == self.instance.fecha_hora:
-                raise serializers.ValidationError(
-                    {
-                        "fecha_hora": (
-                            "La nueva fecha y hora debe ser diferente "
-                            "a la actual."
-                        ),
-                    },
+            except DjangoValidationError as error:
+                detail = (
+                    error.message_dict
+                    if hasattr(error, "message_dict")
+                    else error.messages
                 )
+                raise serializers.ValidationError(detail) from error
 
         validar_disponibilidad = fecha_hora is not None
         if (
@@ -191,6 +210,25 @@ class CitaSerializer(serializers.ModelSerializer):
                 ) from error
 
         return attrs
+
+    def update(self, instance, validated_data):
+        if "estado" in validated_data:
+            nuevo_estado = validated_data.pop("estado")
+            nueva_fecha_hora = validated_data.pop("fecha_hora", None)
+            try:
+                instance.cambiar_estado(
+                    nuevo_estado=nuevo_estado,
+                    fecha_hora=nueva_fecha_hora,
+                )
+            except DjangoValidationError as error:
+                detail = (
+                    error.message_dict
+                    if hasattr(error, "message_dict")
+                    else error.messages
+                )
+                raise serializers.ValidationError(detail) from error
+
+        return super().update(instance, validated_data)
     
 class FranjaDisponibleSerializer(serializers.Serializer):
     fecha = serializers.DateField()
