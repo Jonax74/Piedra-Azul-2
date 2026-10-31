@@ -8,7 +8,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('appointments', '0003_alter_cita_estado'),
         ('persons', '0001_initial'),
-        ('users', '0003_sync_existing_sequences'),
     ]
 
     operations = [

@@ -70,3 +70,63 @@
 .medicos-page .primary-button {
   min-height: 40px;
 }
+
+.professional-form {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 22px;
+}
+
+.professional-form h3 {
+  margin: 4px 0 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #526b6d;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.form-grid input,
+.form-grid select {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d5e2e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #233b3d;
+  font: inherit;
+}
+
+.professional-details {
+  min-width: 0;
+}
+
+.schedule-summary {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .professional-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .professional-row .row-action {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

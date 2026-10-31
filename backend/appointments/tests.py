@@ -158,6 +158,51 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(serializer.validated_data["paciente"], self.paciente)
 
 	@patch("appointments.serializers.validar_cita_programable")
+	def test_scheduler_can_schedule_for_a_patient(self, validar_cita):
+		scheduler = Usuario.objects.create(
+			username="agendador.test",
+			keycloak_user_id="agendador-test",
+		)
+		rol = Rol.objects.create(nombre="AGENDADOR")
+		UsuarioRol.objects.create(usuario=scheduler, rol=rol)
+		request = SimpleNamespace(
+			user=SimpleNamespace(
+				user_id="agendador-test",
+				roles=["AGENDADOR"],
+				is_authenticated=True,
+			),
+		)
+		serializer = CitaSerializer(
+			data={
+				"paciente": self.paciente.pk,
+				"medico": self.medico.pk,
+				"fecha_hora": "2099-01-05T10:00:00Z",
+			},
+			context={"request": request},
+		)
+
+		self.assertTrue(serializer.is_valid(), serializer.errors)
+		cita = serializer.save()
+
+		self.assertEqual(cita.usuario, scheduler)
+		self.assertEqual(cita.paciente, self.paciente)
+
+	@patch("appointments.serializers.validar_cita_programable")
+	def test_client_cannot_set_initial_appointment_status(self, validar_cita):
+		serializer = CitaSerializer(
+			data={
+				"paciente": self.paciente.pk,
+				"medico": self.medico.pk,
+				"fecha_hora": "2099-01-05T10:00:00Z",
+				"estado": "PROGRAMADA",
+			},
+			context={"request": self.request},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("estado", serializer.errors)
+
+	@patch("appointments.serializers.validar_cita_programable")
 	def test_patient_cannot_schedule_for_another_patient(self, validar_cita):
 		serializer = self.serializer_for(self.otro_paciente)
 
