@@ -5,11 +5,15 @@ from persons.models import Medico, Paciente
 from users.models import Usuario
 
 
+ESTADOS_OCUPADOS = ("PROGRAMADA", "CONFIRMADA", "REAGENDADA")
+
+
 class Cita(models.Model):
     ESTADO_CHOICES = [
         ("PROGRAMADA", "Programada"),
         ("CONFIRMADA", "Confirmada"),
         ("CANCELADA", "Cancelada"),
+        ("REAGENDADA", "Reagendada"),
         ("ATENDIDA", "Atendida"),
         ("NO_ASISTIDA", "No asistida"),
     ]
@@ -58,6 +62,7 @@ class Cita(models.Model):
             models.UniqueConstraint(
                 fields=["medico", "fecha_hora"],
                 name="uq_cita_medico_fecha_hora",
+                condition=models.Q(estado__in=ESTADOS_OCUPADOS),
             ),
         ]
         indexes = [

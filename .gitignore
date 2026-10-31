@@ -70,6 +70,8 @@ backend/.env.*
 backend/**/migrations/__pycache__/
 backend/**/migrations/*.py
 !backend/**/migrations/__init__.py
+!backend/appointments/migrations/0003_alter_cita_estado.py
+!backend/appointments/migrations/0004_remove_cita_uq_cita_medico_fecha_hora_and_more.py
 backend/staticfiles/
 backend/media/
 backend/uploads/

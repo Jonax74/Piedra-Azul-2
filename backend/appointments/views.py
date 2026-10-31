@@ -17,7 +17,10 @@ from appointments.serializers import (
     ConfiguracionSistemaSerializer,
     FranjaDisponibleSerializer,
 )
-from appointments.services import obtener_franjas_disponibles
+from appointments.services import (
+    obtener_fechas_disponibles,
+    obtener_franjas_disponibles,
+)
 from config.security.permissions import (
     IsAdminRole,
     IsAgendadorDoctorOrAdmin,
@@ -162,6 +165,21 @@ class CitaDetailView(generics.RetrieveUpdateDestroyAPIView):
     )
     serializer_class = CitaSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        roles = set(getattr(self.request.user, "roles", []))
+
+        if "PACIENTE" in roles and not roles.intersection(
+            {"ADMIN", "AGENDADOR", "MEDICO"},
+        ):
+            return queryset.filter(
+                paciente__persona__usuario__keycloak_user_id=(
+                    self.request.user.user_id
+                ),
+            )
+
+        return queryset
 
 class AgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
@@ -577,4 +595,45 @@ class FranjasDisponiblesView(APIView):
                 "cantidad": len(franjas),
                 "franjas": serializer.data,
             },
-        )    
+        )
+
+
+class FechasDisponiblesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        medico_id = request.query_params.get("medico")
+        mes_texto = request.query_params.get("mes")
+
+        if not medico_id or not mes_texto:
+            return Response(
+                {"detail": "Los parámetros medico y mes son obligatorios."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            medico_id = int(medico_id)
+            mes = datetime.strptime(mes_texto, "%Y-%m").date()
+        except ValueError:
+            return Response(
+                {"detail": "medico debe ser numérico y mes debe usar YYYY-MM."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not Medico.objects.filter(
+            pk=medico_id,
+            estado="ACTIVO",
+        ).exists():
+            return Response(
+                {"detail": "El médico no existe o está inactivo."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        fechas = obtener_fechas_disponibles(medico_id, mes)
+        return Response(
+            {
+                "medico": medico_id,
+                "mes": mes.strftime("%Y-%m"),
+                "fechas": fechas,
+            },
+        )

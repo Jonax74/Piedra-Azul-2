@@ -7,6 +7,7 @@ from appointments.views import (
     CitaListCreateView,
     ExportarAgendaCitasView,
     ExportarAgendaMedicoView,
+    FechasDisponiblesView,
     FechasAgendaCitasView,
     FranjasDisponiblesView,
     ConfiguracionSistemaView,
@@ -48,6 +49,11 @@ urlpatterns = [
         "citas/medico/agenda/exportar/",
         ExportarAgendaMedicoView.as_view(),
         name="cita-agenda-medico-exportar",
+    ),
+    path(
+        "citas/disponibles/fechas/",
+        FechasDisponiblesView.as_view(),
+        name="cita-fechas-disponibles",
     ),
     path(
         "citas/disponibles/",

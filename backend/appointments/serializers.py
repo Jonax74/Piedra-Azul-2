@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
-from appointments.models import Cita, ConfiguracionSistema
+from appointments.models import ESTADOS_OCUPADOS, Cita, ConfiguracionSistema
 from appointments.services import validar_cita_programable
 from persons.models import Paciente
 from users.models import Usuario
@@ -28,7 +28,6 @@ class CitaSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "usuario",
-            "estado",
         ]
 
     def get_paciente_detalle(self, cita):
@@ -125,24 +124,72 @@ class CitaSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         usuario = self._usuario_autenticado()
-        self._validar_alcance_del_paciente(
-            paciente=attrs["paciente"],
-            usuario=usuario,
+        paciente = attrs.get(
+            "paciente",
+            self.instance.paciente if self.instance else None,
         )
-
-        medico = attrs["medico"]
-        fecha_hora = attrs["fecha_hora"]
-    
-        try:
-            validar_cita_programable(
-                medico_id=medico.pk,
-                fecha_hora=fecha_hora,
+        if paciente is not None:
+            self._validar_alcance_del_paciente(
+                paciente=paciente,
+                usuario=usuario,
             )
-        except DjangoValidationError as error:
+
+        if self.instance is None and "estado" in self.initial_data:
             raise serializers.ValidationError(
-                error.messages,
-            ) from error
-    
+                {"estado": "El estado inicial de una cita es PROGRAMADA."},
+            )
+
+        estado = attrs.get(
+            "estado",
+            self.instance.estado if self.instance else "PROGRAMADA",
+        )
+        fecha_hora = attrs.get("fecha_hora")
+
+        if "estado" in attrs and estado == "REAGENDADA":
+            if fecha_hora is None:
+                raise serializers.ValidationError(
+                    {
+                        "fecha_hora": (
+                            "Debe indicar la nueva fecha y hora para "
+                            "reagendar la cita."
+                        ),
+                    },
+                )
+            if fecha_hora == self.instance.fecha_hora:
+                raise serializers.ValidationError(
+                    {
+                        "fecha_hora": (
+                            "La nueva fecha y hora debe ser diferente "
+                            "a la actual."
+                        ),
+                    },
+                )
+
+        validar_disponibilidad = fecha_hora is not None
+        if (
+            self.instance is not None
+            and estado in ESTADOS_OCUPADOS
+            and self.instance.estado not in ESTADOS_OCUPADOS
+        ):
+            validar_disponibilidad = True
+
+        if validar_disponibilidad:
+            medico = attrs.get(
+                "medico",
+                self.instance.medico if self.instance else None,
+            )
+            fecha_hora = fecha_hora or self.instance.fecha_hora
+            try:
+                validar_cita_programable(
+                    medico_id=medico.pk,
+                    fecha_hora=fecha_hora,
+                    cita_id=self.instance.pk if self.instance else None,
+                )
+            except DjangoValidationError as error:
+                raise serializers.ValidationError(
+                    error.messages,
+                ) from error
+
         return attrs
     
 class FranjaDisponibleSerializer(serializers.Serializer):

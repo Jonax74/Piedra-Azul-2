@@ -14,6 +14,12 @@ interface AgendaDatesResponse {
   fechas: string[];
 }
 
+interface AvailableDatesResponse {
+  medico: number;
+  mes: string;
+  fechas: string[];
+}
+
 export interface HistorialPacienteResponse {
   paciente: {
     nombre: string;
@@ -84,6 +90,13 @@ export class CitasService {
     return this.api.get<FranjasResponse>('/citas/disponibles/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
   }
 
+  getFechasDisponibles(medicoId: number, mes: string) {
+    return this.api.get<AvailableDatesResponse>('/citas/disponibles/fechas/', {
+      medico: medicoId,
+      mes,
+    }).pipe(timeout({ first: 12000 }));
+  }
+
   getCitas() {
     return this.api.get<Cita[]>('/citas/');
   }
@@ -94,5 +107,9 @@ export class CitasService {
 
   actualizarCita(id: number, payload: Partial<Cita>) {
     return this.api.put<Cita>(`/citas/${id}/`, payload);
+  }
+
+  actualizarEstadoCita(id: number, payload: Pick<Cita, 'estado'> & Partial<Pick<Cita, 'fecha_hora'>>) {
+    return this.api.patch<Cita>(`/citas/${id}/`, payload);
   }
 }

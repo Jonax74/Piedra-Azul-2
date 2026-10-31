@@ -155,17 +155,11 @@
 
 .agenda-page .appointment-row {
   display: grid;
-  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) minmax(160px, 1.2fr) auto;
   align-items: center;
-}
-
-.agenda-page .appointment-row.doctor-view {
-  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) auto;
 }
 
 .agenda-page .appointment-header {
   display: grid;
-  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) minmax(160px, 1.2fr) auto;
   gap: 18px;
   padding: 0 0 10px;
   color: #718a8a;
@@ -175,8 +169,18 @@
   text-transform: uppercase;
 }
 
+.agenda-page .appointment-row,
+.agenda-page .appointment-header {
+  grid-template-columns: minmax(90px, .75fr) minmax(75px, .6fr) repeat(2, minmax(120px, 1fr)) 100px 120px;
+}
+
+.agenda-page .appointment-row.doctor-view,
 .agenda-page .appointment-header.doctor-view {
-  grid-template-columns: minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(160px, 1.2fr) auto;
+  grid-template-columns: minmax(90px, .75fr) minmax(75px, .6fr) minmax(120px, 1fr) 100px 120px;
+}
+
+.agenda-page .appointment-row > app-appointment-actions {
+  justify-self: end;
 }
 
 .agenda-page .appointment-row time {
@@ -238,5 +242,9 @@
 
   .agenda-page .appointment-row small {
     justify-self: start;
+  }
+
+  .agenda-page .appointment-row > app-appointment-actions {
+    grid-column: 1 / -1;
   }
 }

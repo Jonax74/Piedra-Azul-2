@@ -96,4 +96,45 @@ describe('CitasService', () => {
 		});
 	});
 
+	it('updates appointment status and schedule with PATCH', () => {
+		service.actualizarEstadoCita(14, {
+			estado: 'REAGENDADA',
+			fecha_hora: '2026-10-12T10:00:00-05:00',
+		}).subscribe((appointment) => {
+			expect(appointment.estado).toBe('REAGENDADA');
+		});
+
+		const request = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/14/`,
+		);
+		expect(request.request.method).toBe('PATCH');
+		expect(request.request.body).toEqual({
+			estado: 'REAGENDADA',
+			fecha_hora: '2026-10-12T10:00:00-05:00',
+		});
+		request.flush({
+			id: 14,
+			paciente: 8,
+			medico: 4,
+			fecha_hora: '2026-10-12T10:00:00-05:00',
+			estado: 'REAGENDADA',
+		});
+	});
+
+	it('requests only dates with available slots for a professional', () => {
+		service.getFechasDisponibles(14, '2026-10').subscribe((response) => {
+			expect(response.fechas).toEqual(['2026-10-12']);
+		});
+
+		const request = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/disponibles/fechas/?medico=14&mes=2026-10`,
+		);
+		expect(request.request.method).toBe('GET');
+		request.flush({
+			medico: 14,
+			mes: '2026-10',
+			fechas: ['2026-10-12'],
+		});
+	});
+
 });

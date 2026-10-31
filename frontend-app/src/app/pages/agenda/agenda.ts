@@ -8,9 +8,10 @@ import { Cita } from '../../shared/models/cita.model';
 import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
 import { PersonasService } from '../../core/services/personas.service';
+import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 
 @Component({
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, AppointmentActions],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',
@@ -372,6 +373,38 @@ export class Agenda {
     return persona
       ? `${persona.primer_nombre} ${persona.primer_apellido}`
       : `Profesional #${appointment.medico}`;
+  }
+
+  updateAppointment(updated: Cita): void {
+    this.doctorAppointments = this.doctorAppointments.map((appointment) =>
+      appointment.id === updated.id ? updated : appointment,
+    );
+    this.doctorAppointments.sort((a, b) =>
+      new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime(),
+    );
+
+    if (this.isDoctorOnly) {
+      this.search();
+      return;
+    }
+
+    const updatedAppointments = this.appointments()
+      .map((appointment) => appointment.id === updated.id ? updated : appointment)
+      .filter((appointment) =>
+        !this.selectedDate
+        || appointment.fecha_hora.slice(0, 10) === this.selectedDate,
+      )
+      .sort((a, b) =>
+        new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime(),
+      );
+    this.appointments.set(updatedAppointments);
+    const updatedIndex = updatedAppointments.findIndex(
+      (appointment) => appointment.id === updated.id,
+    );
+    this.currentPage = updatedIndex >= 0
+      ? Math.floor(updatedIndex / this.pageSize) + 1
+      : Math.min(this.currentPage, this.totalPages);
+    this.changeDetector.markForCheck();
   }
 
   previousPage(): void {

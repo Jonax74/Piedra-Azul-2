@@ -132,6 +132,7 @@
 					@if (!isDoctorOnly) { <span>Médico</span> }
 					<span>Paciente</span>
 					<span>Estado</span>
+					<span>Acciones</span>
 				</div>
 				@for (appointment of paginatedAppointments; track appointment.id) {
 					<article class="appointment-row" [class.doctor-view]="isDoctorOnly">
@@ -139,7 +140,11 @@
 						<strong>{{ appointment.fecha_hora | date:'shortTime' }}</strong>
 						@if (!isDoctorOnly) { <span>{{ professionalNameFromAppointment(appointment) }}</span> }
 						<span>{{ patientName(appointment) }}</span>
-						<small>{{ appointment.estado }}</small>
+						<span class="status-pill">{{ appointment.estado }}</span>
+						<app-appointment-actions
+							[cita]="appointment"
+							(citaActualizada)="updateAppointment($event)"
+						/>
 					</article>
 				}
 			</div>
