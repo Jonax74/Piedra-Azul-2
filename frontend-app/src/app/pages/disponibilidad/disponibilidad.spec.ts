@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { provideRouter } from '@angular/router';
 import { Disponibilidad } from './disponibilidad';
 import { DisponibilidadService } from '../../core/services/disponibilidad.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -28,6 +29,7 @@ describe('Disponibilidad', () => {
         { provide: DisponibilidadService, useValue: disponibilidadService },
         { provide: MedicosService, useValue: { getMedicos: () => of([]) } },
         { provide: PersonasService, useValue: { getPersonas: () => of([]) } },
+        provideRouter([]),
       ],
     }).compileComponents();
 

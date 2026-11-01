@@ -1,13 +1,16 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from appointments.models import Cita, ConfiguracionSistema, Festivo
+from appointments.models import (
+    ESTADOS_OCUPADOS,
+    Cita,
+    ConfiguracionSistema,
+    Festivo,
+)
 from persons.models import MedicoDisponibilidad
 
-
-ESTADOS_OCUPADOS = ["PROGRAMADA", "CONFIRMADA"]
 
 DIAS_SEMANA = [
     "LUNES",
@@ -76,6 +79,97 @@ def obtener_franjas_disponibles(medico_id, fecha):
             hora_actual = siguiente.time()
 
     return franjas
+
+
+def obtener_fechas_disponibles(medico_id: int, mes: date) -> list[str]:
+    inicio = mes.replace(day=1)
+    if mes.month == 12:
+        fin = mes.replace(year=mes.year + 1, month=1, day=1)
+    else:
+        fin = mes.replace(month=mes.month + 1, day=1)
+
+    ahora = timezone.now()
+    ahora_local = timezone.localtime(ahora)
+    configuracion = (
+        ConfiguracionSistema.objects
+        .filter(activo=True)
+        .order_by("-actualizado_en")
+        .first()
+    )
+    limite = (
+        ahora + timedelta(weeks=configuracion.semanas_agendamiento)
+        if configuracion is not None
+        else None
+    )
+
+    disponibilidades_por_dia = {}
+    relaciones = (
+        MedicoDisponibilidad.objects
+        .select_related("disponibilidad")
+        .filter(medico_id=medico_id)
+        .order_by("disponibilidad__hora_inicio")
+    )
+    for relacion in relaciones:
+        dia = relacion.disponibilidad.dia_semana
+        disponibilidades_por_dia.setdefault(dia, []).append(
+            relacion.disponibilidad,
+        )
+
+    festivos = set(
+        Festivo.objects
+        .filter(fecha__gte=inicio, fecha__lt=fin)
+        .values_list("fecha", flat=True)
+    )
+    fecha_inicio_local = timezone.make_aware(
+        datetime.combine(inicio, datetime.min.time()),
+        timezone.get_current_timezone(),
+    )
+    fecha_fin_local = timezone.make_aware(
+        datetime.combine(fin, datetime.min.time()),
+        timezone.get_current_timezone(),
+    )
+    ocupadas = {
+        timezone.localtime(fecha_hora)
+        for fecha_hora in Cita.objects.filter(
+            medico_id=medico_id,
+            fecha_hora__gte=fecha_inicio_local,
+            fecha_hora__lt=fecha_fin_local,
+            estado__in=ESTADOS_OCUPADOS,
+        ).values_list("fecha_hora", flat=True)
+    }
+
+    fechas_disponibles = []
+    fecha_actual = inicio
+    while fecha_actual < fin:
+        dia_semana = DIAS_SEMANA[fecha_actual.weekday()]
+        horarios = disponibilidades_por_dia.get(dia_semana, [])
+        if fecha_actual not in festivos and horarios:
+            hay_fecha_disponible = False
+            for disponibilidad in horarios:
+                hora_actual = disponibilidad.hora_inicio
+                while hora_actual < disponibilidad.hora_fin:
+                    fecha_hora = timezone.make_aware(
+                        datetime.combine(fecha_actual, hora_actual),
+                        timezone.get_current_timezone(),
+                    )
+                    if (
+                        fecha_hora > ahora_local
+                        and (limite is None or fecha_hora <= limite)
+                        and fecha_hora not in ocupadas
+                    ):
+                        hay_fecha_disponible = True
+                        break
+                    hora_actual = (
+                        datetime.combine(fecha_actual, hora_actual)
+                        + timedelta(minutes=disponibilidad.intervalo)
+                    ).time()
+                if hay_fecha_disponible:
+                    break
+            if hay_fecha_disponible:
+                fechas_disponibles.append(fecha_actual.isoformat())
+        fecha_actual += timedelta(days=1)
+
+    return fechas_disponibles
 
 
 def fecha_dentro_de_ventana(fecha_hora):

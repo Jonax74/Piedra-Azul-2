@@ -1,16 +1,19 @@
 import { Component, inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/services/auth';
 
 @Component({
-  imports: [],
+  imports: [RouterLink],
   selector: 'app-login',
   styleUrl: './login.scss',
   templateUrl: './login.html',
 })
 export class Login {
   readonly auth = inject(Auth);
-  readonly returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+  private readonly route = inject(ActivatedRoute);
+  readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+  readonly registeredUsername = this.route.snapshot.queryParamMap.get('usuario');
+  readonly registrationSuccess = this.route.snapshot.queryParamMap.get('registro') === 'exitoso';
   readonly router = inject(Router);
   isLoading = false;
   errorMessage = '';

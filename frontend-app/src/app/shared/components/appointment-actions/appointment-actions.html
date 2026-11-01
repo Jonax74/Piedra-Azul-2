@@ -1,0 +1,148 @@
+@if (canEdit) {
+  <div class="appointment-actions" role="group" aria-label="Acciones de la cita">
+    @if (cita.estado !== 'CONFIRMADA') {
+      <button
+        class="icon-action confirm-action"
+        type="button"
+        aria-label="Confirmar cita"
+        title="Confirmar cita"
+        [disabled]="isSaving || cita.id === undefined"
+        (click)="openStatusConfirmation('CONFIRMADA')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      </button>
+    }
+    <button
+      class="icon-action reschedule-action"
+      type="button"
+      aria-label="Reagendar cita"
+      title="Reagendar cita"
+      [disabled]="isSaving || cita.id === undefined"
+      (click)="openReschedule()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z" /></svg>
+    </button>
+    <button
+      class="icon-action cancel-action"
+      type="button"
+      aria-label="Cancelar cita"
+      title="Cancelar cita"
+      [disabled]="isSaving || cita.id === undefined"
+      (click)="openStatusConfirmation('CANCELADA')"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+    </button>
+  </div>
+}
+
+@if (pendingStatus || isRescheduleOpen) {
+  <div class="action-backdrop" role="presentation" (click)="closeDialog()">
+    <section
+      class="action-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="isRescheduleOpen ? 'reschedule-title' : 'status-title'"
+      (click)="$event.stopPropagation()"
+    >
+      @if (isRescheduleOpen) {
+        <span class="eyebrow">Cambio de horario</span>
+        <h3 id="reschedule-title">Reagendar cita</h3>
+        <p>Elige una fecha con horarios disponibles. Al seleccionarla, cargaremos sus turnos.</p>
+        <div class="calendar-field">
+          <div class="calendar-label">
+            <span>Nueva fecha</span>
+            <small>{{ selectedDate || 'Selecciona un día disponible' }}</small>
+          </div>
+          <div class="calendar-header">
+            <button type="button" class="calendar-nav" [disabled]="!canPreviousMonth()" (click)="changeCalendarMonth(-1)" aria-label="Mes anterior">‹</button>
+            <strong>{{ calendarMonthLabel() }}</strong>
+            <button type="button" class="calendar-nav" [disabled]="!canNextMonth()" (click)="changeCalendarMonth(1)" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div class="calendar-grid" [attr.aria-busy]="isLoadingDates">
+            @for (day of calendarCells(); track $index) {
+              @if (day) {
+                <button
+                  type="button"
+                  class="calendar-day"
+                  [class.available-day]="isDateAvailable(day.iso)"
+                  [class.selected-day]="selectedDate === day.iso"
+                  [disabled]="!isDateAvailable(day.iso) || isLoadingDates || isLoadingSlots || isSaving"
+                  [attr.aria-label]="isDateAvailable(day.iso) ? day.iso + ', tiene horarios disponibles' : day.iso + ', sin horarios disponibles'"
+                  [attr.aria-pressed]="selectedDate === day.iso"
+                  (click)="selectDate(day.iso)"
+                >{{ day.number }}</button>
+              } @else {
+                <span class="calendar-empty"></span>
+              }
+            }
+          </div>
+          @if (isLoadingDates) {
+            <small class="calendar-feedback" role="status">Buscando días con turnos…</small>
+          } @else if (calendarError) {
+            <small class="calendar-feedback calendar-error" role="alert">{{ calendarError }}</small>
+          } @else if (availableDates.size === 0) {
+            <small class="calendar-feedback">No hay horarios libres para este profesional este mes.</small>
+          } @else {
+            <small class="calendar-feedback">Solo se marcan los días con horarios libres.</small>
+          }
+        </div>
+        <div class="reschedule-slots">
+          <strong>Horarios disponibles</strong>
+          @if (isLoadingSlots) {
+            <p class="slot-feedback" role="status">Cargando horarios para {{ selectedDate }}…</p>
+          } @else if (selectedDate && slots.length) {
+            <div class="slot-options" aria-label="Horarios disponibles">
+              @for (slot of slots; track slot.fecha_hora) {
+                <button
+                  type="button"
+                  [class.selected-slot]="selectedSlot === slot.fecha_hora"
+                  [disabled]="isSaving"
+                  (click)="selectedSlot = slot.fecha_hora"
+                >{{ slot.hora }}</button>
+              }
+            </div>
+          } @else if (selectedDate) {
+            <p class="slot-feedback">{{ feedback || 'No hay horarios disponibles para esta fecha.' }}</p>
+          } @else {
+            <p class="slot-feedback">Selecciona un día marcado para ver sus horarios.</p>
+          }
+        </div>
+      } @else {
+        <span class="eyebrow">Actualizar cita</span>
+        <h3 id="status-title">{{ pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Cancelar cita' }}</h3>
+        <p>
+          {{ pendingStatus === 'CONFIRMADA'
+            ? 'La cita quedará confirmada. ¿Deseas continuar?'
+            : 'Esta acción liberará el horario para otras personas. ¿Deseas cancelar la cita?' }}
+        </p>
+      }
+
+      @if (feedback) {
+        <p class="action-feedback" role="alert">{{ feedback }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" [disabled]="isSaving" (click)="closeDialog()">Volver</button>
+        @if (isRescheduleOpen) {
+          <button
+            class="primary-button"
+            type="button"
+            [disabled]="isSaving || isLoadingSlots || !selectedSlot"
+            (click)="reschedule()"
+          >{{ isSaving ? 'Reagendando…' : 'Guardar horario' }}</button>
+        } @else {
+          <button
+            class="primary-button"
+            [class.danger-button]="pendingStatus === 'CANCELADA'"
+            type="button"
+            [disabled]="isSaving"
+            (click)="confirmStatusChange()"
+          >{{ isSaving ? 'Guardando…' : (pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Sí, cancelar') }}</button>
+        }
+      </div>
+    </section>
+  </div>
+}

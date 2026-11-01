@@ -2,10 +2,16 @@ from django.urls import path
 
 from appointments.views import (
     AgendaCitasView,
+    AgendaMedicoView,
     CitaDetailView,
     CitaListCreateView,
+    ExportarAgendaCitasView,
+    ExportarAgendaMedicoView,
+    FechasDisponiblesView,
+    FechasAgendaCitasView,
     FranjasDisponiblesView,
     ConfiguracionSistemaView,
+    HistorialPacienteView,
 )
 
 urlpatterns = [
@@ -18,6 +24,36 @@ urlpatterns = [
         "citas/agenda/",
         AgendaCitasView.as_view(),
         name="cita-agenda",
+    ),
+    path(
+        "citas/agenda/paciente/",
+        HistorialPacienteView.as_view(),
+        name="cita-agenda-paciente",
+    ),
+    path(
+        "citas/agenda/fechas/",
+        FechasAgendaCitasView.as_view(),
+        name="cita-agenda-fechas",
+    ),
+    path(
+        "citas/agenda/exportar/",
+        ExportarAgendaCitasView.as_view(),
+        name="cita-agenda-exportar",
+    ),
+    path(
+        "citas/medico/agenda/",
+        AgendaMedicoView.as_view(),
+        name="cita-agenda-medico",
+    ),
+    path(
+        "citas/medico/agenda/exportar/",
+        ExportarAgendaMedicoView.as_view(),
+        name="cita-agenda-medico-exportar",
+    ),
+    path(
+        "citas/disponibles/fechas/",
+        FechasDisponiblesView.as_view(),
+        name="cita-fechas-disponibles",
     ),
     path(
         "citas/disponibles/",

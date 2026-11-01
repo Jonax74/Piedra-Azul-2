@@ -1,8 +1,12 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from appointments.states import obtener_estado_cita
 from persons.models import Medico, Paciente
 from users.models import Usuario
+
+
+ESTADOS_OCUPADOS = ("PROGRAMADA", "CONFIRMADA", "REAGENDADA")
 
 
 class Cita(models.Model):
@@ -10,6 +14,7 @@ class Cita(models.Model):
         ("PROGRAMADA", "Programada"),
         ("CONFIRMADA", "Confirmada"),
         ("CANCELADA", "Cancelada"),
+        ("REAGENDADA", "Reagendada"),
         ("ATENDIDA", "Atendida"),
         ("NO_ASISTIDA", "No asistida"),
     ]
@@ -58,6 +63,7 @@ class Cita(models.Model):
             models.UniqueConstraint(
                 fields=["medico", "fecha_hora"],
                 name="uq_cita_medico_fecha_hora",
+                condition=models.Q(estado__in=ESTADOS_OCUPADOS),
             ),
         ]
         indexes = [
@@ -73,6 +79,17 @@ class Cita(models.Model):
 
     def __str__(self):
         return f"Cita {self.id} - {self.fecha_hora}"
+
+    @property
+    def estado_actual(self):
+        return obtener_estado_cita(self.estado)
+
+    def cambiar_estado(self, nuevo_estado, fecha_hora=None):
+        self.estado_actual.transicionar(
+            cita=self,
+            nuevo_estado=nuevo_estado,
+            fecha_hora=fecha_hora,
+        )
 
 
 class HistoriaClinica(models.Model):

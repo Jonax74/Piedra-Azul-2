@@ -23,7 +23,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: piedra-azul-keycloak
-    command: start-dev
+    command: start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
     restart: unless-stopped
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
@@ -36,6 +36,8 @@ services:
       KC_HOSTNAME: localhost
     ports:
       - "${KEYCLOAK_PORT}:8080"
+    volumes:
+      - ./docker/keycloak/themes:/opt/keycloak/themes:ro
     depends_on:
       postgres:
         condition: service_healthy

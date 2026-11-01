@@ -16,7 +16,7 @@ export class Layout {
     { label: 'Resumen', path: '/dashboard', roles: [] },
     { label: 'Agendar cita', path: '/agendar-cita', roles: ['PACIENTE', 'AGENDADOR'] },
     { label: 'Mis citas', path: '/mis-citas', roles: ['PACIENTE'] },
-    { label: 'Agenda', path: '/agenda', roles: ['ADMIN', 'AGENDADOR'] },
+    { label: 'Agenda', path: '/agenda', roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] },
     { label: 'Médicos', path: '/medicos', roles: ['ADMIN'] },
     { label: 'Disponibilidad', path: '/disponibilidad', roles: ['ADMIN', 'MEDICO'] },
     { label: 'Configuración', path: '/configuracion', roles: ['ADMIN'] },

@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-from config.api_views import MeView, ProfileView
+from config.api_views import MeView, ProfileView, RegistroPacienteView
 
 
 
@@ -25,6 +25,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/me/", MeView.as_view()),
     path("api/me/profile/", ProfileView.as_view()),
+    path("api/registro/", RegistroPacienteView.as_view()),
     path("api/", include("persons.urls")),
     path("api/", include("appointments.urls")),
 ]

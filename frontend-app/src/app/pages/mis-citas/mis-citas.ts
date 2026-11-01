@@ -4,9 +4,10 @@ import { RouterLink } from '@angular/router';
 import { inject } from '@angular/core';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
+import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 
 @Component({
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, AppointmentActions],
   selector: 'app-mis-citas',
   styleUrl: './mis-citas.scss',
   templateUrl: './mis-citas.html',
@@ -40,7 +41,11 @@ export class MisCitas {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.citasService.getCitas().subscribe({
-      next: (items) => { this.appointments = items; this.currentPage = 1; this.changeDetector.markForCheck(); },
+      next: (items) => {
+        this.appointments = this.sortAppointments(items);
+        this.currentPage = 1;
+        this.changeDetector.markForCheck();
+      },
       error: () => { this.feedback = 'No fue posible cargar tus citas.'; this.changeDetector.markForCheck(); },
     });
   }
@@ -51,5 +56,26 @@ export class MisCitas {
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) this.currentPage += 1;
+  }
+
+  updateAppointment(updated: Cita): void {
+    this.appointments = this.sortAppointments(
+      this.appointments.map((appointment) =>
+        appointment.id === updated.id ? updated : appointment,
+      ),
+    );
+    const updatedIndex = this.appointments.findIndex(
+      (appointment) => appointment.id === updated.id,
+    );
+    if (updatedIndex >= 0) {
+      this.currentPage = Math.floor(updatedIndex / this.pageSize) + 1;
+    }
+    this.changeDetector.markForCheck();
+  }
+
+  private sortAppointments(appointments: Cita[]): Cita[] {
+    return [...appointments].sort((a, b) =>
+      new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime(),
+    );
   }
 }

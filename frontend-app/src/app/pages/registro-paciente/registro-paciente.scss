@@ -1,0 +1,264 @@
+.registration-page {
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: minmax(300px, .8fr) minmax(520px, 1.2fr);
+	background: var(--page-bg);
+}
+
+.registration-visual {
+	position: sticky;
+	top: 0;
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 44px clamp(28px, 6vw, 78px);
+	overflow: hidden;
+	background: var(--ink);
+	color: white;
+}
+
+.registration-visual::after {
+	position: absolute;
+	right: -100px;
+	bottom: -140px;
+	width: 430px;
+	height: 430px;
+	border: 1px solid rgba(151, 220, 207, .32);
+	border-radius: 50%;
+	box-shadow: 0 0 0 38px rgba(151, 220, 207, .08), 0 0 0 78px rgba(151, 220, 207, .05);
+	content: '';
+}
+
+.visual-brand {
+	position: relative;
+	z-index: 1;
+	display: inline-flex;
+	width: fit-content;
+	align-items: center;
+	gap: 12px;
+	color: white;
+	font-size: 1.15rem;
+	text-decoration: none;
+}
+
+.brand-logo { width: 44px; height: 44px; flex: 0 0 auto; object-fit: contain; }
+
+.visual-copy {
+	position: relative;
+	z-index: 1;
+	max-width: 440px;
+	margin: auto 0;
+}
+
+.visual-copy h1 {
+	margin: 20px 0 18px;
+	font-family: var(--display-font);
+	font-size: clamp(2.6rem, 4.2vw, 4rem);
+	font-weight: 400;
+	line-height: 1;
+	letter-spacing: -.04em;
+}
+
+.visual-copy p {
+	max-width: 330px;
+	color: #bad0d0;
+	line-height: 1.7;
+}
+
+.visual-line {
+	width: 70px;
+	height: 3px;
+	background: var(--aqua);
+}
+
+.registration-panel {
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 36px clamp(20px, 5vw, 64px);
+}
+
+.registration-card {
+	width: min(100%, 760px);
+	padding: clamp(24px, 4vw, 46px);
+	border: 1px solid #dce9e8;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, .88);
+	box-shadow: 0 18px 45px rgba(25, 67, 69, .055);
+}
+
+.registration-card h2 {
+	margin: 12px 0 7px;
+	color: var(--ink);
+	font-family: var(--display-font);
+	font-size: 2.35rem;
+	font-weight: 400;
+	letter-spacing: -.04em;
+}
+
+.registration-intro {
+	margin: 0 0 27px;
+	color: #60787a;
+	line-height: 1.6;
+}
+
+.registration-card fieldset {
+	min-width: 0;
+	padding: 0;
+	border: 0;
+}
+
+.registration-card legend,
+.registration-card .personal-legend {
+	width: 100%;
+	margin-bottom: 14px;
+	padding-bottom: 9px;
+	border-bottom: 1px solid #e3edec;
+	color: var(--ink);
+	font-family: var(--display-font);
+	font-size: 1.05rem;
+	font-weight: 600;
+}
+
+.registration-card .personal-legend {
+	margin-top: 25px;
+}
+
+.form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 15px 18px;
+}
+
+.form-grid label {
+	display: grid;
+	min-width: 0;
+	gap: 7px;
+	color: #557174;
+	font-size: .74rem;
+	font-weight: 700;
+}
+
+.form-grid label span {
+	display: inline;
+	color: #809596;
+	font-size: .68rem;
+	font-weight: 500;
+}
+
+.field-error {
+	color: #9a3e35;
+	font-size: .68rem;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.form-grid input,
+.form-grid select {
+	height: 42px;
+	min-width: 0;
+	padding: 0 11px;
+	border: 1px solid #cbdedd;
+	border-radius: 4px;
+	background: white;
+	color: var(--ink);
+	font-size: .78rem;
+}
+
+.full-width {
+	grid-column: 1 / -1;
+}
+
+.submit-button {
+	width: 100%;
+	margin-top: 26px;
+}
+
+.submission-status {
+	margin: 11px 0 0;
+	color: #60787a;
+	font-size: .72rem;
+	line-height: 1.5;
+	text-align: center;
+}
+
+.registration-error {
+	margin: 0 0 20px;
+	padding: 12px 14px;
+	border: 1px solid #e8c8c5;
+	border-radius: 5px;
+	background: #fff4f2;
+	color: #8b3831;
+	font-size: .8rem;
+	line-height: 1.5;
+}
+
+.login-prompt {
+	margin: 18px 0 0;
+	color: #60787a;
+	font-size: .78rem;
+	text-align: center;
+}
+
+.login-prompt a {
+	color: var(--teal);
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.login-prompt a:hover {
+	text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+	.registration-page {
+		display: block;
+	}
+
+	.registration-visual {
+		position: relative;
+		min-height: 260px;
+		padding: 26px 24px;
+	}
+
+	.visual-copy {
+		margin: 38px 0 0;
+	}
+
+	.visual-copy h1 {
+		max-width: 400px;
+		font-size: 2.45rem;
+	}
+
+	.visual-copy p,
+	.visual-line {
+		display: none;
+	}
+
+	.registration-panel {
+		min-height: auto;
+		padding: 24px 16px 32px;
+	}
+}
+
+@media (max-width: 480px) {
+	.registration-card {
+		padding: 24px 19px;
+	}
+
+	.registration-card h2 {
+		font-size: 2rem;
+	}
+
+	.form-grid {
+		grid-template-columns: 1fr;
+		gap: 13px;
+	}
+
+	.full-width {
+		grid-column: auto;
+	}
+}

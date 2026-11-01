@@ -4,16 +4,18 @@ import { roleGuard } from './core/guards/role-guard';
 import { Layout } from './layout/layout';
 import { Login } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
+import { RegistroPaciente } from './pages/registro-paciente/registro-paciente';
 
 export const routes: Routes = [
 	{ path: 'login', component: Login },
+	{ path: 'registro', component: RegistroPaciente },
 	{
 		path: '',
 		component: Layout,
 		canActivate: [authGuard],
 		children: [
 			{ path: 'dashboard', component: Dashboard },
-			{ path: 'agenda', loadComponent: () => import('./pages/agenda/agenda').then((m) => m.Agenda), canActivate: [roleGuard], data: { roles: ['ADMIN', 'AGENDADOR'] } },
+			{ path: 'agenda', loadComponent: () => import('./pages/agenda/agenda').then((m) => m.Agenda), canActivate: [roleGuard], data: { roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] } },
 			{ path: 'agendar-cita', loadComponent: () => import('./pages/agendar-cita/agendar-cita').then((m) => m.AgendarCita), canActivate: [roleGuard], data: { roles: ['PACIENTE', 'AGENDADOR'] } },
 			{ path: 'mis-citas', loadComponent: () => import('./pages/mis-citas/mis-citas').then((m) => m.MisCitas), canActivate: [roleGuard], data: { roles: ['PACIENTE'] } },
 			{ path: 'medicos', loadComponent: () => import('./pages/medicos/medicos').then((m) => m.Medicos), canActivate: [roleGuard], data: { roles: ['ADMIN'] } },

@@ -11,13 +11,12 @@ export interface Paciente {
 export class PersonasService {
   private readonly api = inject(ApiService);
   private readonly pacientes$ = this.api.get<Paciente[]>('/pacientes/').pipe(shareReplay({ bufferSize: 1, refCount: false }));
-  private readonly personas$ = this.api.get<Persona[]>('/personas/').pipe(shareReplay({ bufferSize: 1, refCount: false }));
 
   getPacientes() {
     return this.pacientes$;
   }
 
   getPersonas() {
-    return this.personas$;
+    return this.api.get<Persona[]>('/personas/');
   }
 }

@@ -31,4 +31,25 @@ describe('Login', () => {
     expect(component.errorMessage).toBe('No fue posible iniciar la sesión. Intenta nuevamente.');
     expect(component.isLoading).toBe(false);
   });
+
+  it('shows a concise welcome message and Piedrazul and developer footer', () => {
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.querySelector('h1')?.textContent).toContain(
+      'Tu bienestar, en buenas manos.',
+    );
+    expect(page.textContent).toContain('Piedrazul');
+    expect(page.textContent).toContain('Clínica de bienestar');
+    expect(page.textContent).toContain('contacto@piedrazul.example');
+    expect(page.textContent).toContain('Horario de atención');
+    expect(page.textContent).toContain('DEVCORE SOFTWARE STUDIO');
+    expect(page.textContent).toContain('Estudio colombiano de tecnología');
+    expect(page.textContent).toContain('Desarrollo web');
+    expect(page.textContent).toContain('hola@devcore.studio');
+    expect(page.textContent).toContain('Cuidamos de ti, cada día.');
+    expect(page.textContent).not.toContain('pendiente de actualizar');
+    expect(page.textContent).not.toContain(
+      'Tu bienestar empieza con una conversación.',
+    );
+  });
 });
