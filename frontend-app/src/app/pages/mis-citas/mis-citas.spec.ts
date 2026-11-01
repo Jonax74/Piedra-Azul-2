@@ -8,7 +8,7 @@ import { Cita } from '../../shared/models/cita.model';
 describe('MisCitas', () => {
   let component: MisCitas;
   let fixture: ComponentFixture<MisCitas>;
-  const getCitas = vi.fn(() => of([]));
+  const getCitas = vi.fn(() => of<Cita[]>([]));
 
   beforeEach(async () => {
     const appointments = Array.from({ length: 11 }, (_, index) => ({

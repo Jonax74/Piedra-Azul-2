@@ -18,15 +18,18 @@ describe('MedicosService', () => {
 
   afterEach(() => httpTesting.verify());
 
-  it('shares the doctors request between subscribers', () => {
+  it('requests doctors independently for each subscription', () => {
     const first = vi.fn();
     const second = vi.fn();
     service.getMedicos().subscribe(first);
     service.getMedicos().subscribe(second);
 
-    const request = httpTesting.expectOne(`${environment.apiUrl}/medicos/`);
-    expect(request.request.method).toBe('GET');
-    request.flush([{ persona: 7, estado: 'ACTIVO' }]);
+    const requests = httpTesting.match(`${environment.apiUrl}/medicos/`);
+    expect(requests).toHaveLength(2);
+    requests.forEach((request) => {
+      expect(request.request.method).toBe('GET');
+      request.flush([{ persona: 7, estado: 'ACTIVO' }]);
+    });
     expect(first).toHaveBeenCalledWith([{ persona: 7, estado: 'ACTIVO' }]);
     expect(second).toHaveBeenCalledWith([{ persona: 7, estado: 'ACTIVO' }]);
   });

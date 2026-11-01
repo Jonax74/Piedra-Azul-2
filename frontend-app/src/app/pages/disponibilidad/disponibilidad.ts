@@ -170,9 +170,9 @@ export class Disponibilidad {
       next: (schedule) => this.disponibilidadService.asociarConMedico({ medico: Number(this.selectedProfessional), disponibilidad: schedule.id! }).subscribe({
         next: () => {
           this.resetForm();
-          this.feedback = 'Horario guardado correctamente.';
           this.isSaving = false;
           this.refreshSchedules();
+          this.feedback = 'Horario guardado correctamente.';
           this.changeDetector.markForCheck();
         },
         error: () => { this.feedback = 'El horario se creó, pero no pudo asociarse al profesional.'; this.isSaving = false; this.changeDetector.markForCheck(); },

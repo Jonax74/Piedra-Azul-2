@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { Medicos } from './medicos';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -12,6 +13,7 @@ describe('Medicos', () => {
     await TestBed.configureTestingModule({
       imports: [Medicos],
       providers: [
+        provideRouter([]),
         {
           provide: MedicosService,
           useValue: {

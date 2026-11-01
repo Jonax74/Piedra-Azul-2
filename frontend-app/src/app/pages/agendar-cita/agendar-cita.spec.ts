@@ -110,8 +110,8 @@ describe('AgendarCita', () => {
       paciente: 10,
       medico: 8,
       fecha_hora: selectedSlot,
-      estado: 'PROGRAMADA',
     });
+    expect(citasService.crearCita.mock.calls[0][0]).not.toHaveProperty('estado');
     expect(component.showConfirmation).toBe(true);
     expect(component.confirmationMessage).toContain('Carlos Médico');
     expect(component.selectedProfessional).toBe('');

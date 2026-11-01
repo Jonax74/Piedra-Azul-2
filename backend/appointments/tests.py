@@ -505,6 +505,17 @@ class CitaPacienteScopeTests(TestCase):
 		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
 		factory = APIRequestFactory()
 
+		for documento in ("", "   "):
+			with self.subTest(documento=documento):
+				request = factory.get(
+					"/api/citas/agenda/paciente/",
+					{"cedula": documento},
+				)
+				force_authenticate(request, user=user)
+				response = HistorialPacienteView.as_view()(request)
+				self.assertEqual(response.status_code, 400)
+				self.assertIn("debe contener", response.data["detail"])
+
 		request = factory.get(
 			"/api/citas/agenda/paciente/",
 			{"cedula": "abc"},
@@ -522,6 +533,23 @@ class CitaPacienteScopeTests(TestCase):
 		response = HistorialPacienteView.as_view()(request)
 		self.assertEqual(response.status_code, 404)
 		self.assertIn("No se encontró", response.data["detail"])
+
+	def test_patient_history_trims_document_and_returns_empty_history(self):
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/paciente/",
+			{"cedula": " 10000001 "},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test"),
+		)
+
+		response = HistorialPacienteView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["paciente"]["cedula"], 10000001)
+		self.assertEqual(response.data["cantidad"], 0)
+		self.assertEqual(response.data["citas"], [])
 
 	def test_patient_cannot_search_another_patients_history(self):
 		request = APIRequestFactory().get(
@@ -662,9 +690,52 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertIn("Confirmada", rows[3])
 
 	def test_scheduler_csv_export_requires_doctor_and_valid_date(self):
+		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
+		factory = APIRequestFactory()
+		test_cases = (
+			(
+				{"fecha": "2099-01-05"},
+				400,
+				"Debes seleccionar un médico",
+			),
+			(
+				{"medico": self.medico.pk},
+				400,
+				"YYYY-MM-DD",
+			),
+			(
+				{"medico": self.medico.pk, "fecha": "no-es-fecha"},
+				400,
+				"YYYY-MM-DD",
+			),
+			(
+				{"medico": 99999, "fecha": "2099-01-05"},
+				404,
+				"no está activo",
+			),
+		)
+
+		for query, expected_status, expected_detail in test_cases:
+			with self.subTest(query=query):
+				request = factory.get("/api/citas/agenda/exportar/", query)
+				force_authenticate(request, user=user)
+				response = ExportarAgendaCitasView.as_view()(request)
+				self.assertEqual(response.status_code, expected_status)
+				self.assertIn(expected_detail, response.data["detail"])
+
+	def test_scheduler_csv_escapes_spreadsheet_formulas_in_patient_fields(self):
+		self.persona_paciente.primer_nombre = "=HYPERLINK(\"https://example.test\")"
+		self.persona_paciente.telefono = "+1-555-0100"
+		self.persona_paciente.save(update_fields=["primer_nombre", "telefono"])
+		Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T15:00:00Z",
+		)
 		request = APIRequestFactory().get(
 			"/api/citas/agenda/exportar/",
-			{"medico": self.medico.pk, "fecha": "no-es-fecha"},
+			{"medico": self.medico.pk, "fecha": "2099-01-05"},
 		)
 		force_authenticate(
 			request,
@@ -672,9 +743,17 @@ class CitaPacienteScopeTests(TestCase):
 		)
 
 		response = ExportarAgendaCitasView.as_view()(request)
+		rows = list(csv.reader(
+			StringIO(response.content.decode("utf-8-sig")),
+			delimiter=";",
+		))
 
-		self.assertEqual(response.status_code, 400)
-		self.assertIn("YYYY-MM-DD", response.data["detail"])
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			rows[3][2],
+			'\'=HYPERLINK("https://example.test") Paciente',
+		)
+		self.assertEqual(rows[3][4], "'+1-555-0100")
 
 	def test_patient_sees_appointment_created_by_scheduler(self):
 		scheduler = Usuario.objects.create(

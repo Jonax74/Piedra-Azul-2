@@ -1,6 +1,6 @@
 import { NgZone } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { Auth } from '../../core/services/auth';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -316,7 +316,7 @@ describe('Agenda', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
 
-    component.patientDocument = '10000001';
+    component.patientDocument = ' 10000001 ';
     component.searchPatientHistory();
     fixture.detectChanges();
 
@@ -324,6 +324,29 @@ describe('Agenda', () => {
     expect(fixture.nativeElement.textContent).toContain('Ana Paciente');
     expect(fixture.nativeElement.textContent).toContain('Carlos Medico');
     expect(fixture.nativeElement.textContent).toContain('Programada');
+  });
+
+  it('shows the API error when a patient cannot be found by ID', async () => {
+    roles = ['AGENDADOR'];
+    getHistorialPaciente.mockReturnValue(throwError(() => ({
+      error: { detail: 'No se encontró un paciente con esa cédula.' },
+    })));
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.openPatientHistory();
+    component.patientDocument = '10000001';
+    component.searchPatientHistory();
+    fixture.detectChanges();
+
+    expect(getHistorialPaciente).toHaveBeenCalledWith('10000001');
+    expect(component.isSearchingPatient()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain(
+      'No se encontró un paciente con esa cédula.',
+    );
   });
 
   it('shows a clear message when patient ID contains non-digits', async () => {
