@@ -1,6 +1,8 @@
 from django.db import IntegrityError
 from django.db.utils import OperationalError
 import logging
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -21,6 +23,11 @@ class RegistroPacienteView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        request=RegistroPacienteSerializer,
+        responses={201: OpenApiTypes.OBJECT},
+        auth=[],
+    )
     def post(self, request):
         serializer = RegistroPacienteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -64,6 +71,7 @@ class RegistroPacienteView(APIView):
 
 
 class MeView(APIView):
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         return Response(
             {
@@ -76,6 +84,7 @@ class MeView(APIView):
     
 
 class ProfileView(APIView):
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         keycloak_user = request.user
 

@@ -65,6 +65,10 @@ backend/*.sqlite3
 backend/*.db
 backend/.env
 backend/.env.*
+.env.zap
+backend/.env.zap
+backups/zap/
+zap-reports/
 
 # Django specific
 backend/**/migrations/__pycache__/

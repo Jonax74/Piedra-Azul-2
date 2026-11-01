@@ -34,7 +34,14 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "clave-local-insegura")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1",
+    ).split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -48,6 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "rest_framework",
+    "drf_spectacular",
     "corsheaders",
 
     "users",
@@ -156,10 +164,18 @@ CORS_ALLOWED_ORIGINS = [
 
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "config.security.keycloak_authentication.KeycloakJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Piedrazul API",
+    "DESCRIPTION": "API local de Piedrazul para pruebas de seguridad autorizadas.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }

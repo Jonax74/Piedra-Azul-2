@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from appointments.models import ESTADOS_OCUPADOS, Cita, ConfiguracionSistema
@@ -31,6 +33,7 @@ class CitaSerializer(serializers.ModelSerializer):
             "usuario",
         ]
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_paciente_detalle(self, cita):
         persona = cita.paciente.persona
         return {
@@ -41,6 +44,7 @@ class CitaSerializer(serializers.ModelSerializer):
             },
         }
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_medico_detalle(self, cita):
         persona = cita.medico.persona
         return {

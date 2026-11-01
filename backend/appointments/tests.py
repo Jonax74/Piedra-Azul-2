@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -85,6 +86,23 @@ class CitaStatePatternTests(SimpleTestCase):
 		)
 
 		self.assertEqual(cita.estado, "CONFIRMADA")
+
+
+class ZapSeedDataTests(TestCase):
+	def test_seed_command_is_repeatable_and_creates_synthetic_accounts(self):
+		call_command("seed_zap_data", verbosity=0)
+		call_command("seed_zap_data", verbosity=0)
+
+		self.assertEqual(Usuario.objects.filter(username__in=[
+			"paciente1",
+			"paciente2",
+			"agendador1",
+			"admin1",
+			"medico1",
+		]).count(), 5)
+		self.assertEqual(Paciente.objects.count(), 2)
+		self.assertEqual(Medico.objects.count(), 1)
+		self.assertEqual(Cita.objects.count(), 1)
 
 
 class CitaPacienteScopeTests(TestCase):

@@ -6,6 +6,8 @@ from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.text import slugify
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -184,6 +186,13 @@ class CitaDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("medico", OpenApiTypes.INT, required=False),
+            OpenApiParameter("fecha", OpenApiTypes.DATE, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         medico_id = request.query_params.get("medico")
         fecha_texto = request.query_params.get("fecha")
@@ -250,6 +259,12 @@ class AgendaCitasView(APIView):
 class HistorialPacienteView(APIView):
     permission_classes = [IsAgendadorDoctorOrAdmin]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("cedula", OpenApiTypes.STR, required=True),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         documento = request.query_params.get("cedula", "").strip()
         if not documento.isdigit():
@@ -330,6 +345,13 @@ class HistorialPacienteView(APIView):
 class FechasAgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("mes", OpenApiTypes.STR, required=True),
+            OpenApiParameter("medico", OpenApiTypes.INT, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         month_text = request.query_params.get("mes", "")
         medico_id = request.query_params.get("medico")
@@ -389,6 +411,13 @@ class FechasAgendaCitasView(APIView):
 class ExportarAgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("medico", OpenApiTypes.INT, required=True),
+            OpenApiParameter("fecha", OpenApiTypes.DATE, required=True),
+        ],
+        responses={200: OpenApiTypes.BINARY},
+    )
     def get(self, request):
         medico_id = request.query_params.get("medico", "")
         fecha_texto = request.query_params.get("fecha", "")
@@ -435,6 +464,12 @@ class ExportarAgendaCitasView(APIView):
 class ExportarAgendaMedicoView(APIView):
     permission_classes = [IsDoctorRole]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("fecha", OpenApiTypes.DATE, required=True),
+        ],
+        responses={200: OpenApiTypes.BINARY},
+    )
     def get(self, request):
         fecha_texto = request.query_params.get("fecha", "")
         try:
@@ -479,6 +514,12 @@ class ExportarAgendaMedicoView(APIView):
 class AgendaMedicoView(APIView):
     permission_classes = [IsDoctorRole]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("fecha", OpenApiTypes.DATE, required=False),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         keycloak_user_id = request.user.user_id
         fecha_texto = request.query_params.get("fecha")
@@ -536,6 +577,13 @@ class AgendaMedicoView(APIView):
 class FranjasDisponiblesView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("medico", OpenApiTypes.INT, required=True),
+            OpenApiParameter("fecha", OpenApiTypes.DATE, required=True),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         medico_id = request.query_params.get("medico")
         fecha_texto = request.query_params.get("fecha")
@@ -601,6 +649,13 @@ class FranjasDisponiblesView(APIView):
 class FechasDisponiblesView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("medico", OpenApiTypes.INT, required=True),
+            OpenApiParameter("mes", OpenApiTypes.STR, required=True),
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         medico_id = request.query_params.get("medico")
         mes_texto = request.query_params.get("mes")

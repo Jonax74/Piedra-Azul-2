@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from persons.models import (
@@ -64,6 +66,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id"]
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_usuario(self, persona):
         usuario = getattr(persona, "usuario", None)
         if usuario is None:
@@ -228,6 +231,7 @@ class MedicoSerializer(serializers.ModelSerializer):
             persona_actual_id=current_persona_id,
         )
 
+    @extend_schema_field(EspecialidadSerializer(many=True))
     def get_especialidades(self, medico):
         especialidades = Especialidad.objects.filter(
             medicos__medico=medico,
