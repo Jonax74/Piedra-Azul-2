@@ -18,6 +18,7 @@ describe('Agenda', () => {
   let getHistorialPaciente: ReturnType<typeof vi.fn>;
   let getMedicos: ReturnType<typeof vi.fn>;
   let getPersonas: ReturnType<typeof vi.fn>;
+  let getPacientes: ReturnType<typeof vi.fn>;
   let roles: string[];
   let agendaResponse: Subject<{
     cantidad: number;
@@ -67,6 +68,14 @@ describe('Agenda', () => {
     }));
     getMedicos = vi.fn(() => of([]));
     getPersonas = vi.fn(() => of([]));
+    getPacientes = vi.fn(() => of([{
+      persona: {
+        id: 1,
+        dni: 10000001,
+        primer_nombre: 'Ana',
+        primer_apellido: 'Paciente',
+      },
+    }]));
     roles = ['MEDICO'];
     await TestBed.configureTestingModule({
       imports: [Agenda],
@@ -84,7 +93,7 @@ describe('Agenda', () => {
           },
         },
         { provide: MedicosService, useValue: { getMedicos } },
-        { provide: PersonasService, useValue: { getPersonas } },
+        { provide: PersonasService, useValue: { getPersonas, getPacientes } },
       ],
     }).compileComponents();
 
@@ -269,6 +278,11 @@ describe('Agenda', () => {
     await fixture.whenStable();
 
     expect(fixture.nativeElement.textContent).toContain('Consultar paciente');
+    const patientHistory = fixture.nativeElement.querySelector('.patient-history-entry') as HTMLElement;
+    const filters = fixture.nativeElement.querySelector('.filter-bar') as HTMLElement;
+    const results = fixture.nativeElement.querySelector('.table-section') as HTMLElement;
+    expect(patientHistory.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(filters.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fixture.nativeElement.querySelector('.patient-history-entry button').click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
@@ -300,6 +314,49 @@ describe('Agenda', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Escribe una cédula válida usando solo números.',
     );
+  });
+
+  it('suggests matching patient documents and supports keyboard selection', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    getPacientes.mockReturnValue(of(Array.from({ length: 7 }, (_, index) => ({
+      persona: {
+        id: index + 1,
+        dni: 10000001 + index,
+        primer_nombre: `Paciente${index + 1}`,
+        primer_apellido: 'Prueba',
+      },
+    }))));
+
+    component.openPatientHistory();
+    await fixture.whenStable();
+    component.patientDocument = '100';
+    component.onPatientDocumentChange();
+    fixture.detectChanges();
+
+    const inputGroup = fixture.nativeElement.querySelector('.input-group') as HTMLElement;
+    const suggestions = fixture.nativeElement.querySelector('.patient-suggestions') as HTMLElement;
+    expect(suggestions.querySelectorAll('[role="option"]')).toHaveLength(6);
+    expect(inputGroup.compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const suggestion = fixture.nativeElement.querySelector(
+      '[role="option"]',
+    ) as HTMLButtonElement;
+    expect(suggestion.textContent).toContain('10000001');
+    expect(suggestion.textContent).toContain('Paciente1 Prueba');
+
+    component.onPatientSuggestionKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    component.onPatientSuggestionKeydown(new KeyboardEvent('keydown', { key: 'Enter' }));
+    fixture.detectChanges();
+
+    expect(component.patientDocument).toBe('10000001');
+    expect(component.isPatientSuggestionsOpen()).toBe(false);
+    component.searchPatientHistory();
+    expect(getHistorialPaciente).toHaveBeenCalledWith('10000001');
   });
 
   it('lets a doctor open patient lookup and view appointment history', async () => {

@@ -7,7 +7,17 @@
 		</div>
 		<span class="status-pill">{{ selectedDate || 'Todas las fechas' }}</span>
 	</div>
-	<section class="filter-bar surface row g-3">
+	<section class="surface patient-history-entry d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mt-3 p-3">
+		<div>
+			<span class="eyebrow">Historial de citas</span>
+			<h3 class="h5 mb-1">Consultar paciente</h3>
+			<p class="mb-0 small text-muted">Busca por número de cédula para revisar sus datos y citas anteriores.</p>
+		</div>
+		<button class="primary-button compact btn" type="button" (click)="openPatientHistory()">
+			Consultar por cédula
+		</button>
+	</section>
+	<section class="filter-bar surface row g-3 mt-3">
 		@if (!isDoctorOnly) {
 			<label class="col-12 col-md">Profesional
 				<select
@@ -102,16 +112,6 @@
 			}
 		</div>
 	</section>
-	<section class="surface patient-history-entry d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mt-3 p-3">
-		<div>
-			<span class="eyebrow">Historial de citas</span>
-			<h3 class="h5 mb-1">Consultar paciente</h3>
-			<p class="mb-0 small text-muted">Busca por número de cédula para revisar sus datos y citas anteriores.</p>
-		</div>
-		<button class="primary-button compact btn" type="button" (click)="openPatientHistory()">
-			Consultar por cédula
-		</button>
-	</section>
 	@if (feedback()) { <p class="feedback-message">{{ feedback() }}</p> }
 	<section class="surface table-section">
 		<div class="section-header">
@@ -192,22 +192,54 @@
 						<form class="mb-3" (ngSubmit)="searchPatientHistory()">
 							<label class="form-label" for="patient-document">Número de cédula</label>
 							<div class="input-group">
-								<input
-									id="patient-document"
-									class="form-control"
-									type="text"
-									inputmode="numeric"
-									autocomplete="off"
-									maxlength="20"
-									[(ngModel)]="patientDocument"
-									name="patientDocument"
-									placeholder="Escribe la cédula del paciente"
-									[disabled]="isSearchingPatient()"
-								>
+								<div class="patient-document-field">
+									<input
+										id="patient-document"
+										class="form-control"
+										type="text"
+										inputmode="numeric"
+										autocomplete="off"
+										maxlength="20"
+										[(ngModel)]="patientDocument"
+										(ngModelChange)="onPatientDocumentChange()"
+										(keydown)="onPatientSuggestionKeydown($event)"
+										name="patientDocument"
+										placeholder="Escribe la cédula del paciente"
+										[disabled]="isSearchingPatient()"
+										role="combobox"
+										aria-autocomplete="list"
+										[attr.aria-expanded]="isPatientSuggestionsOpen() && matchingPatientSuggestions.length > 0"
+										[attr.aria-controls]="isPatientSuggestionsOpen() ? 'patient-document-suggestions' : null"
+										[attr.aria-activedescendant]="activePatientSuggestionId()"
+									>
+								</div>
 								<button class="primary-button compact btn" type="submit" [disabled]="isSearchingPatient()">
 									{{ isSearchingPatient() ? 'Buscando...' : 'Buscar' }}
 								</button>
 							</div>
+							@if (isPatientSuggestionsOpen() && matchingPatientSuggestions.length) {
+								<ul id="patient-document-suggestions" class="patient-suggestions" role="listbox" aria-label="Pacientes coincidentes">
+									@for (patient of matchingPatientSuggestions; track patient.persona.id ?? patient.persona.dni) {
+										<li role="presentation">
+											<button
+												type="button"
+												class="patient-suggestion"
+												[class.active]="activePatientSuggestionIndex === $index"
+												role="option"
+												[id]="'patient-suggestion-' + (patient.persona.id ?? patient.persona.dni)"
+												[attr.aria-selected]="activePatientSuggestionIndex === $index"
+												(click)="selectPatientSuggestion(patient)"
+											>
+												<strong>{{ patient.persona.dni }}</strong>
+												<span>{{ patient.persona.primer_nombre }} {{ patient.persona.primer_apellido }}</span>
+											</button>
+										</li>
+									}
+								</ul>
+							}
+							@if (patientSuggestionsError()) {
+								<small class="d-block text-muted mt-2" role="status">{{ patientSuggestionsError() }}</small>
+							}
 						</form>
 						@if (patientHistoryError()) {
 							<div class="alert alert-danger py-2" role="alert">{{ patientHistoryError() }}</div>
