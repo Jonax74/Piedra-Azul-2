@@ -119,6 +119,8 @@ class HistoriaClinica(models.Model):
 
 
 class Festivo(models.Model):
+    """Fecha no hábil en la que no pueden programarse citas."""
+
     id = models.AutoField(
         primary_key=True,
         db_column="fes_id",
