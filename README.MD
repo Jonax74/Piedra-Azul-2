@@ -67,4 +67,4 @@ fecha. El calendario solo habilita fechas con citas para el profesional
 seleccionado, o fechas con citas de cualquier profesional cuando no hay uno
 seleccionado. Al elegir ambos filtros aparece **Exportar CSV**, que descarga el
 listado de pacientes con fecha, hora, nombre, documento, teléfono y estado; las
-citas canceladas se excluyen del calendario y del archivo.
+citas canceladas se excluyen del calendario y del archivo rapidamente.
