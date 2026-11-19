@@ -2,7 +2,7 @@ from datetime import date
 
 from django.test import TestCase
 
-from persons.models import Paciente, Persona
+from persons.models import Medico, Paciente, Persona
 from persons.serializers import MedicoSerializer, PacienteSerializer
 from users.models import Rol, Usuario, UsuarioRol
 
@@ -69,6 +69,39 @@ class PersonaUsuarioLinkTests(TestCase):
 
 		self.assertFalse(serializer.is_valid())
 		self.assertIn("usuario_id", serializer.errors)
+
+	def test_creates_medico_and_persona_atomically_from_persona_data(self):
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					"primer_nombre": "Medico",
+					"primer_apellido": "Prueba",
+					"genero": "OTRO",
+					"fecha_nacimiento": date(1985, 1, 1),
+					"telefono": "3000000001",
+					"dni": 98765432,
+				},
+				"tipo_profesional": "MEDICO",
+				"estado": "ACTIVO",
+			},
+		)
+
+		self.assertTrue(serializer.is_valid(), serializer.errors)
+		medico = serializer.save()
+
+		self.assertEqual(medico.persona.primer_nombre, "Medico")
+		self.assertEqual(Medico.objects.count(), 1)
+
+	def test_medico_requires_existing_person_or_persona_data(self):
+		serializer = MedicoSerializer(
+			data={
+				"tipo_profesional": "MEDICO",
+				"estado": "ACTIVO",
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("persona_data", serializer.errors)
 
 	def test_updating_patient_user_link_moves_the_relationship(self):
 		persona = Persona.objects.create(**self.persona_data(34567890))

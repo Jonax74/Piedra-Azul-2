@@ -148,6 +148,55 @@
   min-height: 210px;
 }
 
+.agenda-page .patient-document-field {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+}
+
+.agenda-page .patient-suggestions {
+  margin: 6px 0 0;
+  padding: 5px;
+  border: 1px solid #d7e3df;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgb(25 59 54 / 9%);
+  list-style: none;
+}
+
+.agenda-page .patient-suggestion {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.agenda-page .patient-suggestion span {
+  overflow: hidden;
+  color: #718a8a;
+  font-size: .86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-page .patient-suggestion:hover,
+.agenda-page .patient-suggestion.active {
+  background: #e8f5f3;
+}
+
+.agenda-page .patient-suggestion:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+}
+
 .agenda-page select,
 .agenda-page input {
   width: 100%;

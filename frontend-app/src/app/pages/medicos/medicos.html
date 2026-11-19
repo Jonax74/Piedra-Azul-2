@@ -1,1 +1,85 @@
-<div class="page-shell medicos-page"><div class="page-heading"><div><span class="eyebrow">Equipo clínico</span><h2>Médicos y terapeutas</h2><p>Administra los profesionales disponibles para la atención.</p></div><button class="primary-button compact" type="button">Agregar profesional</button></div><section class="surface table-section"><div class="section-header"><div><span class="eyebrow">Directorio</span><h3>Profesionales registrados</h3></div><input class="search-input" type="search" [(ngModel)]="searchTerm" placeholder="Buscar profesional"></div><div class="professional-list">@for (professional of filteredProfessionals; track professional.persona) {<article class="professional-row"><div class="professional-avatar">{{ professionalName(professional).slice(0, 2) }}</div><div><strong>{{ professionalName(professional) }}</strong><small>{{ professional.tipo_profesional }}</small></div><span class="active-tag">{{ professional.estado }}</span><button class="row-action" type="button">Ver detalles</button></article>} @empty {<div class="empty-state"><strong>No hay profesionales para mostrar</strong><p>Los resultados del directorio aparecerán aquí.</p></div>}</div></section></div>
+<div class="page-shell medicos-page">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Equipo clínico</span>
+      <h2>Médicos y terapeutas</h2>
+      <p>Administra los profesionales y consulta sus horarios de atención.</p>
+    </div>
+    <button class="primary-button compact" type="button" (click)="isCreating = !isCreating">
+      {{ isCreating ? 'Cancelar' : 'Agregar profesional' }}
+    </button>
+  </div>
+
+  @if (isCreating) {
+    <form class="surface professional-form" (ngSubmit)="saveProfessional()">
+      <div>
+        <span class="eyebrow">Nuevo registro</span>
+        <h3>Datos del profesional</h3>
+      </div>
+      <div class="form-grid">
+        <label>Primer nombre<input name="primer_nombre" [(ngModel)]="professionalForm.primer_nombre" required maxlength="50"></label>
+        <label>Segundo nombre<input name="segundo_nombre" [(ngModel)]="professionalForm.segundo_nombre" maxlength="50"></label>
+        <label>Primer apellido<input name="primer_apellido" [(ngModel)]="professionalForm.primer_apellido" required maxlength="50"></label>
+        <label>Segundo apellido<input name="segundo_apellido" [(ngModel)]="professionalForm.segundo_apellido" maxlength="50"></label>
+        <label>Género
+          <select name="genero" [(ngModel)]="professionalForm.genero" required>
+            <option value="MUJER">Mujer</option>
+            <option value="HOMBRE">Hombre</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </label>
+        <label>Fecha de nacimiento<input name="fecha_nacimiento" type="date" [(ngModel)]="professionalForm.fecha_nacimiento" required></label>
+        <label>Teléfono<input name="telefono" type="tel" [(ngModel)]="professionalForm.telefono" required maxlength="15"></label>
+        <label>Documento<input name="dni" type="number" [(ngModel)]="professionalForm.dni" required min="1"></label>
+        <label>Correo electrónico<input name="correo" type="email" [(ngModel)]="professionalForm.correo"></label>
+        <label>Tipo de profesional
+          <select name="tipo_profesional" [(ngModel)]="professionalForm.tipo_profesional" required>
+            <option value="MEDICO">Médico</option>
+            <option value="TERAPISTA">Terapista</option>
+          </select>
+        </label>
+      </div>
+      <button class="primary-button" type="submit" [disabled]="isSaving">
+        {{ isSaving ? 'Guardando...' : 'Registrar profesional' }}
+      </button>
+    </form>
+  }
+
+  @if (feedback) {
+    <p class="feedback-message" role="status">{{ feedback }}</p>
+  }
+
+  <section class="surface table-section">
+    <div class="section-header">
+      <div><span class="eyebrow">Directorio</span><h3>Profesionales registrados</h3></div>
+      <input class="search-input" type="search" [(ngModel)]="searchTerm" placeholder="Buscar profesional">
+    </div>
+    <div class="professional-list">
+      @for (professional of filteredProfessionals; track professional.persona) {
+        <article class="professional-row">
+          <div class="professional-avatar">{{ professionalName(professional).slice(0, 2) }}</div>
+          <div class="professional-details">
+            <strong>{{ professionalName(professional) }}</strong>
+            <small>{{ professional.tipo_profesional }} · {{ professional.estado }}</small>
+            @for (schedule of professionalSchedules(professional); track schedule.id) {
+              <small class="schedule-summary">{{ schedule.dia_semana }}: {{ schedule.hora_inicio }}–{{ schedule.hora_fin }} (cada {{ schedule.intervalo }} min)</small>
+            } @empty {
+              <small class="schedule-summary">Sin horarios asignados</small>
+            }
+          </div>
+          <a class="row-action" [routerLink]="['/disponibilidad']" [queryParams]="{ medico: professional.persona }">
+            Configurar horario
+          </a>
+        </article>
+      } @empty {
+        <div class="empty-state">
+          <strong>{{ feedback ? 'No se pudo cargar el directorio' : 'No hay profesionales para mostrar' }}</strong>
+          <p>{{ feedback ? 'Revisa la conexión y vuelve a intentarlo.' : 'Registra el primer profesional para poder asignarle disponibilidades.' }}</p>
+          @if (!feedback) {
+            <button class="primary-button compact" type="button" (click)="isCreating = true">Agregar profesional</button>
+          }
+        </div>
+      }
+    </div>
+  </section>
+</div>

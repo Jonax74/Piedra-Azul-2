@@ -166,7 +166,9 @@ class EspecialidadSerializer(serializers.ModelSerializer):
 class MedicoSerializer(serializers.ModelSerializer):
     persona = serializers.PrimaryKeyRelatedField(
         queryset=Persona.objects.all(),
+        required=False,
     )
+    persona_data = PersonaSerializer(write_only=True, required=False)
 
     especialidades = serializers.SerializerMethodField()
 
@@ -189,12 +191,29 @@ class MedicoSerializer(serializers.ModelSerializer):
         model = Medico
         fields = [
             "persona",
+            "persona_data",
             "tipo_profesional",
             "estado",
             "especialidades",
             "especialidad_ids",
             "usuario_id",
         ]
+
+    def validate(self, attrs):
+        persona_data = attrs.get("persona_data")
+        persona = attrs.get("persona")
+
+        if persona_data is not None and persona is not None:
+            raise serializers.ValidationError(
+                "Envía una persona existente o los datos de una nueva, no ambos."
+            )
+
+        if self.instance is None and persona_data is None and persona is None:
+            raise serializers.ValidationError(
+                {"persona_data": "Debes enviar los datos del profesional."}
+            )
+
+        return attrs
 
     def validate_usuario_id(self, usuario):
         current_persona_id = (
@@ -221,6 +240,10 @@ class MedicoSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        persona_data = validated_data.pop("persona_data", None)
+        if persona_data is not None:
+            validated_data["persona"] = Persona.objects.create(**persona_data)
+
         especialidades = validated_data.pop(
             "especialidad_ids",
             [],

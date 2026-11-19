@@ -7,7 +7,7 @@ import { MedicosService } from '../../core/services/medicos.service';
 import { Cita } from '../../shared/models/cita.model';
 import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
-import { PersonasService } from '../../core/services/personas.service';
+import { Paciente, PersonasService } from '../../core/services/personas.service';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 
 @Component({
@@ -25,6 +25,7 @@ export class Agenda {
   private readonly platformId = inject(PLATFORM_ID);
   professionals: Medico[] = [];
   people: Persona[] = [];
+  patientSuggestions: Paciente[] = [];
   readonly appointments = signal<Cita[]>([]);
   private doctorAppointments: Cita[] = [];
   selectedProfessional = '';
@@ -34,9 +35,14 @@ export class Agenda {
   readonly isExporting = signal(false);
   readonly isPatientHistoryOpen = signal(false);
   readonly isSearchingPatient = signal(false);
+  readonly isLoadingPatientSuggestions = signal(false);
   readonly patientHistory = signal<HistorialPacienteResponse | null>(null);
   readonly patientHistoryError = signal('');
+  readonly patientSuggestionsError = signal('');
+  readonly isPatientSuggestionsOpen = signal(false);
   patientDocument = '';
+  activePatientSuggestionIndex = -1;
+  private patientSuggestionsLoaded = false;
   isCalendarOpen = false;
   readonly feedback = signal('');
   readonly calendarError = signal('');
@@ -249,18 +255,106 @@ export class Agenda {
     this.patientDocument = '';
     this.patientHistory.set(null);
     this.patientHistoryError.set('');
+    this.patientSuggestionsError.set('');
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
     this.isPatientHistoryOpen.set(true);
+    this.loadPatientSuggestions();
   }
 
   closePatientHistory(): void {
     if (this.isSearchingPatient()) return;
     this.isPatientHistoryOpen.set(false);
+    this.isPatientSuggestionsOpen.set(false);
+  }
+
+  onPatientDocumentChange(): void {
+    this.patientHistory.set(null);
+    this.patientHistoryError.set('');
+    this.isPatientSuggestionsOpen.set(this.patientDocument.trim().length >= 2);
+    this.activePatientSuggestionIndex = -1;
+  }
+
+  onPatientSuggestionKeydown(event: KeyboardEvent): void {
+    const suggestions = this.matchingPatientSuggestions;
+    if (event.key === 'Escape') {
+      this.isPatientSuggestionsOpen.set(false);
+      this.activePatientSuggestionIndex = -1;
+      return;
+    }
+
+    if (!suggestions.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.isPatientSuggestionsOpen.set(true);
+      this.activePatientSuggestionIndex = Math.min(
+        this.activePatientSuggestionIndex + 1,
+        suggestions.length - 1,
+      );
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activePatientSuggestionIndex = Math.max(
+        this.activePatientSuggestionIndex - 1,
+        0,
+      );
+    } else if (event.key === 'Enter'
+      && this.isPatientSuggestionsOpen()
+      && this.activePatientSuggestionIndex >= 0) {
+      event.preventDefault();
+      this.selectPatientSuggestion(suggestions[this.activePatientSuggestionIndex]);
+    }
+  }
+
+  activePatientSuggestionId(): string | null {
+    const patient = this.matchingPatientSuggestions[this.activePatientSuggestionIndex];
+    return patient ? `patient-suggestion-${patient.persona.id ?? patient.persona.dni}` : null;
+  }
+
+  selectPatientSuggestion(patient: Paciente): void {
+    this.patientDocument = String(patient.persona.dni);
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
+    this.patientSuggestionsError.set('');
+  }
+
+  get matchingPatientSuggestions(): Paciente[] {
+    const query = this.patientDocument.trim();
+    if (!/^\d{2,}$/.test(query)) return [];
+
+    return this.patientSuggestions
+      .filter((patient) => String(patient.persona.dni).startsWith(query)
+        && String(patient.persona.dni) !== query)
+      .slice(0, 6);
+  }
+
+  private loadPatientSuggestions(): void {
+    if (this.patientSuggestionsLoaded || this.isLoadingPatientSuggestions()) return;
+
+    this.isLoadingPatientSuggestions.set(true);
+    this.patientSuggestionsError.set('');
+    this.personasService.getPacientes().subscribe({
+      next: (patients) => {
+        this.patientSuggestions = patients;
+        this.patientSuggestionsLoaded = true;
+        this.isLoadingPatientSuggestions.set(false);
+        this.changeDetector.markForCheck();
+      },
+      error: () => {
+        this.patientSuggestionsError.set(
+          'No se pudieron cargar las sugerencias. Puedes escribir la cédula completa y buscar.',
+        );
+        this.isLoadingPatientSuggestions.set(false);
+        this.changeDetector.markForCheck();
+      },
+    });
   }
 
   searchPatientHistory(): void {
     const document = this.patientDocument.trim();
     this.patientHistory.set(null);
     this.patientHistoryError.set('');
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
     if (!/^\d+$/.test(document)) {
       this.patientHistoryError.set('Escribe una cédula válida usando solo números.');
       return;

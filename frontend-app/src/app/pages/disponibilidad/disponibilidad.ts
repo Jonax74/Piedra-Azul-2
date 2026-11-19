@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { DisponibilidadService } from '../../core/services/disponibilidad.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { PersonasService } from '../../core/services/personas.service';
@@ -25,6 +26,7 @@ export class Disponibilidad {
   private readonly disponibilidadService = inject(DisponibilidadService);
   private readonly medicosService = inject(MedicosService);
   private readonly personasService = inject(PersonasService);
+  private readonly route = inject(ActivatedRoute);
   private readonly changeDetector = inject(ChangeDetectorRef);
   readonly weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
   readonly weekdayValues = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
@@ -45,8 +47,15 @@ export class Disponibilidad {
   fieldErrors: AvailabilityFieldErrors = {};
 
   ngOnInit(): void {
-    this.medicosService.getMedicos().subscribe({ next: (items) => { this.professionals = items.filter((item) => item.estado === 'ACTIVO'); this.changeDetector.markForCheck(); } });
-    this.personasService.getPersonas().subscribe({ next: (items) => { this.people = items; this.changeDetector.markForCheck(); } });
+    this.selectedProfessional = this.route.snapshot.queryParamMap.get('medico') ?? '';
+    this.medicosService.getMedicos().subscribe({
+      next: (items) => { this.professionals = items; this.changeDetector.markForCheck(); },
+      error: () => { this.feedback = 'No fue posible cargar los profesionales.'; this.changeDetector.markForCheck(); },
+    });
+    this.personasService.getPersonas().subscribe({
+      next: (items) => { this.people = items; this.changeDetector.markForCheck(); },
+      error: () => { this.feedback = 'No fue posible cargar los nombres de los profesionales.'; this.changeDetector.markForCheck(); },
+    });
     this.loadRelations();
     this.loadSchedules();
   }
@@ -59,6 +68,7 @@ export class Disponibilidad {
   }
   
   refreshSchedules(): void {
+    this.feedback = '';
     this.loadRelations();
     this.loadSchedules();
   }
