@@ -1,0 +1,55 @@
+flowchart LR
+    DEV["Desarrollador"] -->|"Pull Request a develop/main"| C1
+
+    subgraph CI["1. Integración continua - cada Pull Request"]
+        direction TB
+        C1["Checkout + dependencias lockeadas"]
+        C2["Tests backend Django"]
+        C3["Tests frontend Angular"]
+        C4["makemigrations --check"]
+        C5["docker compose config + build"]
+        C6["Audit de dependencias"]
+        C1 --> C2 & C3 & C4 & C5 & C6
+    end
+
+    C2 & C3 & C4 & C5 & C6 --> GATE{"Gate: todos los jobs en verde"}
+    GATE -->|"Falla"| BLOCK["Merge bloqueado"]
+    GATE -->|"OK y merge a main"| B1
+
+    subgraph BUILD["2. Build - merge a main"]
+        direction TB
+        B1["Construir imágenes de producción"]
+        B2["Etiquetar con git SHA"]
+        B3["Publicar en GHCR"]
+        B1 --> B2 --> B3
+    end
+
+    B3 --> D1
+
+    SECRETS[("GitHub Secrets")] -.->|"solo al job de deploy"| D1
+
+    subgraph DEPLOY["3. Deploy - ambiente académico único"]
+        direction TB
+        D1["Cargar secretos"]
+        D2["manage.py migrate --noinput - una sola vez"]
+        D3["Desplegar API"]
+        D4["Desplegar Frontend"]
+        D5["Actualizar Keycloak"]
+        D1 --> D2 --> D3 --> D4 --> D5
+    end
+
+    D5 --> V1
+
+    subgraph VERIFY["4. Verificación post-despliegue"]
+        direction TB
+        V1["Health checks API y frontend"]
+        V2["Smoke test: login, cancelar, reporte"]
+        V3["ZAP baseline pasivo"]
+        V1 --> V2 --> V3
+    end
+
+    V2 -->|"OK"| LIVE["Versión viva - SHA registrado"]
+    V2 -->|"Falla"| RB["Rollback a imagen SHA anterior - sin borrar datos"]
+
+    NOTA["Cuotas gratuitas. Si se exceden, el job falla; no hay upgrade automático."]
+    DEPLOY ~~~ NOTA
