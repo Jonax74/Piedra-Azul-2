@@ -1,0 +1,9 @@
+flowchart LR
+    FAIL[Health/smoke falla] --> CLASS{Clasificar}
+    CLASS -->|solo app| APP[Revertir frontend/backend]
+    CLASS -->|config/migración| CONFIG[Revertir configuración]
+    CONFIG --> DBCHECK{Migración compatible}
+    DBCHECK -->|sí| DB[Restaurar release anterior]
+    DBCHECK -->|no| MANUAL[Procedimiento manual aprobado]
+    APP --> VERIFY[Repetir smoke test]
+    DB --> VERIFY
