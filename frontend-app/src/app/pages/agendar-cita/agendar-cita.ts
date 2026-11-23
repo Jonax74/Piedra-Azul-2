@@ -532,8 +532,22 @@ export class AgendarCita {
         this.isSaving.set(false);
         this.changeDetector.detectChanges();
       },
-      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving.set(false); this.changeDetector.detectChanges(); },
+      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => {
+        this.feedback = this.bookingErrorMessage(error);
+        this.isSaving.set(false);
+        this.changeDetector.detectChanges();
+      },
     });
+  }
+
+  private bookingErrorMessage(error: { error?: { detail?: string; non_field_errors?: string[] } }): string {
+    const message = error.error?.detail ?? error.error?.non_field_errors?.[0];
+    if (message?.includes('The fields medico, fecha_hora must make a unique set.')) {
+      return 'Este horario ya fue reservado para el médico seleccionado. Elige otro horario disponible.';
+    }
+
+    return message
+      ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.';
   }
 
   closeConfirmation(): void {
