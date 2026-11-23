@@ -9,6 +9,7 @@ import { RegistroPaciente } from './pages/registro-paciente/registro-paciente';
 export const routes: Routes = [
 	{ path: 'login', component: Login },
 	{ path: 'registro', component: RegistroPaciente },
+	{ path: 'registro-paciente', redirectTo: 'registro', pathMatch: 'full' },
 	{
 		path: '',
 		component: Layout,

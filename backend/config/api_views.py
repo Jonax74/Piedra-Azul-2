@@ -53,6 +53,17 @@ class RegistroPacienteView(APIView):
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+        except Exception:
+            logger.exception("Falló el registro de paciente por una condición inesperada.")
+            return Response(
+                {
+                    "detail": (
+                        "Ocurrió un problema inesperado al crear la cuenta. "
+                        "Inténtalo nuevamente."
+                    )
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {

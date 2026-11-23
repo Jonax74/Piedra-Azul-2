@@ -56,7 +56,7 @@ export class RegistroPaciente {
 				segundo_nombre: this.form.persona.segundo_nombre.trim() || null,
 				segundo_apellido: this.form.persona.segundo_apellido.trim() || null,
 			},
-		}).pipe(timeout({ first: 20000 })).subscribe({
+		}).pipe(timeout({ first: 45000 })).subscribe({
 			next: () => {
 				this.isSubmitting = false;
 				this.form.password = '';
