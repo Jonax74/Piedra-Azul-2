@@ -59,4 +59,61 @@ describe('MisCitas', () => {
     expect(component.appointments.map((appointment) => appointment.id)).toEqual([1, 2]);
     expect(component.appointments[0].fecha_hora).toBe('2099-01-05T10:00:00-05:00');
   });
+
+  it('separates future appointments from past appointments, newest past first', () => {
+    component.appointments = [
+      {
+        id: 1,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2020-01-10T10:00:00-05:00',
+        estado: 'ATENDIDA',
+      },
+      {
+        id: 2,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2099-01-10T10:00:00-05:00',
+        estado: 'PROGRAMADA',
+      },
+      {
+        id: 3,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2021-01-10T10:00:00-05:00',
+        estado: 'ATENDIDA',
+      },
+    ];
+
+    expect(component.upcomingAppointments.map((appointment) => appointment.id)).toEqual([2]);
+    expect(component.pastAppointments.map((appointment) => appointment.id)).toEqual([3, 1]);
+  });
+
+  it('paginates the appointment panels independently', () => {
+    component.appointments = [
+      ...Array.from({ length: 11 }, (_, index) => ({
+        id: index + 1,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: `2099-01-${String(index + 1).padStart(2, '0')}T10:00:00-05:00`,
+        estado: 'PROGRAMADA',
+      })),
+      ...Array.from({ length: 11 }, (_, index) => ({
+        id: index + 12,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: `2000-01-${String(index + 1).padStart(2, '0')}T10:00:00-05:00`,
+        estado: 'ATENDIDA',
+      })),
+    ];
+
+    component.nextUpcomingPage();
+    expect(component.currentPastPage).toBe(1);
+    component.nextPastPage();
+
+    expect(component.currentUpcomingPage).toBe(2);
+    expect(component.currentPastPage).toBe(2);
+    expect(component.paginatedUpcomingAppointments).toHaveLength(1);
+    expect(component.paginatedPastAppointments).toHaveLength(1);
+  });
 });
