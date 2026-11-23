@@ -1,10 +1,76 @@
 from datetime import date
+from types import SimpleNamespace
 
 from django.test import TestCase
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from persons.models import Medico, Paciente, Persona
 from persons.serializers import MedicoSerializer, PacienteSerializer
+from persons.views import MedicoListCreateView, PacienteListCreateView
 from users.models import Rol, Usuario, UsuarioRol
+
+
+class PersonaSearchTests(TestCase):
+	def setUp(self):
+		self.factory = APIRequestFactory()
+		self.patient_persona = Persona.objects.create(
+			primer_nombre="Ana",
+			segundo_nombre="Maria",
+			primer_apellido="Torres",
+			segundo_apellido="Lopez",
+			genero="MUJER",
+			fecha_nacimiento=date(1995, 4, 20),
+			telefono="3001234567",
+			dni=987654321,
+			correo="ana@example.com",
+		)
+		Paciente.objects.create(persona=self.patient_persona)
+		self.medico_persona = Persona.objects.create(
+			primer_nombre="Carlos",
+			primer_apellido="Gomez",
+			genero="HOMBRE",
+			fecha_nacimiento=date(1985, 1, 1),
+			telefono="3007654321",
+			dni=123456789,
+			correo="carlos@example.com",
+		)
+		Medico.objects.create(
+			persona=self.medico_persona,
+			tipo_profesional="MEDICO",
+			estado="ACTIVO",
+		)
+		self.user = SimpleNamespace(
+			roles=["AGENDADOR"],
+			user_id="agendador-test",
+			is_authenticated=True,
+		)
+
+	def test_patient_can_be_filtered_by_exact_dni(self):
+		request = self.factory.get("/api/pacientes/", {"dni": "987654321"})
+		force_authenticate(request, user=self.user)
+		response = PacienteListCreateView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), 1)
+		self.assertEqual(response.data[0]["persona"]["dni"], 987654321)
+
+	def test_patient_can_be_searched_by_name_or_partial_dni(self):
+		request = self.factory.get("/api/pacientes/", {"q": "Ana"})
+		force_authenticate(request, user=self.user)
+		response = PacienteListCreateView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), 1)
+		self.assertEqual(response.data[0]["persona"]["primer_nombre"], "Ana")
+
+	def test_medico_can_be_filtered_by_exact_dni(self):
+		request = self.factory.get("/api/medicos/", {"dni": "123456789"})
+		force_authenticate(request, user=self.user)
+		response = MedicoListCreateView.as_view()(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), 1)
+		self.assertEqual(response.data[0]["persona"], self.medico_persona.id)
 
 
 class PersonaUsuarioLinkTests(TestCase):

@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { PersonasService, Paciente } from '../../core/services/personas.service';
@@ -40,17 +41,29 @@ export class AgendarCita {
   professionals: Medico[] = [];
   people: Persona[] = [];
   patients: Paciente[] = [];
-  slots: Array<{ fecha_hora: string; hora: string }> = [];
+  readonly slots = signal<Array<{ fecha_hora: string; hora: string }>>([]);
   selectedSpecialty = '';
   selectedProfessional = '';
   selectedDate = '';
   selectedPatient = '';
   selectedSlot = '';
-  isLoading = false;
-  isSaving = false;
+  patientSearch = '';
+  professionalSearch = '';
+  specialtySearch = '';
+  patientDropdownOpen = false;
+  professionalDropdownOpen = false;
+  specialtyDropdownOpen = false;
+  isSearchingPatients = false;
+  isSearchingProfessionals = false;
+  private patientSearchTimer: ReturnType<typeof setTimeout> | undefined;
+  private professionalSearchTimer: ReturnType<typeof setTimeout> | undefined;
+  private slotRequest?: Subscription;
+  private slotRequestId = 0;
+  readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
   feedback = '';
-  showConfirmation = false;
-  confirmationMessage = '';
+  readonly showConfirmation = signal(false);
+  readonly confirmationMessage = signal('');
   patientOnly = false;
   currentPersonaId: number | null = null;
   fieldErrors: BookingFieldErrors = {};
@@ -62,8 +75,8 @@ export class AgendarCita {
   private readonly availabilityByProfessional = new Map<number, Set<string>>();
 
   get currentStep(): number {
-    if (this.showConfirmation) return 1;
-    if (this.selectedSlot || this.slots.length) return 2;
+    if (this.showConfirmation()) return 1;
+    if (this.selectedSlot || this.slots().length) return 2;
     return 1;
   }
 
@@ -84,6 +97,180 @@ export class AgendarCita {
       },
       error: () => { this.feedback = 'No fue posible cargar tu perfil.'; this.changeDetector.markForCheck(); },
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.patientSearchTimer) clearTimeout(this.patientSearchTimer);
+    if (this.professionalSearchTimer) clearTimeout(this.professionalSearchTimer);
+    this.cancelSlotRequest();
+  }
+
+  openSpecialtyDropdown(): void {
+    this.patientDropdownOpen = false;
+    this.professionalDropdownOpen = false;
+    this.specialtyDropdownOpen = true;
+  }
+
+  closeSpecialtyDropdown(): void {
+    setTimeout(() => {
+      this.specialtyDropdownOpen = false;
+      this.changeDetector.markForCheck();
+    }, 150);
+  }
+
+  onSpecialtySearch(value: string): void {
+    this.specialtySearch = value;
+    this.specialtyDropdownOpen = true;
+  }
+
+  selectSpecialty(specialty: Especialidad): void {
+    this.selectedSpecialty = specialty.id?.toString() ?? '';
+    this.specialtySearch = specialty.nombre;
+    this.specialtyDropdownOpen = false;
+    this.selectedProfessional = '';
+    this.professionalSearch = '';
+    this.selectedDate = '';
+    this.dateChanged();
+  }
+
+  clearSpecialty(): void {
+    this.selectedSpecialty = '';
+    this.specialtySearch = '';
+    this.specialtyDropdownOpen = true;
+  }
+
+  get filteredSpecialties(): Especialidad[] {
+    const term = this.specialtySearch.trim().toLocaleLowerCase('es');
+    if (!term) return this.specialties;
+    return this.specialties.filter((specialty) =>
+      specialty.nombre.toLocaleLowerCase('es').includes(term),
+    );
+  }
+
+  openPatientDropdown(): void {
+    this.specialtyDropdownOpen = false;
+    this.professionalDropdownOpen = false;
+    this.patientDropdownOpen = true;
+  }
+
+  openProfessionalDropdown(): void {
+    this.patientDropdownOpen = false;
+    this.specialtyDropdownOpen = false;
+    this.professionalDropdownOpen = true;
+  }
+
+  closePatientDropdown(): void {
+    setTimeout(() => {
+      this.patientDropdownOpen = false;
+      this.changeDetector.markForCheck();
+    }, 150);
+  }
+
+  closeProfessionalDropdown(): void {
+    setTimeout(() => {
+      this.professionalDropdownOpen = false;
+      this.changeDetector.markForCheck();
+    }, 150);
+  }
+
+  onPatientSearch(value: string): void {
+    this.patientSearch = value;
+    if (this.patientSearchTimer) clearTimeout(this.patientSearchTimer);
+    this.patientSearchTimer = setTimeout(() => this.loadPatientMatches(value), 250);
+  }
+
+  private loadPatientMatches(value: string): void {
+    const term = value.trim();
+    if (!term) {
+      this.loadInitialPatients();
+      return;
+    }
+
+    this.isSearchingPatients = true;
+    this.personasService.getPacientes({ q: term }).subscribe({
+      next: (items) => {
+        this.patients = items;
+        this.isSearchingPatients = false;
+        this.changeDetector.markForCheck();
+      },
+      error: () => {
+        this.isSearchingPatients = false;
+        this.feedback = 'No fue posible consultar los pacientes.';
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  private loadInitialPatients(): void {
+    this.personasService.getPacientes().subscribe({
+      next: (items) => {
+        this.patients = items;
+        this.isSearchingPatients = false;
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  selectPatient(patient: Paciente): void {
+    this.selectedPatient = patient.persona.id?.toString() ?? '';
+    this.patientSearch = this.patientDisplayName(patient);
+    this.patientDropdownOpen = false;
+    this.fieldErrors.patient = '';
+  }
+
+  patientDisplayName(patient: Paciente): string {
+    return `${patient.persona.primer_nombre} ${patient.persona.segundo_nombre ? `${patient.persona.segundo_nombre} ` : ''}${patient.persona.primer_apellido}${patient.persona.segundo_apellido ? ` ${patient.persona.segundo_apellido}` : ''}`;
+  }
+
+  onProfessionalSearch(value: string): void {
+    this.professionalSearch = value;
+    if (this.professionalSearchTimer) clearTimeout(this.professionalSearchTimer);
+    this.professionalSearchTimer = setTimeout(() => this.loadProfessionalMatches(value), 250);
+  }
+
+  private loadProfessionalMatches(value: string): void {
+    const term = value.trim();
+    if (!term) {
+      this.loadInitialProfessionals();
+      return;
+    }
+
+    this.isSearchingProfessionals = true;
+    this.medicosService.getMedicos({ q: term }).subscribe({
+      next: (items) => {
+        this.professionals = items.filter((item) => item.estado === 'ACTIVO');
+        this.isSearchingProfessionals = false;
+        this.changeDetector.markForCheck();
+      },
+      error: () => {
+        this.isSearchingProfessionals = false;
+        this.feedback = 'No fue posible consultar los profesionales.';
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  private loadInitialProfessionals(): void {
+    this.medicosService.getMedicos().subscribe({
+      next: (items) => {
+        this.professionals = items.filter((item) => item.estado === 'ACTIVO');
+        this.isSearchingProfessionals = false;
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  selectProfessional(professional: Medico): void {
+    this.selectedProfessional = professional.persona.toString();
+    this.professionalSearch = this.professionalName(professional);
+    this.professionalDropdownOpen = false;
+    this.fieldErrors.professional = '';
+    this.dateChanged();
+    if (this.selectedDate && this.isDateSelectable(this.selectedDate)) {
+      this.loadSlots();
+    } else {
+      this.selectedDate = '';
+    }
   }
 
   private loadBookingRules(): void {
@@ -121,9 +308,10 @@ export class AgendarCita {
   }
 
   dateChanged(): void {
+    this.cancelSlotRequest();
     this.fieldErrors.date = this.dateValidationMessage();
     this.selectedSlot = '';
-    this.slots = [];
+    this.slots.set([]);
   }
 
   dateValidationMessage(): string {
@@ -218,6 +406,9 @@ export class AgendarCita {
       this.selectedPatient = this.patientOnly
         ? ownPatient?.persona.id?.toString() ?? ''
         : '';
+      if (ownPatient) {
+        this.patientSearch = this.patientDisplayName(ownPatient);
+      }
       this.feedback = items.length ? 'Selecciona una fecha y consulta los horarios disponibles.' : 'No hay pacientes registrados para agendar.';
       this.changeDetector.markForCheck();
     }, error: () => { this.feedback = 'No fue posible cargar los pacientes.'; this.changeDetector.markForCheck(); } });
@@ -243,6 +434,10 @@ export class AgendarCita {
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : 'Profesional';
   }
 
+  professionalDni(professional: Medico): number | null {
+    return this.people.find((item) => item.id === professional.persona)?.dni ?? null;
+  }
+
   loadSlots(): void {
     this.fieldErrors.date = this.dateValidationMessage();
     if (!this.selectedProfessional || !this.selectedDate) {
@@ -252,20 +447,50 @@ export class AgendarCita {
       if (!this.selectedDate) {
         this.fieldErrors.date = 'Selecciona una fecha.';
       }
+      this.cancelSlotRequest();
       this.feedback = '';
       return;
     }
     if (this.fieldErrors.date) {
+      this.cancelSlotRequest();
       this.feedback = '';
       return;
     }
-    this.isLoading = true;
+    this.cancelSlotRequest();
+    const requestId = ++this.slotRequestId;
+    const professionalId = Number(this.selectedProfessional);
+    const date = this.selectedDate;
+    this.isLoading.set(true);
     this.feedback = '';
     this.selectedSlot = '';
-    this.citasService.getFranjasDisponibles(Number(this.selectedProfessional), this.selectedDate).subscribe({
-      next: (response) => { this.slots = response.franjas; this.isLoading = false; this.feedback = response.franjas.length ? `Hay ${response.franjas.length} horarios disponibles para el ${this.selectedDate}.` : `No hay horarios disponibles para el ${this.selectedDate}.`; this.changeDetector.markForCheck(); },
-      error: (error: { name?: string; error?: { detail?: string } }) => { this.feedback = error.name === 'TimeoutError' ? 'La consulta de horarios tardó demasiado. Verifica que Django y PostgreSQL estén activos.' : error.error?.detail ?? 'No fue posible consultar los horarios. Verifica el profesional y la fecha.'; this.isLoading = false; this.changeDetector.markForCheck(); },
+    this.slotRequest = this.citasService.getFranjasDisponibles(professionalId, date).subscribe({
+      next: (response) => {
+        if (requestId !== this.slotRequestId) return;
+        this.slots.set(response.franjas);
+        this.isLoading.set(false);
+        this.feedback = response.franjas.length
+          ? `Hay ${response.franjas.length} horarios disponibles para el ${date}.`
+          : `No hay horarios disponibles para el ${date}.`;
+        this.slotRequest = undefined;
+        this.changeDetector.detectChanges();
+      },
+      error: (error: { name?: string; error?: { detail?: string } }) => {
+        if (requestId !== this.slotRequestId) return;
+        this.feedback = error.name === 'TimeoutError'
+          ? 'La consulta de horarios tardó demasiado. Verifica que Django y PostgreSQL estén activos.'
+          : error.error?.detail ?? 'No fue posible consultar los horarios. Verifica el profesional y la fecha.';
+        this.isLoading.set(false);
+        this.slotRequest = undefined;
+        this.changeDetector.detectChanges();
+      },
     });
+  }
+
+  private cancelSlotRequest(): void {
+    this.slotRequestId += 1;
+    this.slotRequest?.unsubscribe();
+    this.slotRequest = undefined;
+    this.isLoading.set(false);
   }
 
   book(): void {
@@ -290,40 +515,44 @@ export class AgendarCita {
       return;
     }
     if (!this.selectedSlot) {
-      this.fieldErrors.slot = this.slots.length
+      this.fieldErrors.slot = this.slots().length
         ? 'Selecciona un horario disponible antes de confirmar la cita.'
         : 'Consulta la disponibilidad y selecciona un horario antes de confirmar.';
       this.feedback = '';
       return;
     }
-    this.isSaving = true;
+    this.isSaving.set(true);
     this.citasService.crearCita({ paciente: Number(this.selectedPatient), medico: Number(this.selectedProfessional), fecha_hora: this.selectedSlot }).subscribe({
       next: () => {
-        this.confirmationMessage = `Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots.find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`;
+        this.confirmationMessage.set(`Tu cita con ${this.professionalName(this.professionals.find((item) => item.persona.toString() === this.selectedProfessional)!) } quedó agendada para el ${this.selectedDate} a las ${this.slots().find((slot) => slot.fecha_hora === this.selectedSlot)?.hora ?? 'la hora seleccionada'}.`);
         this.resetForm();
         this.fieldErrors = {};
-        this.showConfirmation = true;
+        this.showConfirmation.set(true);
         this.feedback = '';
-        this.isSaving = false;
-        this.changeDetector.markForCheck();
+        this.isSaving.set(false);
+        this.changeDetector.detectChanges();
       },
-      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving = false; this.changeDetector.markForCheck(); },
+      error: (error: { error?: { detail?: string; non_field_errors?: string[] } }) => { this.feedback = error.error?.detail ?? error.error?.non_field_errors?.[0] ?? 'No fue posible agendar la cita. El horario puede haberse ocupado o la fecha no ser válida.'; this.isSaving.set(false); this.changeDetector.detectChanges(); },
     });
   }
 
   closeConfirmation(): void {
-    this.showConfirmation = false;
+    this.showConfirmation.set(false);
     this.changeDetector.markForCheck();
   }
 
   private resetForm(): void {
     this.selectedSpecialty = '';
     this.selectedProfessional = '';
+    this.professionalSearch = '';
+    this.patientSearch = this.patientOnly
+      ? this.patientName()
+      : '';
     this.selectedPatient = this.patientOnly
       ? this.currentPersonaId?.toString() ?? ''
       : '';
     this.selectedDate = '';
     this.selectedSlot = '';
-    this.slots = [];
+    this.slots.set([]);
   }
 }

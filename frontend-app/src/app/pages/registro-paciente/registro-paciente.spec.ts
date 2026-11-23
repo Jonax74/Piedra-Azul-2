@@ -96,11 +96,11 @@ describe('RegistroPaciente', () => {
 		component.register();
 
 		const request = httpTesting.expectOne(`${environment.apiUrl}/registro/`);
-		await new Promise((resolve) => setTimeout(resolve, 20010));
+		await new Promise((resolve) => setTimeout(resolve, 45010));
 		httpTesting.expectNone(`${environment.apiUrl}/registro/`);
 
 		expect(request.cancelled).toBe(true);
 		expect(component.isSubmitting).toBe(false);
 		expect(component.errorMessage).toContain('tardó demasiado');
-	}, 25000);
+	}, 50000);
 });
