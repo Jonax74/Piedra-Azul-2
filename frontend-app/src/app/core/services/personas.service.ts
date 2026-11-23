@@ -12,8 +12,9 @@ export class PersonasService {
   private readonly api = inject(ApiService);
   private readonly pacientes$ = this.api.get<Paciente[]>('/pacientes/').pipe(shareReplay({ bufferSize: 1, refCount: false }));
 
-  getPacientes() {
-    return this.pacientes$;
+  getPacientes(params?: { q?: string; dni?: string }) {
+    if (!params) return this.pacientes$;
+    return this.api.get<Paciente[]>('/pacientes/', params);
   }
 
   getPersonas() {
