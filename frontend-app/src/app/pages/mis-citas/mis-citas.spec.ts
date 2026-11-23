@@ -60,7 +60,7 @@ describe('MisCitas', () => {
     expect(component.appointments[0].fecha_hora).toBe('2099-01-05T10:00:00-05:00');
   });
 
-  it('separates future appointments from past appointments, newest past first', () => {
+  it('shows only future appointments and filters by date and assigned professional', () => {
     component.appointments = [
       {
         id: 1,
@@ -75,45 +75,44 @@ describe('MisCitas', () => {
         medico: 3,
         fecha_hora: '2099-01-10T10:00:00-05:00',
         estado: 'PROGRAMADA',
+        medico_detalle: {
+          persona: { primer_nombre: 'Carlos', primer_apellido: 'Médico' },
+        },
       },
       {
         id: 3,
         paciente: 5,
-        medico: 3,
-        fecha_hora: '2021-01-10T10:00:00-05:00',
-        estado: 'ATENDIDA',
+        medico: 4,
+        fecha_hora: '2099-01-10T11:00:00-05:00',
+        estado: 'CONFIRMADA',
       },
     ];
 
-    expect(component.upcomingAppointments.map((appointment) => appointment.id)).toEqual([2]);
-    expect(component.pastAppointments.map((appointment) => appointment.id)).toEqual([3, 1]);
+    expect(component.upcomingAppointments.map((appointment) => appointment.id)).toEqual([2, 3]);
+    expect(component.professionals.map((professional) => professional.id)).toEqual([3, 4]);
+
+    component.selectedDate = '2099-01-10';
+    component.selectedProfessional = '3';
+    expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([2]);
   });
 
-  it('paginates the appointment panels independently', () => {
+  it('resets pagination when filters change', () => {
     component.appointments = [
-      ...Array.from({ length: 11 }, (_, index) => ({
+      ...Array.from({ length: 12 }, (_, index) => ({
         id: index + 1,
         paciente: 5,
         medico: 3,
         fecha_hora: `2099-01-${String(index + 1).padStart(2, '0')}T10:00:00-05:00`,
         estado: 'PROGRAMADA',
       })),
-      ...Array.from({ length: 11 }, (_, index) => ({
-        id: index + 12,
-        paciente: 5,
-        medico: 3,
-        fecha_hora: `2000-01-${String(index + 1).padStart(2, '0')}T10:00:00-05:00`,
-        estado: 'ATENDIDA',
-      })),
     ];
 
-    component.nextUpcomingPage();
-    expect(component.currentPastPage).toBe(1);
-    component.nextPastPage();
+    component.nextPage();
+    expect(component.currentPage).toBe(2);
+    component.selectedDate = '2099-01-12';
+    component.onFilterChange();
 
-    expect(component.currentUpcomingPage).toBe(2);
-    expect(component.currentPastPage).toBe(2);
-    expect(component.paginatedUpcomingAppointments).toHaveLength(1);
-    expect(component.paginatedPastAppointments).toHaveLength(1);
+    expect(component.currentPage).toBe(1);
+    expect(component.paginatedAppointments.map((appointment) => appointment.id)).toEqual([12]);
   });
 });

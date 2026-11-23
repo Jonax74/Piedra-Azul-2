@@ -8,14 +8,34 @@
     <a routerLink="/agendar-cita" class="primary-button compact">Agendar una cita</a>
   </div>
 
+  <section class="filter-bar surface" aria-label="Filtros de próximas citas">
+    <label>Fecha
+      <input type="date" [(ngModel)]="selectedDate" (ngModelChange)="onFilterChange()">
+    </label>
+    <label>Médico asignado
+      <select [(ngModel)]="selectedProfessional" (ngModelChange)="onFilterChange()">
+        <option value="">Todos los médicos</option>
+        @for (professional of professionals; track professional.id) {
+          <option [value]="professional.id">{{ professional.name }}</option>
+        }
+      </select>
+    </label>
+    <button
+      class="secondary-button filters-clear"
+      type="button"
+      [disabled]="!selectedDate && !selectedProfessional"
+      (click)="clearFilters()"
+    >Limpiar filtros</button>
+  </section>
+
   <section class="surface appointment-list" aria-labelledby="upcoming-title">
     <div class="section-header">
       <div><span class="eyebrow">Tu agenda</span><h3 id="upcoming-title">Próximas citas</h3></div>
-      <span class="status-pill">{{ upcomingAppointments.length }} citas</span>
+      <span class="status-pill">{{ filteredAppointments.length }} de {{ upcomingAppointments.length }} citas</span>
     </div>
-    @if (upcomingAppointments.length) {
+    @if (filteredAppointments.length) {
       <div class="appointment-rows">
-        @for (appointment of paginatedUpcomingAppointments; track appointment.id) {
+        @for (appointment of paginatedAppointments; track appointment.id) {
           <article class="appointment-row">
             <div class="appointment-details">
               <strong>{{ appointment.fecha_hora | date:'medium' }}</strong>
@@ -29,13 +49,19 @@
           </article>
         }
       </div>
-      @if (upcomingTotalPages > 1) {
+      @if (totalPages > 1) {
         <nav class="pagination-controls" aria-label="Paginación de próximas citas">
-          <button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentUpcomingPage === 1" (click)="previousUpcomingPage()">←</button>
-          <span>Página {{ currentUpcomingPage }} de {{ upcomingTotalPages }}</span>
-          <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentUpcomingPage === upcomingTotalPages" (click)="nextUpcomingPage()">→</button>
+          <button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentPage === 1" (click)="previousPage()">←</button>
+          <span>Página {{ currentPage }} de {{ totalPages }}</span>
+          <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPage === totalPages" (click)="nextPage()">→</button>
         </nav>
       }
+    } @else if (upcomingAppointments.length) {
+      <div class="empty-state">
+        <strong>No hay citas que coincidan con los filtros</strong>
+        <p>Prueba con otra fecha o médico asignado.</p>
+        <button class="secondary-button filter-reset-link" type="button" (click)="clearFilters()">Limpiar filtros</button>
+      </div>
     } @else {
       <div class="empty-state">
         <span class="empty-icon">+</span>
@@ -45,38 +71,5 @@
       </div>
     }
   </section>
-
-  <section class="surface appointment-list" aria-labelledby="past-title">
-    <div class="section-header">
-      <div><span class="eyebrow">Tu historial</span><h3 id="past-title">Citas anteriores</h3></div>
-      <span class="status-pill">{{ pastAppointments.length }} citas</span>
-    </div>
-    @if (pastAppointments.length) {
-      <div class="appointment-rows">
-        @for (appointment of paginatedPastAppointments; track appointment.id) {
-          <article class="appointment-row">
-            <div class="appointment-details">
-              <strong>{{ appointment.fecha_hora | date:'medium' }}</strong>
-              <small>{{ professionalName(appointment) }}</small>
-            </div>
-            <span class="status-pill">{{ appointment.estado }}</span>
-          </article>
-        }
-      </div>
-      @if (pastTotalPages > 1) {
-        <nav class="pagination-controls" aria-label="Paginación del historial de citas">
-          <button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentPastPage === 1" (click)="previousPastPage()">←</button>
-          <span>Página {{ currentPastPage }} de {{ pastTotalPages }}</span>
-          <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPastPage === pastTotalPages" (click)="nextPastPage()">→</button>
-        </nav>
-      }
-    } @else {
-      <div class="empty-state">
-        <strong>Aún no tienes citas anteriores</strong>
-        <p>Las citas que ya hayan pasado aparecerán aquí.</p>
-      </div>
-    }
-  </section>
-
   @if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
 </div>

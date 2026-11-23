@@ -1,13 +1,13 @@
-import { ChangeDetectorRef, Component, PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, PLATFORM_ID } from '@angular/core';
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 
 @Component({
-  imports: [RouterLink, DatePipe, AppointmentActions],
+  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions],
   selector: 'app-mis-citas',
   styleUrl: './mis-citas.scss',
   templateUrl: './mis-citas.html',
@@ -19,8 +19,9 @@ export class MisCitas {
   appointments: Cita[] = [];
   feedback = '';
   readonly pageSize = 10;
-  currentUpcomingPage = 1;
-  currentPastPage = 1;
+  currentPage = 1;
+  selectedDate = '';
+  selectedProfessional = '';
 
   get upcomingAppointments(): Cita[] {
     const now = Date.now();
@@ -29,29 +30,30 @@ export class MisCitas {
     );
   }
 
-  get pastAppointments(): Cita[] {
-    const now = Date.now();
-    return this.appointments
-      .filter((appointment) => new Date(appointment.fecha_hora).getTime() < now)
-      .reverse();
+  get filteredAppointments(): Cita[] {
+    return this.upcomingAppointments.filter((appointment) =>
+      (!this.selectedDate || this.appointmentDate(appointment) === this.selectedDate)
+      && (!this.selectedProfessional || appointment.medico === Number(this.selectedProfessional)),
+    );
   }
 
-  get upcomingTotalPages(): number {
-    return Math.max(1, Math.ceil(this.upcomingAppointments.length / this.pageSize));
+  get professionals(): Array<{ id: number; name: string }> {
+    const namesById = new Map<number, string>();
+    for (const appointment of this.upcomingAppointments) {
+      namesById.set(appointment.medico, this.professionalName(appointment));
+    }
+    return [...namesById]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, 'es'));
   }
 
-  get pastTotalPages(): number {
-    return Math.max(1, Math.ceil(this.pastAppointments.length / this.pageSize));
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredAppointments.length / this.pageSize));
   }
 
-  get paginatedUpcomingAppointments(): Cita[] {
-    const start = (this.currentUpcomingPage - 1) * this.pageSize;
-    return this.upcomingAppointments.slice(start, start + this.pageSize);
-  }
-
-  get paginatedPastAppointments(): Cita[] {
-    const start = (this.currentPastPage - 1) * this.pageSize;
-    return this.pastAppointments.slice(start, start + this.pageSize);
+  get paginatedAppointments(): Cita[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredAppointments.slice(start, start + this.pageSize);
   }
 
   professionalName(appointment: Cita): string {
@@ -67,28 +69,29 @@ export class MisCitas {
     this.citasService.getCitas().subscribe({
       next: (items) => {
         this.appointments = this.sortAppointments(items);
-        this.currentUpcomingPage = 1;
-        this.currentPastPage = 1;
+        this.currentPage = 1;
         this.changeDetector.markForCheck();
       },
       error: () => { this.feedback = 'No fue posible cargar tus citas.'; this.changeDetector.markForCheck(); },
     });
   }
 
-  previousUpcomingPage(): void {
-    if (this.currentUpcomingPage > 1) this.currentUpcomingPage -= 1;
+  onFilterChange(): void {
+    this.currentPage = 1;
   }
 
-  nextUpcomingPage(): void {
-    if (this.currentUpcomingPage < this.upcomingTotalPages) this.currentUpcomingPage += 1;
+  clearFilters(): void {
+    this.selectedDate = '';
+    this.selectedProfessional = '';
+    this.onFilterChange();
   }
 
-  previousPastPage(): void {
-    if (this.currentPastPage > 1) this.currentPastPage -= 1;
+  previousPage(): void {
+    if (this.currentPage > 1) this.currentPage -= 1;
   }
 
-  nextPastPage(): void {
-    if (this.currentPastPage < this.pastTotalPages) this.currentPastPage += 1;
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage += 1;
   }
 
   updateAppointment(updated: Cita): void {
@@ -97,16 +100,22 @@ export class MisCitas {
         appointment.id === updated.id ? updated : appointment,
       ),
     );
-    const upcomingIndex = this.upcomingAppointments.findIndex(
+    const updatedIndex = this.filteredAppointments.findIndex(
       (appointment) => appointment.id === updated.id,
     );
-    if (upcomingIndex >= 0) {
-      this.currentUpcomingPage = Math.floor(upcomingIndex / this.pageSize) + 1;
+    if (updatedIndex >= 0) {
+      this.currentPage = Math.floor(updatedIndex / this.pageSize) + 1;
     } else {
-      this.currentUpcomingPage = Math.min(this.currentUpcomingPage, this.upcomingTotalPages);
+      this.currentPage = Math.min(this.currentPage, this.totalPages);
     }
-    this.currentPastPage = Math.min(this.currentPastPage, this.pastTotalPages);
     this.changeDetector.markForCheck();
+  }
+
+  private appointmentDate(appointment: Cita): string {
+    const date = new Date(appointment.fecha_hora);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private sortAppointments(appointments: Cita[]): Cita[] {

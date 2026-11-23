@@ -19,6 +19,7 @@ export const routes: Routes = [
 			{ path: 'agenda', loadComponent: () => import('./pages/agenda/agenda').then((m) => m.Agenda), canActivate: [roleGuard], data: { roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] } },
 			{ path: 'agendar-cita', loadComponent: () => import('./pages/agendar-cita/agendar-cita').then((m) => m.AgendarCita), canActivate: [roleGuard], data: { roles: ['PACIENTE', 'AGENDADOR'] } },
 			{ path: 'mis-citas', loadComponent: () => import('./pages/mis-citas/mis-citas').then((m) => m.MisCitas), canActivate: [roleGuard], data: { roles: ['PACIENTE'] } },
+			{ path: 'historial', loadComponent: () => import('./pages/historial/historial').then((m) => m.Historial), canActivate: [roleGuard], data: { roles: ['PACIENTE'] } },
 			{ path: 'medicos', loadComponent: () => import('./pages/medicos/medicos').then((m) => m.Medicos), canActivate: [roleGuard], data: { roles: ['ADMIN'] } },
 			{ path: 'disponibilidad', loadComponent: () => import('./pages/disponibilidad/disponibilidad').then((m) => m.Disponibilidad), canActivate: [roleGuard], data: { roles: ['ADMIN', 'MEDICO'] } },
 			{ path: 'configuracion', loadComponent: () => import('./pages/configuracion/configuracion').then((m) => m.Configuracion), canActivate: [roleGuard], data: { roles: ['ADMIN'] } },
