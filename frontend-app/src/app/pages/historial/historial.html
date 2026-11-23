@@ -3,7 +3,7 @@
     <div>
       <span class="eyebrow">Seguimiento personal</span>
       <h2>Historial de citas</h2>
-      <p>Consulta las citas que ya tuvieron lugar.</p>
+      <p>Consulta tus citas anteriores y las que cancelaste.</p>
     </div>
   </div>
 
@@ -30,7 +30,7 @@
   <section class="surface appointment-list" aria-labelledby="history-title">
     <div class="section-header">
       <div><span class="eyebrow">Citas anteriores</span><h3 id="history-title">Historial</h3></div>
-      <span class="status-pill">{{ filteredAppointments.length }} de {{ pastAppointments.length }} citas</span>
+      <span class="status-pill">{{ filteredAppointments.length }} de {{ historyAppointments.length }} citas</span>
     </div>
     @if (filteredAppointments.length) {
       <div class="appointment-rows">
@@ -51,7 +51,7 @@
           <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPage === totalPages" (click)="nextPage()">→</button>
         </nav>
       }
-    } @else if (pastAppointments.length) {
+    } @else if (historyAppointments.length) {
       <div class="empty-state">
         <strong>No hay citas que coincidan con los filtros</strong>
         <p>Prueba con otra fecha o médico asignado.</p>
@@ -59,8 +59,8 @@
       </div>
     } @else {
       <div class="empty-state">
-        <strong>Aún no tienes citas anteriores</strong>
-        <p>Las citas que ya hayan pasado aparecerán aquí.</p>
+        <strong>Aún no tienes citas anteriores ni canceladas</strong>
+        <p>Las citas finalizadas o canceladas aparecerán aquí.</p>
       </div>
     }
   </section>

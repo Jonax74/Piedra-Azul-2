@@ -26,7 +26,9 @@ export class MisCitas {
   get upcomingAppointments(): Cita[] {
     const now = Date.now();
     return this.appointments.filter(
-      (appointment) => new Date(appointment.fecha_hora).getTime() >= now,
+      (appointment) =>
+        appointment.estado !== 'CANCELADA'
+        && new Date(appointment.fecha_hora).getTime() >= now,
     );
   }
 

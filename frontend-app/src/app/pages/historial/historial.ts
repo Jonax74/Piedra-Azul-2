@@ -21,15 +21,18 @@ export class Historial {
   selectedDate = '';
   selectedProfessional = '';
 
-  get pastAppointments(): Cita[] {
+  get historyAppointments(): Cita[] {
     const now = Date.now();
     return this.appointments
-      .filter((appointment) => new Date(appointment.fecha_hora).getTime() < now)
+      .filter((appointment) =>
+        appointment.estado === 'CANCELADA'
+        || new Date(appointment.fecha_hora).getTime() < now,
+      )
       .reverse();
   }
 
   get filteredAppointments(): Cita[] {
-    return this.pastAppointments.filter((appointment) =>
+    return this.historyAppointments.filter((appointment) =>
       (!this.selectedDate || this.appointmentDate(appointment) === this.selectedDate)
       && (!this.selectedProfessional || appointment.medico === Number(this.selectedProfessional)),
     );
@@ -37,7 +40,7 @@ export class Historial {
 
   get professionals(): Array<{ id: number; name: string }> {
     const namesById = new Map<number, string>();
-    for (const appointment of this.pastAppointments) {
+    for (const appointment of this.historyAppointments) {
       namesById.set(appointment.medico, this.professionalName(appointment));
     }
     return [...namesById]

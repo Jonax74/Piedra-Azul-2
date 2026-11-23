@@ -86,6 +86,13 @@ describe('MisCitas', () => {
         fecha_hora: '2099-01-10T11:00:00-05:00',
         estado: 'CONFIRMADA',
       },
+      {
+        id: 4,
+        paciente: 5,
+        medico: 5,
+        fecha_hora: '2099-01-11T10:00:00-05:00',
+        estado: 'CANCELADA',
+      },
     ];
 
     expect(component.upcomingAppointments.map((appointment) => appointment.id)).toEqual([2, 3]);

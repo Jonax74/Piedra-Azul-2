@@ -32,25 +32,32 @@ describe('Historial', () => {
         estado: 'ATENDIDA',
       },
       {
-        id: 2,
-        paciente: 5,
-        medico: 3,
-        fecha_hora: '2099-01-10T10:00:00-05:00',
-        estado: 'PROGRAMADA',
-      },
-      {
         id: 3,
         paciente: 5,
         medico: 4,
         fecha_hora: '2021-01-10T10:00:00-05:00',
         estado: 'ATENDIDA',
       },
+      {
+        id: 4,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2030-01-10T10:00:00-05:00',
+        estado: 'CANCELADA',
+      },
+      {
+        id: 2,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2099-01-10T10:00:00-05:00',
+        estado: 'PROGRAMADA',
+      },
     ];
 
-    expect(component.pastAppointments.map((appointment) => appointment.id)).toEqual([3, 1]);
+    expect(component.historyAppointments.map((appointment) => appointment.id)).toEqual([4, 3, 1]);
   });
 
-  it('filters history by date and assigned professional', () => {
+  it('includes future cancellations in history filters', () => {
     component.appointments = [
       {
         id: 1,
@@ -62,14 +69,21 @@ describe('Historial', () => {
       {
         id: 2,
         paciente: 5,
-        medico: 4,
-        fecha_hora: '2020-01-11T10:00:00-05:00',
-        estado: 'ATENDIDA',
+        medico: 3,
+        fecha_hora: '2099-01-11T10:00:00-05:00',
+        estado: 'CANCELADA',
+      },
+      {
+        id: 3,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2099-01-11T11:00:00-05:00',
+        estado: 'PROGRAMADA',
       },
     ] satisfies Cita[];
-    component.selectedDate = '2020-01-10';
+    component.selectedDate = '2099-01-11';
     component.selectedProfessional = '3';
 
-    expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([1]);
+    expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([2]);
   });
 });
