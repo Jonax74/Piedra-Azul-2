@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { timeout } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 
@@ -24,9 +24,11 @@ interface RegistroError {
 export class RegistroPaciente {
 	private readonly api = inject(ApiService);
 	private readonly router = inject(Router);
+	readonly isStaffRegistration = inject(ActivatedRoute).snapshot.data['staffRegistration'] === true;
 	readonly maxBirthDate = new Date().toISOString().slice(0, 10);
 	isSubmitting = false;
 	errorMessage = '';
+	successMessage = '';
 	readonly form = {
 		username: '',
 		password: '',
@@ -46,6 +48,7 @@ export class RegistroPaciente {
 
 	register(): void {
 		this.errorMessage = '';
+		this.successMessage = '';
 		this.isSubmitting = true;
 		this.api.post<RegistroPacienteResponse>('/registro/', {
 			username: this.form.username.trim(),
@@ -57,10 +60,15 @@ export class RegistroPaciente {
 				segundo_apellido: this.form.persona.segundo_apellido.trim() || null,
 			},
 		}).pipe(timeout({ first: 45000 })).subscribe({
-			next: () => {
+			next: (response) => {
 				this.isSubmitting = false;
 				this.form.password = '';
 				this.form.passwordConfirmation = '';
+				if (this.isStaffRegistration) {
+					this.successMessage = `El paciente ${response.username} fue registrado correctamente.`;
+					this.clearForm();
+					return;
+				}
 				void this.router.navigate(['/login'], {
 					queryParams: {
 						registro: 'exitoso',
@@ -77,6 +85,22 @@ export class RegistroPaciente {
 
 	clearError(): void {
 		this.errorMessage = '';
+		this.successMessage = '';
+	}
+
+	private clearForm(): void {
+		this.form.username = '';
+		this.form.persona = {
+			primer_nombre: '',
+			segundo_nombre: '',
+			primer_apellido: '',
+			segundo_apellido: '',
+			genero: '',
+			fecha_nacimiento: '',
+			telefono: '',
+			dni: null,
+			correo: '',
+		};
 	}
 
 	private errorMessageFrom(error: unknown): string {

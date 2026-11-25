@@ -6,6 +6,7 @@ import { Auth } from '../core/services/auth';
 describe('Layout', () => {
   let component: Layout;
   let fixture: ComponentFixture<Layout>;
+  let roles: string[];
   let auth: {
     username: () => string;
     roles: () => string[];
@@ -14,10 +15,11 @@ describe('Layout', () => {
   };
 
   beforeEach(async () => {
+    roles = ['ADMIN'];
     auth = {
       username: () => 'Ana',
-      roles: () => ['ADMIN'],
-      hasAnyRole: (roles) => roles.length === 0 || roles.includes('ADMIN'),
+      roles: () => roles,
+      hasAnyRole: (allowedRoles) => allowedRoles.length === 0 || allowedRoles.some((role) => roles.includes(role)),
       logout: vi.fn(),
     };
     await TestBed.configureTestingModule({
@@ -38,5 +40,16 @@ describe('Layout', () => {
     expect(element.textContent).toContain('Configuración');
     component.logout();
     expect(auth.logout).toHaveBeenCalledOnce();
+  });
+
+  it('shows patient registration in the scheduler navigation', () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Layout);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Registrar Paciente');
+    expect(element.querySelector('a[href="/registrar-paciente"]')).not.toBeNull();
   });
 });

@@ -11,6 +11,7 @@ import { Medico } from '../../shared/models/medico.model';
 import { Especialidad } from '../../shared/models/especialidad.model';
 import { Persona } from '../../shared/models/persona.model';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { RegistrarPacienteLink } from '../../shared/components/registrar-paciente-link/registrar-paciente-link';
 
 interface BookingFieldErrors {
   patient?: string;
@@ -25,7 +26,7 @@ interface CalendarDay {
 }
 
 @Component({
-  imports: [FormsModule, SearchableSelect],
+  imports: [FormsModule, SearchableSelect, RegistrarPacienteLink],
   selector: 'app-agendar-cita',
   styleUrl: './agendar-cita.scss',
   templateUrl: './agendar-cita.html',
