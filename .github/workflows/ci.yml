@@ -1,0 +1,137 @@
+name: CI
+
+# Cuándo se ejecuta: en cada Pull Request hacia develop o main,
+# y cuando alguien hace push directo a esas ramas.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Si se hace un push nuevo mientras corre uno anterior de la misma rama,
+# se cancela el viejo para no gastar tiempo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# El workflow solo puede leer el código. Principio de mínimo privilegio.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Django)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # PostgreSQL temporal que existe solo mientras corre este job.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: piedra_db
+          POSTGRES_USER: piedra
+          POSTGRES_PASSWORD: ci-password-no-secreto
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U piedra -d piedra_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Variables que Django lee (mismos nombres que en docker-compose.yml).
+    # Son valores falsos, solo para CI. Nada real va aquí.
+    env:
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DB_NAME: piedra_db
+      DB_USER: piedra
+      DB_PASSWORD: ci-password-no-secreto
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      KEYCLOAK_URL: http://localhost:8080
+      KEYCLOAK_ISSUER: http://localhost:8080/realms/piedrazul
+      KEYCLOAK_JWKS_URL: http://localhost:8080/realms/piedrazul/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ci-only-not-a-secret
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Chequeo de Django
+        run: python manage.py check
+
+      - name: Verificar que no falten migraciones
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Pruebas unitarias
+        run: python manage.py test
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend-app
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend-app/package-lock.json
+
+      - name: Instalar dependencias (versiones exactas del lock)
+        run: npm ci
+
+      - name: Build de producción
+        run: npm run build -- --configuration production
+
+      - name: Pruebas unitarias
+        run: npm test -- --watch=false
+
+      # Informativo: hoy hay vulnerabilidades reportadas, por eso no bloquea.
+      - name: Auditoría de dependencias
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
+  docker:
+    name: Docker (build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Crear .env de CI a partir del ejemplo
+        run: cp .env.example .env
+
+      - name: Validar docker-compose.yml
+        run: docker compose config --quiet
+
+      - name: Construir las imágenes
+        run: docker compose build
