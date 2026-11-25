@@ -464,6 +464,65 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["cantidad"], 1)
 
+	def test_agenda_sections_filter_appointments_by_status(self):
+		estados = (
+			"PROGRAMADA",
+			"CONFIRMADA",
+			"REAGENDADA",
+			"ATENDIDA",
+			"CANCELADA",
+			"NO_ASISTIDA",
+		)
+		for offset, estado in enumerate(estados, start=5):
+			Cita.objects.create(
+				usuario=self.usuario,
+				paciente=self.paciente,
+				medico=self.medico,
+				fecha_hora=f"2099-01-{offset:02d}T10:00:00Z",
+				estado=estado,
+			)
+
+		user = SimpleNamespace(
+			roles=["AGENDADOR"],
+			user_id="agendador-test",
+		)
+		for seccion, estados_esperados in (
+			("agenda", ["PROGRAMADA", "CONFIRMADA", "REAGENDADA"]),
+			("historial", ["ATENDIDA", "CANCELADA", "NO_ASISTIDA"]),
+		):
+			request = APIRequestFactory().get(
+				"/api/citas/agenda/",
+				{"seccion": seccion},
+			)
+			force_authenticate(request, user=user)
+
+			response = AgendaCitasView.as_view()(request)
+
+			self.assertEqual(response.status_code, 200)
+			self.assertEqual(
+				[appointment["estado"] for appointment in response.data["resultados"]],
+				estados_esperados,
+			)
+			self.assertEqual(response.data["cantidad"], len(estados_esperados))
+
+	def test_agenda_rejects_invalid_section(self):
+		request = APIRequestFactory().get(
+			"/api/citas/agenda/",
+			{"seccion": "otra"},
+		)
+		force_authenticate(
+			request,
+			user=SimpleNamespace(
+				roles=["AGENDADOR"],
+				user_id="agendador-test",
+			),
+		)
+
+		response = AgendaCitasView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("seccion", response.data["detail"])
+
 	def test_scheduler_can_search_patient_by_document_and_get_all_appointments(self):
 		Cita.objects.create(
 			usuario=self.usuario,
