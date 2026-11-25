@@ -1,22 +1,27 @@
 <div class="searchable-select" [class.is-open]="isOpen">
-	<input
-		[id]="inputId"
-		type="search"
-		role="combobox"
-		[placeholder]="placeholder"
-		[value]="query"
-		[disabled]="isDisabled"
-		[readOnly]="isDisabled"
-		[attr.aria-label]="ariaLabel"
-		[attr.aria-expanded]="isOpen"
-		[attr.aria-controls]="inputId + '-options'"
-		[attr.aria-activedescendant]="isOpen && activeIndex >= 0 ? optionId(activeIndex) : null"
-		[attr.autocomplete]="'off'"
-		(input)="onQueryChange($any($event.target).value)"
-		(focus)="open()"
-		(blur)="onBlur()"
-		(keydown)="onKeydown($event)"
-	>
+	<div class="search-control" [class.is-open]="isOpen">
+		<svg aria-hidden="true" viewBox="0 0 24 24">
+			<path d="M10.8 4a6.8 6.8 0 1 0 4.25 12.08l4.43 4.44 1.42-1.42-4.44-4.43A6.8 6.8 0 0 0 10.8 4Zm0 2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6Z"/>
+		</svg>
+		<input
+			[id]="inputId"
+			type="search"
+			role="combobox"
+			[placeholder]="placeholder"
+			[value]="query"
+			[disabled]="isDisabled"
+			[readOnly]="isDisabled"
+			[attr.aria-label]="ariaLabel"
+			[attr.aria-expanded]="isOpen"
+			[attr.aria-controls]="inputId + '-options'"
+			[attr.aria-activedescendant]="isOpen && activeIndex >= 0 ? optionId(activeIndex) : null"
+			[attr.autocomplete]="'off'"
+			(input)="onQueryChange($any($event.target).value)"
+			(focus)="open()"
+			(blur)="onBlur()"
+			(keydown)="onKeydown($event)"
+		>
+	</div>
 	@if (isOpen) {
 		<div class="searchable-options" [id]="inputId + '-options'" role="listbox" [attr.aria-label]="ariaLabel">
 			@if (loading) {
@@ -33,6 +38,7 @@
 						(mousedown)="$event.preventDefault()"
 						(click)="select(option)"
 					>
+						<span class="option-avatar" aria-hidden="true">{{ option.label.charAt(0) }}</span>
 						<span class="option-copy">
 							<strong>{{ option.label }}</strong>
 							@if (option.detail) { <small>{{ option.detail }}</small> }

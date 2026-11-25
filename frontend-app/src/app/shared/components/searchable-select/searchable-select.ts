@@ -79,7 +79,7 @@ export class SearchableSelect implements ControlValueAccessor, OnChanges {
 
   open(): void {
     if (this.isDisabled) return;
-    this.query = this.selectedOption()?.label ?? '';
+    this.query = this.selectedValue ? this.selectedOption()?.label ?? '' : '';
     this.filterQuery = '';
     this.activeIndex = -1;
     this.setOpen(true);
@@ -147,7 +147,7 @@ export class SearchableSelect implements ControlValueAccessor, OnChanges {
   }
 
   private syncQueryToSelection(): void {
-    this.query = this.selectedOption()?.label ?? '';
+    this.query = this.selectedValue ? this.selectedOption()?.label ?? '' : '';
     this.filterQuery = '';
   }
 

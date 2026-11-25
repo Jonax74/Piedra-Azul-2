@@ -33,6 +33,15 @@ describe('SearchableSelect', () => {
     expect(component.filteredOptions).toHaveLength(2);
   });
 
+  it('keeps the query empty when the empty-value option is selected', () => {
+    component.options = [{ value: '', label: 'Todos los profesionales' }, ...component.options];
+    component.writeValue('');
+    component.open();
+
+    expect(component.query).toBe('');
+    expect(component.filteredOptions).toHaveLength(3);
+  });
+
   it('selects an option and reports the selected value', () => {
     const change = vi.fn();
     component.registerOnChange(change);

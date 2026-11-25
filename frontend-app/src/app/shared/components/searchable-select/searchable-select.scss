@@ -13,21 +13,52 @@
   z-index: 20;
 }
 
-.searchable-select input {
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
+.search-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   border: 1px solid #bdcfc9;
   border-radius: 6px;
   background: #fff;
-  color: var(--ink, #17383b);
-  font: inherit;
+  transition: border-color .18s ease, box-shadow .18s ease;
 }
 
-.searchable-select input:focus {
+.search-control.is-open,
+.search-control:focus-within {
   border-color: var(--teal, #158580);
+  box-shadow: 0 0 0 3px rgba(21, 133, 128, .11);
+}
+
+.search-control svg {
+  width: 18px;
+  height: 18px;
+  margin-left: 13px;
+  flex: 0 0 auto;
+  fill: var(--teal, #158580);
+}
+
+.search-control input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px 0 9px;
+  border: 0;
   outline: 0;
-  box-shadow: 0 0 0 3px rgb(21 133 128 / 11%);
+  background: transparent;
+  color: var(--ink, #17383b);
+  font-family: inherit;
+  font-size: .82rem;
+  box-shadow: none;
+}
+
+.search-control input:focus {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.search-control input::placeholder {
+  color: #91a4a3;
 }
 
 .searchable-options {
@@ -46,17 +77,18 @@
 }
 
 .searchable-options button {
-  display: flex;
+  display: grid;
   width: 100%;
-  min-height: 44px;
+  grid-template-columns: 38px minmax(0, 1fr) 24px;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 9px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ink, #17383b);
+  font: inherit;
   text-align: left;
   cursor: pointer;
 }
@@ -73,8 +105,22 @@
   gap: 3px;
 }
 
+.option-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5f1e9;
+  color: #39755a;
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .option-copy strong {
   overflow: hidden;
+  color: var(--ink, #17383b);
   font-size: .8rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -82,13 +128,15 @@
 
 .option-copy small,
 .searchable-status {
-  color: #718a8a;
+  color: #7b9493;
   font-size: .72rem;
 }
 
 .option-check {
   color: var(--teal, #158580);
   font-weight: 700;
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .searchable-status {
