@@ -34,9 +34,11 @@
 					@if (day) {
 						<button
 							type="button"
-							class="calendar-day available-day"
+							class="calendar-day"
+							[class.available-day]="isDateAvailable(day.iso)"
 							[class.selected-day]="selectedDate === day.iso"
-							[attr.aria-label]="day.iso"
+							[disabled]="!isDateAvailable(day.iso)"
+							[attr.aria-label]="day.iso + (availableDates === null ? '' : isDateAvailable(day.iso) ? ', tiene citas' : ', sin citas')"
 							[attr.aria-pressed]="selectedDate === day.iso"
 							(click)="selectDate(day.iso)"
 						>{{ day.number }}</button>

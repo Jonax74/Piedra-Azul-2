@@ -147,8 +147,13 @@ describe('MisCitas', () => {
 
     fixture.nativeElement.querySelector('[aria-label="Filtrar por fecha"]').click();
     fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector(
+        '#upcoming-date-calendar [aria-label="2099-01-12, sin citas"]',
+      ) as HTMLButtonElement).disabled,
+    ).toBe(true);
     fixture.nativeElement.querySelector(
-      '#upcoming-date-calendar [aria-label="2099-01-11"]',
+      '#upcoming-date-calendar [aria-label="2099-01-11, tiene citas"]',
     ).click();
     fixture.detectChanges();
 

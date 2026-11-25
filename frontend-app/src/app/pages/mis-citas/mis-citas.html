@@ -13,6 +13,7 @@
       <app-date-picker
         inputId="upcoming-date"
         ariaLabel="Filtrar por fecha"
+        [availableDates]="availableAppointmentDates"
         [(ngModel)]="selectedDate"
         (ngModelChange)="onFilterChange()"
       />

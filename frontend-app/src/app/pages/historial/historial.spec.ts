@@ -131,8 +131,13 @@ describe('Historial', () => {
 
     fixture.nativeElement.querySelector('[aria-label="Filtrar por fecha"]').click();
     fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector(
+        '#history-date-calendar [aria-label="2020-01-12, sin citas"]',
+      ) as HTMLButtonElement).disabled,
+    ).toBe(true);
     fixture.nativeElement.querySelector(
-      '#history-date-calendar [aria-label="2020-01-11"]',
+      '#history-date-calendar [aria-label="2020-01-11, tiene citas"]',
     ).click();
     fixture.detectChanges();
 

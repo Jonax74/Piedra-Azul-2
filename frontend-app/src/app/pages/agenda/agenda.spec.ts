@@ -297,6 +297,28 @@ describe('Agenda', () => {
     expect(options[0].textContent).toContain('María Ruiz');
   });
 
+  it('uses the custom date picker for the administrator agenda filter', async () => {
+    roles = ['ADMIN'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const month = component.calendarMonth;
+    const date = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}-15`;
+    fixture.nativeElement.querySelector('[aria-label="Filtrar agenda por fecha"]').click();
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector(
+      `#admin-agenda-date-calendar [aria-label="${date}"]`,
+    ).click();
+    fixture.detectChanges();
+
+    expect(component.selectedDate).toBe(date);
+    fixture.nativeElement.querySelector('.filter-bar .primary-button').click();
+    expect(getAgenda).toHaveBeenLastCalledWith(undefined, date);
+  });
+
   it('lets an agendador search a patient by ID and displays appointment history', async () => {
     roles = ['AGENDADOR'];
     fixture.destroy();

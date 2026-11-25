@@ -22,6 +22,18 @@ export class Historial {
   currentPage = 1;
   selectedDate = '';
   selectedProfessional = '';
+  private availableDatesSource: Cita[] | null = null;
+  private availableDatesCache = new Set<string>();
+
+  get availableAppointmentDates(): ReadonlySet<string> {
+    if (this.availableDatesSource !== this.appointments) {
+      this.availableDatesSource = this.appointments;
+      this.availableDatesCache = new Set(
+        this.historyAppointments.map((appointment) => this.appointmentDate(appointment)),
+      );
+    }
+    return this.availableDatesCache;
+  }
 
   get historyAppointments(): Cita[] {
     const now = Date.now();

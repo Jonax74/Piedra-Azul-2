@@ -10,9 +10,10 @@ import { Persona } from '../../shared/models/persona.model';
 import { Paciente, PersonasService } from '../../core/services/personas.service';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect],
+  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',

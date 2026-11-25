@@ -85,9 +85,13 @@
 				}
 			</div>
 		} @else {
-			<label class="col-12 col-md">Fecha
-				<input class="form-control" type="date" [(ngModel)]="selectedDate">
-			</label>
+			<div class="col-12 col-md">
+				<app-date-picker
+					inputId="admin-agenda-date"
+					ariaLabel="Filtrar agenda por fecha"
+					[(ngModel)]="selectedDate"
+				/>
+			</div>
 		}
 		<div class="col-12 col-md-auto d-flex align-items-end gap-2">
 			<button

@@ -19,8 +19,8 @@
 				@if (fieldErrors.day) { <small class="field-error">{{ fieldErrors.day }}</small> }
 			</label>
 			<div class="field-row">
-				<label>Hora inicial<input type="time" [(ngModel)]="startTime" (ngModelChange)="fieldErrors.startTime = ''">@if (fieldErrors.startTime) { <small class="field-error">{{ fieldErrors.startTime }}</small> }</label>
-				<label>Hora final<input type="time" [(ngModel)]="endTime" (ngModelChange)="fieldErrors.endTime = ''">@if (fieldErrors.endTime) { <small class="field-error">{{ fieldErrors.endTime }}</small> }</label>
+				<label>Hora inicial<input class="time-input" type="time" [(ngModel)]="startTime" (ngModelChange)="fieldErrors.startTime = ''">@if (fieldErrors.startTime) { <small class="field-error">{{ fieldErrors.startTime }}</small> }</label>
+				<label>Hora final<input class="time-input" type="time" [(ngModel)]="endTime" (ngModelChange)="fieldErrors.endTime = ''">@if (fieldErrors.endTime) { <small class="field-error">{{ fieldErrors.endTime }}</small> }</label>
 			</div>
 			<label>Intervalo entre citas
 				<select [(ngModel)]="interval" (ngModelChange)="fieldErrors.interval = ''"><option [ngValue]="30">30 minutos</option><option [ngValue]="45">45 minutos</option><option [ngValue]="60">60 minutos</option></select>

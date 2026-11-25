@@ -12,6 +12,7 @@
       <app-date-picker
         inputId="history-date"
         ariaLabel="Filtrar por fecha"
+        [availableDates]="availableAppointmentDates"
         [(ngModel)]="selectedDate"
         (ngModelChange)="onFilterChange()"
       />

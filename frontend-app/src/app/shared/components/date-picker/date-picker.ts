@@ -21,6 +21,7 @@ export class DatePicker implements ControlValueAccessor {
   @Input() label = 'Fecha';
   @Input() emptyLabel = 'Todas las fechas';
   @Input() ariaLabel = 'Seleccionar fecha';
+  @Input() availableDates: ReadonlySet<string> | null = null;
 
   readonly weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   selectedDate = '';
@@ -99,10 +100,15 @@ export class DatePicker implements ControlValueAccessor {
   }
 
   selectDate(date: string): void {
+    if (!this.isDateAvailable(date)) return;
     this.selectedDate = date;
     this.isOpen = false;
     this.onChange(date);
     this.onTouched();
+  }
+
+  isDateAvailable(date: string): boolean {
+    return this.availableDates === null || this.availableDates.has(date);
   }
 
   private parseDate(value: string): Date | null {

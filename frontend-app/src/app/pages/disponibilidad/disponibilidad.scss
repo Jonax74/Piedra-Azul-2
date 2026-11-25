@@ -129,3 +129,26 @@
   font-weight: 600;
   letter-spacing: 0;
 }
+
+.availability-page .time-input {
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid #cbdedd;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.availability-page .time-input:focus {
+  border-color: var(--teal);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(11 133 130 / 10%);
+}
+
+.availability-page .time-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: .7;
+}

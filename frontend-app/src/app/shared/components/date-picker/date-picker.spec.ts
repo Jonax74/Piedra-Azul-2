@@ -36,4 +36,15 @@ describe('DatePicker', () => {
     expect(touched).toHaveBeenCalledOnce();
     expect(component.isOpen).toBe(false);
   });
+
+  it('does not select dates outside the available-date set', () => {
+    const change = vi.fn();
+    component.availableDates = new Set(['2024-02-15']);
+    component.registerOnChange(change);
+
+    component.selectDate('2024-02-16');
+
+    expect(component.selectedDate).toBe('');
+    expect(change).not.toHaveBeenCalled();
+  });
 });
