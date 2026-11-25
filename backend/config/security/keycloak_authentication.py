@@ -40,7 +40,10 @@ class KeycloakJWTAuthentication(BaseAuthentication):
                 "Falta configurar KEYCLOAK_ISSUER."
             )
 
-        jwks_url = f"{issuer}/protocol/openid-connect/certs"
+        jwks_url = os.getenv(
+            "KEYCLOAK_JWKS_URL",
+            f"{issuer}/protocol/openid-connect/certs",
+        )
 
         try:
             signing_key = jwt.PyJWKClient(jwks_url).get_signing_key_from_jwt(

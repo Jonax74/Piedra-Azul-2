@@ -22,33 +22,93 @@
 					<small>Las citas se agendan únicamente para ti.</small>
 				</div>
 			} @else {
-				<label>Paciente
-					<select [(ngModel)]="selectedPatient" (ngModelChange)="fieldErrors.patient = ''">
-						<option value="">Selecciona un paciente</option>
-						@for (patient of patients; track patient.persona.id) {
-							<option [value]="patient.persona.id">{{ patient.persona.primer_nombre }} {{ patient.persona.primer_apellido }}</option>
-						}
-					</select>
+				<div class="search-select">
+					<label for="patient-search">Paciente</label>
+					<div class="search-control" [class.is-open]="patientDropdownOpen">
+						<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.8 4a6.8 6.8 0 1 0 4.25 12.08l4.43 4.44 1.42-1.42-4.44-4.43A6.8 6.8 0 0 0 10.8 4Zm0 2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6Z"/></svg>
+						<input
+							id="patient-search"
+							type="search"
+							placeholder="Buscar por cédula o nombre..."
+							autocomplete="off"
+							[value]="patientSearch"
+							(input)="onPatientSearch($any($event.target).value)"
+							(focus)="openPatientDropdown()"
+							(blur)="closePatientDropdown()"
+						>
+						@if (isSearchingPatients) { <span class="search-spinner" aria-label="Buscando"></span> }
+					</div>
+					@if (patientDropdownOpen) {
+						<div class="search-results" role="listbox" aria-label="Pacientes">
+							@for (patient of patients; track patient.persona.id) {
+								<button type="button" role="option" [class.selected-result]="selectedPatient === patient.persona.id?.toString()" (mousedown)="$event.preventDefault()" (click)="selectPatient(patient)">
+									<span class="result-avatar">{{ patient.persona.primer_nombre.charAt(0) }}{{ patient.persona.primer_apellido.charAt(0) }}</span>
+									<span class="result-copy">
+										<strong>{{ patientDisplayName(patient) }}</strong>
+										<small>CC · {{ patient.persona.dni }}</small>
+									</span>
+									@if (selectedPatient === patient.persona.id?.toString()) { <span class="result-check">✓</span> }
+								</button>
+							} @empty {
+								<p class="search-empty">{{ isSearchingPatients ? 'Buscando pacientes...' : 'No encontramos pacientes con esa búsqueda.' }}</p>
+							}
+						</div>
+					}
 					@if (fieldErrors.patient) { <small class="field-error">{{ fieldErrors.patient }}</small> }
-				</label>
+				</div>
 			}
-			<label>Especialidad
-				<select [(ngModel)]="selectedSpecialty">
-					<option value="">Todas las especialidades</option>
-					@for (specialty of specialties; track specialty.id) {
-						<option [value]="specialty.id">{{ specialty.nombre }}</option>
+			<div class="search-select specialty-select">
+				<label for="specialty-search">Especialidad</label>
+				<div class="search-control" [class.is-open]="specialtyDropdownOpen">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.8 4a6.8 6.8 0 1 0 4.25 12.08l4.43 4.44 1.42-1.42-4.44-4.43A6.8 6.8 0 0 0 10.8 4Zm0 2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6Z"/></svg>
+					<input
+						id="specialty-search"
+						type="search"
+						placeholder="Buscar especialidad..."
+						autocomplete="off"
+						[value]="specialtySearch"
+						(input)="onSpecialtySearch($any($event.target).value)"
+						(focus)="openSpecialtyDropdown()"
+						(blur)="closeSpecialtyDropdown()"
+					>
+					@if (selectedSpecialty) {
+						<button type="button" class="search-clear" aria-label="Limpiar especialidad" (mousedown)="$event.preventDefault()" (click)="clearSpecialty()">×</button>
 					}
-				</select>
-			</label>
-			<label>Profesional
-					<select [(ngModel)]="selectedProfessional" (ngModelChange)="fieldErrors.professional = ''; selectedSlot = ''; slots = []; dateChanged()">
-					<option value="">Selecciona un profesional</option>
-					@for (professional of filteredProfessionals; track professional.persona) {
-						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
-					}
-				</select>
-					@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
-			</label>
+				</div>
+				@if (specialtyDropdownOpen) {
+					<div class="search-results" role="listbox" aria-label="Especialidades">
+						@for (specialty of filteredSpecialties; track specialty.id) {
+							<button type="button" role="option" [class.selected-result]="selectedSpecialty === specialty.id?.toString()" (mousedown)="$event.preventDefault()" (click)="selectSpecialty(specialty)">
+								<span class="result-avatar specialty-avatar">{{ specialty.nombre.charAt(0) }}</span>
+								<span class="result-copy">
+									<strong>{{ specialty.nombre }}</strong>
+									<small>Especialidad</small>
+								</span>
+								@if (selectedSpecialty === specialty.id?.toString()) { <span class="result-check">✓</span> }
+							</button>
+						} @empty {
+							<p class="search-empty">No encontramos esa especialidad.</p>
+						}
+					</div>
+				}
+			</div>
+			<div class="search-select">
+				<label for="professional-search">Profesional</label>
+				<app-searchable-select
+					inputId="professional-search"
+					ariaLabel="Profesionales"
+					placeholder="Buscar por cédula o nombre..."
+					emptyMessage="No encontramos profesionales con esa búsqueda."
+					loadingMessage="Buscando profesionales..."
+					[options]="professionalOptions"
+					[loading]="isSearchingProfessionals"
+					[(ngModel)]="selectedProfessional"
+					(searchChange)="onProfessionalSearch($event)"
+					(dropdownChange)="onProfessionalDropdownChange($event)"
+					(ngModelChange)="selectProfessionalById($event)"
+				/>
+				@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
+			</div>
 			<div class="calendar-field">
 				<div class="calendar-label"><span>Fecha</span><small>{{ selectedDate || 'Selecciona un día disponible' }}</small></div>
 				<div class="calendar-header"><button type="button" class="calendar-nav" [disabled]="!canPreviousMonth()" (click)="previousMonth()" aria-label="Mes anterior">‹</button><strong>{{ calendarMonthLabel() }}</strong><button type="button" class="calendar-nav" [disabled]="!canNextMonth()" (click)="nextMonth()" aria-label="Mes siguiente">›</button></div>
@@ -57,32 +117,32 @@
 				<small class="date-hint">Disponible desde hoy hasta {{ maxBookingDate }}. Los días sin atención aparecen bloqueados.</small>
 				@if (fieldErrors.date) { <small class="field-error">{{ fieldErrors.date }}</small> }
 			</div>
-			@if (isLoading) { <p class="loading-message" role="status">Consultando horarios disponibles...</p> }
+			@if (isLoading()) { <p class="loading-message" role="status">Consultando horarios disponibles...</p> }
 		</section>
 		<section class="surface slots-panel">
 			<span class="eyebrow">Horarios disponibles</span>
 			<h3>Selecciona una franja</h3>
-			@if (isLoading) { <p class="muted-text">Estamos buscando los horarios para la fecha seleccionada...</p> } @else if (!selectedDate) { <p class="muted-text">Elige una fecha para ver los horarios habilitados.</p> } @else { <p class="muted-text">Selecciona el horario que prefieras.</p> }
+			@if (isLoading()) { <p class="muted-text">Estamos buscando los horarios para la fecha seleccionada...</p> } @else if (!selectedDate) { <p class="muted-text">Elige una fecha para ver los horarios habilitados.</p> } @else { <p class="muted-text">Selecciona el horario que prefieras.</p> }
 			<div class="slot-grid">
-				@for (slot of slots; track slot.fecha_hora) {
+				@for (slot of slots(); track slot.fecha_hora) {
 					<button type="button" [class.selected-slot]="selectedSlot === slot.fecha_hora" (click)="selectedSlot = slot.fecha_hora; fieldErrors.slot = ''">{{ slot.hora }}</button>
 				} @empty {
-					<p class="muted-text">{{ selectedDate ? 'No hay horarios disponibles para esta fecha.' : 'No hay horarios cargados todavía.' }}</p>
+					<p class="muted-text">{{ isLoading() ? 'Consultando horarios...' : selectedDate ? 'No hay horarios disponibles para esta fecha.' : 'No hay horarios cargados todavía.' }}</p>
 				}
 			</div>
 			@if (fieldErrors.slot) { <small class="field-error">{{ fieldErrors.slot }}</small> }
-			<button class="primary-button" type="button" [disabled]="isSaving" (click)="book()">
-				{{ isSaving ? 'Agendando cita...' : 'Confirmar cita' }}
+			<button class="primary-button" type="button" [disabled]="isSaving()" (click)="book()">
+				{{ isSaving() ? 'Agendando cita...' : 'Confirmar cita' }}
 			</button>
 		</section>
 	</div>
 	@if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
-	@if (showConfirmation) {
+	@if (showConfirmation()) {
 		<div class="modal-backdrop" role="presentation" (click)="closeConfirmation()">
 			<section class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" (click)="$event.stopPropagation()">
 				<span class="confirmation-icon">✓</span>
 				<h3 id="confirmation-title">Cita confirmada</h3>
-				<p>{{ confirmationMessage }}</p>
+				<p>{{ confirmationMessage() }}</p>
 				<button class="primary-button" type="button" (click)="closeConfirmation()">Entendido</button>
 			</section>
 		</div>

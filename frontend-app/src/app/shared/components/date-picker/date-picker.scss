@@ -1,0 +1,145 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.date-picker {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.date-picker:focus-within,
+.date-picker:has(.calendar-popup) {
+  z-index: 20;
+}
+
+.calendar-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid #d7e3df;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+
+.calendar-trigger span:first-child {
+  color: #718a8a;
+}
+
+.calendar-trigger strong {
+  flex: 1;
+  font-size: .76rem;
+  font-weight: 600;
+}
+
+.calendar-trigger-icon {
+  color: var(--teal);
+}
+
+.calendar-popup {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 280px;
+  max-width: min(280px, calc(100vw - 40px));
+  padding: 8px;
+  border: 1px solid #d7e3df;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(25 59 54 / 14%);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 0 4px;
+  border-bottom: 1px solid #edf2f0;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.calendar-header strong {
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.calendar-nav {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--teal);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 5px 2px;
+}
+
+.calendar-weekdays {
+  color: #809596;
+  font-size: .62rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-grid {
+  padding-top: 2px;
+}
+
+.calendar-day,
+.calendar-empty {
+  display: grid;
+  min-width: 0;
+  height: 30px;
+  place-items: center;
+}
+
+.calendar-day {
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #c5d0cf;
+  font-size: .7rem;
+  font-family: inherit;
+}
+
+.calendar-day.available-day {
+  background: #e8f5f3;
+  color: var(--teal);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.calendar-day.selected-day,
+.calendar-day.available-day:hover:not(:disabled) {
+  background: var(--teal);
+  color: #fff;
+}
+
+.calendar-feedback {
+  display: block;
+  padding: 4px 3px 2px;
+  color: #809596;
+  font-size: .65rem;
+  text-align: center;
+}
+
+.calendar-feedback.calendar-error {
+  color: #a84242;
+}

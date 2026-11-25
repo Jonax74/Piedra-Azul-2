@@ -1,13 +1,15 @@
-import { ChangeDetectorRef, Component, PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, PLATFORM_ID } from '@angular/core';
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [RouterLink, DatePipe, AppointmentActions],
+  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions, SearchableSelect, DatePicker],
   selector: 'app-mis-citas',
   styleUrl: './mis-citas.scss',
   templateUrl: './mis-citas.html',
@@ -20,14 +22,65 @@ export class MisCitas {
   feedback = '';
   readonly pageSize = 10;
   currentPage = 1;
+  selectedDate = '';
+  selectedProfessional = '';
+  private availableDatesSource: Cita[] | null = null;
+  private availableDatesCache = new Set<string>();
+
+  get availableAppointmentDates(): ReadonlySet<string> {
+    if (this.availableDatesSource !== this.appointments) {
+      this.availableDatesSource = this.appointments;
+      this.availableDatesCache = new Set(
+        this.upcomingAppointments.map((appointment) => this.appointmentDate(appointment)),
+      );
+    }
+    return this.availableDatesCache;
+  }
+
+  get upcomingAppointments(): Cita[] {
+    const now = Date.now();
+    return this.appointments.filter(
+      (appointment) =>
+        appointment.estado !== 'CANCELADA'
+        && new Date(appointment.fecha_hora).getTime() >= now,
+    );
+  }
+
+  get filteredAppointments(): Cita[] {
+    return this.upcomingAppointments.filter((appointment) =>
+      (!this.selectedDate || this.appointmentDate(appointment) === this.selectedDate)
+      && (!this.selectedProfessional || appointment.medico === Number(this.selectedProfessional)),
+    );
+  }
+
+  get professionals(): Array<{ id: number; name: string }> {
+    const namesById = new Map<number, string>();
+    for (const appointment of this.upcomingAppointments) {
+      namesById.set(appointment.medico, this.professionalName(appointment));
+    }
+    return [...namesById]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los médicos' },
+      ...this.professionals.map(({ id, name }) => ({
+        value: id.toString(),
+        label: name,
+        searchText: name,
+      })),
+    ];
+  }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.appointments.length / this.pageSize));
+    return Math.max(1, Math.ceil(this.filteredAppointments.length / this.pageSize));
   }
 
   get paginatedAppointments(): Cita[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.appointments.slice(start, start + this.pageSize);
+    return this.filteredAppointments.slice(start, start + this.pageSize);
   }
 
   professionalName(appointment: Cita): string {
@@ -50,6 +103,16 @@ export class MisCitas {
     });
   }
 
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  clearFilters(): void {
+    this.selectedDate = '';
+    this.selectedProfessional = '';
+    this.onFilterChange();
+  }
+
   previousPage(): void {
     if (this.currentPage > 1) this.currentPage -= 1;
   }
@@ -64,13 +127,22 @@ export class MisCitas {
         appointment.id === updated.id ? updated : appointment,
       ),
     );
-    const updatedIndex = this.appointments.findIndex(
+    const updatedIndex = this.filteredAppointments.findIndex(
       (appointment) => appointment.id === updated.id,
     );
     if (updatedIndex >= 0) {
       this.currentPage = Math.floor(updatedIndex / this.pageSize) + 1;
+    } else {
+      this.currentPage = Math.min(this.currentPage, this.totalPages);
     }
     this.changeDetector.markForCheck();
+  }
+
+  private appointmentDate(appointment: Cita): string {
+    const date = new Date(appointment.fecha_hora);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private sortAppointments(appointments: Cita[]): Cita[] {

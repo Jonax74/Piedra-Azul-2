@@ -1,59 +1,40 @@
-# FrontendApp
+# Frontend Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Este frontend forma parte del entorno local de Piedra Azul y se ejecuta en el
+servicio `frontend` de Docker Compose. Para configurar y levantar el proyecto
+completo, sigue el [README de la raíz](../README.MD). No necesitas instalar
+Node.js ni Angular CLI en el equipo anfitrión.
 
-## Development server
+Desde la raíz del repositorio:
 
-To start a local development server, run:
-
-```bash
-ng serve
+```powershell
+docker compose up --build -d
+docker compose logs -f frontend
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+La aplicación queda disponible en <http://localhost:4200>. El contenedor monta
+el código de `frontend-app/` para recargar los cambios durante el desarrollo.
 
-## Code scaffolding
+## Comandos de Angular
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Con los servicios iniciados, ejecuta las tareas dentro del contenedor:
 
-```bash
-ng generate component component-name
+```powershell
+docker compose exec frontend npx ng generate component nombre-componente
+docker compose exec frontend npm run build
+docker compose exec frontend npm test -- --watch=false
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Angular CLI no incluye un framework de pruebas end-to-end por defecto. Si se
+incorpora uno, documenta su configuración y comando aquí.
 
-```bash
-ng generate --help
+Si cambias `package.json` o `package-lock.json`, actualiza las dependencias del
+volumen de Node.js desde la raíz y reinicia Angular:
+
+```powershell
+docker compose run --rm --no-deps frontend npm ci
+docker compose restart frontend
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Para más información sobre Angular, consulta la
+[documentación de Angular CLI](https://angular.dev/tools/cli).

@@ -7,6 +7,7 @@ import { PersonasService } from '../../core/services/personas.service';
 import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
 import { Disponibilidad as DisponibilidadModel } from '../../shared/models/disponibilidad.model';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 interface AvailabilityFieldErrors {
   professional?: string;
@@ -17,7 +18,7 @@ interface AvailabilityFieldErrors {
 }
 
 @Component({
-  imports: [FormsModule],
+  imports: [FormsModule, SearchableSelect],
   selector: 'app-disponibilidad',
   styleUrl: './disponibilidad.scss',
   templateUrl: './disponibilidad.html',
@@ -98,13 +99,29 @@ export class Disponibilidad {
   }
 
   get filteredSchedules(): DisponibilidadModel[] {
-    if (!this.selectedProfessional) return this.schedules;
-    const scheduleIds = new Set(
-      this.relations
-        .filter((relation) => relation.medico === Number(this.selectedProfessional))
-        .map((relation) => relation.disponibilidad),
-    );
-    return this.schedules.filter((schedule) => schedule.id !== undefined && scheduleIds.has(schedule.id));
+    let schedules = this.schedules;
+    if (this.selectedProfessional) {
+      const scheduleIds = new Set(
+        this.relations
+          .filter((relation) => relation.medico === Number(this.selectedProfessional))
+          .map((relation) => relation.disponibilidad),
+      );
+      schedules = schedules.filter((schedule) => schedule.id !== undefined && scheduleIds.has(schedule.id));
+    }
+
+    return [...schedules].sort((a, b) => {
+      const professionalOrder = this.professionalNames(a).localeCompare(this.professionalNames(b), 'es', { sensitivity: 'base' });
+      if (professionalOrder !== 0) return professionalOrder;
+
+      const dayIndex = (day: string) => {
+        const index = this.weekdayValues.indexOf(day.toUpperCase());
+        return index === -1 ? this.weekdayValues.length : index;
+      };
+      const dayOrder = dayIndex(a.dia_semana) - dayIndex(b.dia_semana);
+      if (dayOrder !== 0) return dayOrder;
+
+      return a.hora_inicio.localeCompare(b.hora_inicio) || a.hora_fin.localeCompare(b.hora_fin);
+    });
   }
 
   professionalChanged(): void {
@@ -118,12 +135,29 @@ export class Disponibilidad {
       .map((relation) => this.professionals.find((professional) => professional.persona === relation.medico))
       .filter((professional): professional is Medico => Boolean(professional))
       .map((professional) => this.professionalName(professional));
+    names.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
     return names.length ? names.join(', ') : 'Profesional no identificado';
   }
 
   professionalName(professional: Medico): string {
     const person = this.people.find((item) => item.id === professional.persona);
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : `Profesional #${professional.persona}`;
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Selecciona un profesional' },
+      ...this.professionals.map((professional) => {
+        const person = this.people.find((item) => item.id === professional.persona);
+        const name = this.professionalName(professional);
+        return {
+          value: professional.persona.toString(),
+          label: name,
+          detail: person ? `CC ${person.dni}` : professional.tipo_profesional,
+          searchText: `${person?.dni ?? ''} ${professional.tipo_profesional}`,
+        };
+      }),
+    ];
   }
 
   saveSchedule(): void {

@@ -7,11 +7,13 @@ import { MedicosService } from '../../core/services/medicos.service';
 import { Cita } from '../../shared/models/cita.model';
 import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
-import { PersonasService } from '../../core/services/personas.service';
+import { Paciente, PersonasService } from '../../core/services/personas.service';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [FormsModule, DatePipe, AppointmentActions],
+  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',
@@ -25,6 +27,7 @@ export class Agenda {
   private readonly platformId = inject(PLATFORM_ID);
   professionals: Medico[] = [];
   people: Persona[] = [];
+  patientSuggestions: Paciente[] = [];
   readonly appointments = signal<Cita[]>([]);
   private doctorAppointments: Cita[] = [];
   selectedProfessional = '';
@@ -34,18 +37,28 @@ export class Agenda {
   readonly isExporting = signal(false);
   readonly isPatientHistoryOpen = signal(false);
   readonly isSearchingPatient = signal(false);
+  readonly isLoadingPatientSuggestions = signal(false);
   readonly patientHistory = signal<HistorialPacienteResponse | null>(null);
   readonly patientHistoryError = signal('');
+  readonly patientSuggestionsError = signal('');
+  readonly isPatientSuggestionsOpen = signal(false);
   patientDocument = '';
+  activePatientSuggestionIndex = -1;
+  private patientSuggestionsLoaded = false;
   isCalendarOpen = false;
   readonly feedback = signal('');
   readonly calendarError = signal('');
   calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  private adminCalendarMonth = this.currentCalendarMonth();
+  private adminDatesRequestedKey = '';
+  private adminDatesLoadedKey = '';
+  private adminDatesRequestId = 0;
   readonly availableAppointmentDates = signal(new Set<string>());
   readonly isDoctorOnly = this.auth.roles().includes('MEDICO')
     && !this.auth.roles().some((role) => ['ADMIN', 'AGENDADOR'].includes(role));
   readonly isSchedulerOnly = this.auth.roles().includes('AGENDADOR')
     && !this.auth.roles().includes('ADMIN');
+  readonly isAdministrator = this.auth.roles().includes('ADMIN');
   readonly pageSize = 10;
   currentPage = 1;
 
@@ -102,10 +115,19 @@ export class Agenda {
   }
 
   onProfessionalChange(): void {
-    if (!this.isSchedulerOnly) return;
+    if (!this.isSchedulerOnly && !this.isAdministrator) return;
     this.selectedDate = '';
-    this.loadSchedulerAppointmentDates();
+    if (this.isSchedulerOnly) {
+      this.loadSchedulerAppointmentDates();
+    } else {
+      this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    }
     this.search();
+  }
+
+  onAdminCalendarMonthChange(month: string): void {
+    this.adminCalendarMonth = month;
+    this.loadAdminAppointmentDates(month);
   }
 
   toggleCalendar(): void {
@@ -137,6 +159,7 @@ export class Agenda {
       });
     }
     if (this.isSchedulerOnly) this.loadSchedulerAppointmentDates();
+    if (this.isAdministrator) this.loadAdminAppointmentDates(this.adminCalendarMonth);
     if (!this.isDoctorOnly) this.search();
   }
 
@@ -199,6 +222,43 @@ export class Agenda {
     });
   }
 
+  private loadAdminAppointmentDates(month: string): void {
+    const medicoId = this.selectedProfessional ? Number(this.selectedProfessional) : undefined;
+    const requestKey = `${month}:${medicoId ?? ''}`;
+    if (this.adminDatesLoadedKey === requestKey
+      || (this.isLoadingDates() && this.adminDatesRequestedKey === requestKey)) {
+      return;
+    }
+
+    const requestId = ++this.adminDatesRequestId;
+    this.adminDatesRequestedKey = requestKey;
+    this.availableAppointmentDates.set(new Set());
+    this.isLoadingDates.set(true);
+    this.calendarError.set('');
+
+    this.citasService.getFechasAgenda(month, medicoId).subscribe({
+      next: (response) => {
+        if (requestId !== this.adminDatesRequestId) return;
+        if (response.mes !== this.adminCalendarMonth
+          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)) {
+          return;
+        }
+        this.adminDatesLoadedKey = requestKey;
+        this.availableAppointmentDates.set(new Set(response.fechas));
+        this.isLoadingDates.set(false);
+        this.changeDetector.markForCheck();
+      },
+      error: (error: { error?: { detail?: string } }) => {
+        if (requestId !== this.adminDatesRequestId) return;
+        this.calendarError.set(error.error?.detail
+          ?? 'No fue posible cargar las fechas con citas.');
+        this.availableAppointmentDates.set(new Set());
+        this.isLoadingDates.set(false);
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
   private currentCalendarMonth(): string {
     return `${this.calendarMonth.getFullYear()}-${String(this.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
   }
@@ -206,6 +266,22 @@ export class Agenda {
   professionalName(professional: Medico): string {
     const person = this.people.find((item) => item.id === professional.persona);
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : 'Profesional';
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los profesionales' },
+      ...this.professionals.map((professional) => {
+        const person = this.people.find((item) => item.id === professional.persona);
+        const name = this.professionalName(professional);
+        return {
+          value: professional.persona.toString(),
+          label: name,
+          detail: person ? `CC ${person.dni}` : professional.tipo_profesional,
+          searchText: `${person?.dni ?? ''} ${professional.tipo_profesional}`,
+        };
+      }),
+    ];
   }
 
   exportAppointments(): void {
@@ -249,18 +325,106 @@ export class Agenda {
     this.patientDocument = '';
     this.patientHistory.set(null);
     this.patientHistoryError.set('');
+    this.patientSuggestionsError.set('');
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
     this.isPatientHistoryOpen.set(true);
+    this.loadPatientSuggestions();
   }
 
   closePatientHistory(): void {
     if (this.isSearchingPatient()) return;
     this.isPatientHistoryOpen.set(false);
+    this.isPatientSuggestionsOpen.set(false);
+  }
+
+  onPatientDocumentChange(): void {
+    this.patientHistory.set(null);
+    this.patientHistoryError.set('');
+    this.isPatientSuggestionsOpen.set(this.patientDocument.trim().length >= 2);
+    this.activePatientSuggestionIndex = -1;
+  }
+
+  onPatientSuggestionKeydown(event: KeyboardEvent): void {
+    const suggestions = this.matchingPatientSuggestions;
+    if (event.key === 'Escape') {
+      this.isPatientSuggestionsOpen.set(false);
+      this.activePatientSuggestionIndex = -1;
+      return;
+    }
+
+    if (!suggestions.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.isPatientSuggestionsOpen.set(true);
+      this.activePatientSuggestionIndex = Math.min(
+        this.activePatientSuggestionIndex + 1,
+        suggestions.length - 1,
+      );
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activePatientSuggestionIndex = Math.max(
+        this.activePatientSuggestionIndex - 1,
+        0,
+      );
+    } else if (event.key === 'Enter'
+      && this.isPatientSuggestionsOpen()
+      && this.activePatientSuggestionIndex >= 0) {
+      event.preventDefault();
+      this.selectPatientSuggestion(suggestions[this.activePatientSuggestionIndex]);
+    }
+  }
+
+  activePatientSuggestionId(): string | null {
+    const patient = this.matchingPatientSuggestions[this.activePatientSuggestionIndex];
+    return patient ? `patient-suggestion-${patient.persona.id ?? patient.persona.dni}` : null;
+  }
+
+  selectPatientSuggestion(patient: Paciente): void {
+    this.patientDocument = String(patient.persona.dni);
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
+    this.patientSuggestionsError.set('');
+  }
+
+  get matchingPatientSuggestions(): Paciente[] {
+    const query = this.patientDocument.trim();
+    if (!/^\d{2,}$/.test(query)) return [];
+
+    return this.patientSuggestions
+      .filter((patient) => String(patient.persona.dni).startsWith(query)
+        && String(patient.persona.dni) !== query)
+      .slice(0, 6);
+  }
+
+  private loadPatientSuggestions(): void {
+    if (this.patientSuggestionsLoaded || this.isLoadingPatientSuggestions()) return;
+
+    this.isLoadingPatientSuggestions.set(true);
+    this.patientSuggestionsError.set('');
+    this.personasService.getPacientes().subscribe({
+      next: (patients) => {
+        this.patientSuggestions = patients;
+        this.patientSuggestionsLoaded = true;
+        this.isLoadingPatientSuggestions.set(false);
+        this.changeDetector.markForCheck();
+      },
+      error: () => {
+        this.patientSuggestionsError.set(
+          'No se pudieron cargar las sugerencias. Puedes escribir la cédula completa y buscar.',
+        );
+        this.isLoadingPatientSuggestions.set(false);
+        this.changeDetector.markForCheck();
+      },
+    });
   }
 
   searchPatientHistory(): void {
     const document = this.patientDocument.trim();
     this.patientHistory.set(null);
     this.patientHistoryError.set('');
+    this.isPatientSuggestionsOpen.set(false);
+    this.activePatientSuggestionIndex = -1;
     if (!/^\d+$/.test(document)) {
       this.patientHistoryError.set('Escribe una cédula válida usando solo números.');
       return;

@@ -1,0 +1,61 @@
+<div class="date-picker">
+	<button
+		type="button"
+		class="calendar-trigger"
+		[disabled]="isDisabled"
+		(click)="toggleCalendar()"
+		[attr.aria-expanded]="isOpen"
+		[attr.aria-label]="ariaLabel"
+		aria-haspopup="dialog"
+		[attr.aria-controls]="inputId + '-calendar'"
+	>
+		<span>{{ label }}</span>
+		<strong>{{ selectedDate || emptyLabel }}</strong>
+		<span class="calendar-trigger-icon" aria-hidden="true">▾</span>
+	</button>
+	@if (isOpen) {
+		<section
+			class="calendar-popup"
+			[id]="inputId + '-calendar'"
+			role="dialog"
+			[attr.aria-label]="ariaLabel"
+			(keydown.escape)="closeCalendar()"
+		>
+			<div class="calendar-header">
+				<button type="button" class="calendar-nav" (click)="changeMonth(-1)" aria-label="Mes anterior">‹</button>
+				<strong>{{ calendarMonthLabel() }}</strong>
+				<button type="button" class="calendar-nav" (click)="changeMonth(1)" aria-label="Mes siguiente">›</button>
+			</div>
+			<div class="calendar-weekdays" aria-hidden="true">
+				@for (weekday of weekdays; track $index) { <span>{{ weekday }}</span> }
+			</div>
+			<div class="calendar-grid">
+				@for (day of calendarCells(); track $index) {
+					@if (day) {
+						<button
+							type="button"
+							class="calendar-day"
+							[class.available-day]="isDateAvailable(day.iso)"
+							[class.selected-day]="selectedDate === day.iso"
+							[disabled]="!isDateAvailable(day.iso)"
+							[attr.aria-label]="day.iso + (availableDates === null ? '' : isDateAvailable(day.iso) ? ', tiene citas' : ', sin citas')"
+							[attr.aria-pressed]="selectedDate === day.iso"
+							(click)="selectDate(day.iso)"
+						>{{ day.number }}</button>
+					} @else {
+						<span class="calendar-empty"></span>
+					}
+				}
+			</div>
+			@if (loading) {
+				<small class="calendar-feedback" role="status">Cargando fechas con citas...</small>
+			} @else if (errorMessage) {
+				<small class="calendar-feedback calendar-error" role="alert">{{ errorMessage }}</small>
+			} @else if (availableDates !== null && availableDates.size === 0) {
+				<small class="calendar-feedback">No hay citas disponibles en este mes.</small>
+			} @else if (availableDates !== null) {
+				<small class="calendar-feedback">Selecciona un día marcado con citas.</small>
+			}
+		</section>
+	}
+</div>
