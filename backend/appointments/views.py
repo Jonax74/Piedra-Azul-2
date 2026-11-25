@@ -349,6 +349,18 @@ class FechasAgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
     def get(self, request):
+        seccion = request.query_params.get("seccion", "agenda")
+        if seccion not in {"agenda", "historial"}:
+            return Response(
+                {"detail": "seccion debe ser agenda o historial."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        estados = (
+            ESTADOS_OCUPADOS
+            if seccion == "agenda"
+            else ESTADOS_HISTORIAL
+        )
         month_text = request.query_params.get("mes", "")
         medico_id = request.query_params.get("medico")
 
@@ -389,7 +401,7 @@ class FechasAgendaCitasView(APIView):
                     zona_horaria,
                 ),
             )
-            .exclude(estado="CANCELADA")
+            .filter(estado__in=estados)
             .annotate(fecha_local=TruncDate("fecha_hora", tzinfo=zona_horaria))
             .values_list("fecha_local", flat=True)
             .distinct()
@@ -408,6 +420,18 @@ class ExportarAgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
     def get(self, request):
+        seccion = request.query_params.get("seccion", "agenda")
+        if seccion not in {"agenda", "historial"}:
+            return Response(
+                {"detail": "seccion debe ser agenda o historial."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        estados = (
+            ESTADOS_OCUPADOS
+            if seccion == "agenda"
+            else ESTADOS_HISTORIAL
+        )
         medico_id = request.query_params.get("medico", "")
         fecha_texto = request.query_params.get("fecha", "")
         try:
@@ -443,7 +467,7 @@ class ExportarAgendaCitasView(APIView):
                 fecha_hora__gte=inicio,
                 fecha_hora__lte=fin,
             )
-            .exclude(estado="CANCELADA")
+            .filter(estado__in=estados)
             .order_by("fecha_hora")
         )
         medico = Medico.objects.select_related("persona").get(pk=medico_id)
@@ -454,6 +478,18 @@ class ExportarAgendaMedicoView(APIView):
     permission_classes = [IsDoctorRole]
 
     def get(self, request):
+        seccion = request.query_params.get("seccion", "agenda")
+        if seccion not in {"agenda", "historial"}:
+            return Response(
+                {"detail": "seccion debe ser agenda o historial."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        estados = (
+            ESTADOS_OCUPADOS
+            if seccion == "agenda"
+            else ESTADOS_HISTORIAL
+        )
         fecha_texto = request.query_params.get("fecha", "")
         try:
             fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
@@ -488,7 +524,7 @@ class ExportarAgendaMedicoView(APIView):
                 fecha_hora__gte=inicio,
                 fecha_hora__lte=fin,
             )
-            .exclude(estado="CANCELADA")
+            .filter(estado__in=estados)
             .order_by("fecha_hora")
         )
         return _appointment_csv_response(citas, medico, fecha)
