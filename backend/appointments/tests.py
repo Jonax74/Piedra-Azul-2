@@ -255,7 +255,10 @@ class CitaPacienteScopeTests(TestCase):
 		)
 		request = APIRequestFactory().patch(
 			f"/api/citas/{cita.pk}/",
-			{"estado": "CANCELADA"},
+			{
+				"estado": "CANCELADA",
+				"motivo_cancelacion": "No puedo asistir.",
+			},
 			format="json",
 		)
 		force_authenticate(request, user=self.request.user)
@@ -266,6 +269,11 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		cita.refresh_from_db()
 		self.assertEqual(cita.estado, "CANCELADA")
+		self.assertEqual(cita.motivo_cancelacion, "No puedo asistir.")
+		self.assertEqual(
+			response.data["motivo_cancelacion"],
+			"No puedo asistir.",
+		)
 
 	def test_patient_cannot_cancel_appointment_less_than_48_hours_ahead(self):
 		now = datetime(2099, 1, 1, 10, tzinfo=datetime_timezone.utc)
@@ -277,7 +285,10 @@ class CitaPacienteScopeTests(TestCase):
 		)
 		request = APIRequestFactory().patch(
 			f"/api/citas/{cita.pk}/",
-			{"estado": "CANCELADA"},
+			{
+				"estado": "CANCELADA",
+				"motivo_cancelacion": "No puedo asistir.",
+			},
 			format="json",
 		)
 		force_authenticate(request, user=self.request.user)
@@ -289,6 +300,73 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertIn("estado", response.data)
 		cita.refresh_from_db()
 		self.assertEqual(cita.estado, "PROGRAMADA")
+
+	def test_patient_cannot_cancel_without_a_reason(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"estado": "CANCELADA"},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("motivo_cancelacion", response.data)
+		cita.refresh_from_db()
+		self.assertEqual(cita.estado, "PROGRAMADA")
+		self.assertIsNone(cita.motivo_cancelacion)
+
+	def test_patient_cannot_cancel_with_a_whitespace_only_reason(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{
+				"estado": "CANCELADA",
+				"motivo_cancelacion": "   ",
+			},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("motivo_cancelacion", response.data)
+
+	def test_patient_reason_is_trimmed_before_it_is_saved(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{
+				"estado": "CANCELADA",
+				"motivo_cancelacion": "  No puedo asistir.  ",
+			},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 200, response.data)
+		cita.refresh_from_db()
+		self.assertEqual(cita.motivo_cancelacion, "No puedo asistir.")
 
 	def test_cita_includes_patient_and_medico_names(self):
 		cita = Cita.objects.create(
@@ -322,7 +400,14 @@ class CitaPacienteScopeTests(TestCase):
 			)
 			request = APIRequestFactory().patch(
 				f"/api/citas/{cita.pk}/",
-				{"estado": estado},
+				{
+					"estado": estado,
+					**(
+						{"motivo_cancelacion": "No puedo asistir."}
+						if estado == "CANCELADA"
+						else {}
+					),
+				},
 				format="json",
 			)
 			force_authenticate(request, user=self.request.user)

@@ -25,6 +25,7 @@ class CitaSerializer(serializers.ModelSerializer):
             "fecha_hora",
             "estado",
             "observacion",
+            "motivo_cancelacion",
             "paciente_detalle",
             "medico_detalle",
         ]
@@ -150,12 +151,40 @@ class CitaSerializer(serializers.ModelSerializer):
 
         roles = set(getattr(self.context["request"].user, "roles", []))
         roles_ampliados = {"ADMIN", "AGENDADOR", "MEDICO"}
-        if (
+        es_cancelacion = (
             self.instance is not None
             and self.instance.estado != "CANCELADA"
             and estado == "CANCELADA"
-            and "PACIENTE" in roles
+        )
+        es_paciente = (
+            "PACIENTE" in roles
             and not roles.intersection(roles_ampliados)
+        )
+
+        if "motivo_cancelacion" in attrs and not es_cancelacion:
+            raise serializers.ValidationError(
+                {
+                    "motivo_cancelacion": (
+                        "El motivo solo se puede registrar al cancelar una cita."
+                    ),
+                },
+            )
+
+        if es_cancelacion and es_paciente:
+            motivo = attrs.get("motivo_cancelacion")
+            if not motivo or not motivo.strip():
+                raise serializers.ValidationError(
+                    {
+                        "motivo_cancelacion": (
+                            "Debes indicar el motivo de la cancelación."
+                        ),
+                    },
+                )
+            attrs["motivo_cancelacion"] = motivo.strip()
+
+        if (
+            es_cancelacion
+            and es_paciente
             and self.instance.fecha_hora < timezone.now() + timedelta(hours=48)
         ):
             raise serializers.ValidationError(
