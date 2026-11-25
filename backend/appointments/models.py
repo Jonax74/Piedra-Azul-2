@@ -7,6 +7,7 @@ from users.models import Usuario
 
 
 ESTADOS_OCUPADOS = ("PROGRAMADA", "CONFIRMADA", "REAGENDADA")
+ESTADOS_HISTORIAL = ("ATENDIDA", "CANCELADA", "NO_ASISTIDA")
 
 
 class Cita(models.Model):

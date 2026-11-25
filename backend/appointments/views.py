@@ -11,7 +11,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from appointments.models import Cita, ConfiguracionSistema
+from appointments.models import (
+    Cita,
+    ConfiguracionSistema,
+    ESTADOS_HISTORIAL,
+    ESTADOS_OCUPADOS,
+)
 from appointments.serializers import (
     CitaSerializer,
     ConfiguracionSistemaSerializer,
@@ -185,9 +190,21 @@ class AgendaCitasView(APIView):
     permission_classes = [IsAgendadorOrAdmin]
 
     def get(self, request):
+        seccion = request.query_params.get("seccion", "agenda")
+        if seccion not in {"agenda", "historial"}:
+            return Response(
+                {"detail": "seccion debe ser agenda o historial."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         medico_id = request.query_params.get("medico")
         fecha_texto = request.query_params.get("fecha")
 
+        estados = (
+            ESTADOS_OCUPADOS
+            if seccion == "agenda"
+            else ESTADOS_HISTORIAL
+        )
         filtros = {}
         fecha = None
 
@@ -233,6 +250,7 @@ class AgendaCitasView(APIView):
                 "usuario",
             )
             .filter(**filtros)
+            .filter(estado__in=estados)
             .order_by("fecha_hora")
         )
 
