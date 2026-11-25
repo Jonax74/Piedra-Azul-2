@@ -22,10 +22,42 @@ describe('CitasService', () => {
 		service.getAgendaMedico('2026-10-12').subscribe();
 
 		const request = httpTesting.expectOne(
-			`${environment.apiUrl}/citas/medico/agenda/?fecha=2026-10-12`,
+			`${environment.apiUrl}/citas/medico/agenda/?fecha=2026-10-12&seccion=agenda`,
 		);
 		expect(request.request.method).toBe('GET');
 		request.flush({ cantidad: 0, resultados: [] });
+	});
+
+	it('requests the selected agenda section for all agenda-related endpoints', () => {
+		service.getAgenda(12, '2026-10-12', 'historial').subscribe();
+		const agendaRequest = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/agenda/?medico=12&fecha=2026-10-12&seccion=historial`,
+		);
+		agendaRequest.flush({ cantidad: 0, resultados: [] });
+
+		service.getAgendaMedico('2026-10-12', 'historial').subscribe();
+		const doctorAgendaRequest = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/medico/agenda/?fecha=2026-10-12&seccion=historial`,
+		);
+		doctorAgendaRequest.flush({ cantidad: 0, resultados: [] });
+
+		service.getFechasAgenda('2026-10', 12, 'historial').subscribe();
+		const datesRequest = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/agenda/fechas/?mes=2026-10&medico=12&seccion=historial`,
+		);
+		datesRequest.flush({ mes: '2026-10', fechas: [] });
+
+		service.exportarAgenda(12, '2026-10-12', 'historial').subscribe();
+		const exportRequest = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/agenda/exportar/?medico=12&fecha=2026-10-12&seccion=historial`,
+		);
+		exportRequest.flush(new Blob());
+
+		service.exportarAgendaMedico('2026-10-12', 'historial').subscribe();
+		const doctorExportRequest = httpTesting.expectOne(
+			`${environment.apiUrl}/citas/medico/agenda/exportar/?fecha=2026-10-12&seccion=historial`,
+		);
+		doctorExportRequest.flush(new Blob());
 	});
 
 	it('requests appointment dates for a month and optional selected professional', () => {
@@ -34,7 +66,7 @@ describe('CitasService', () => {
 		});
 
 		const request = httpTesting.expectOne(
-			`${environment.apiUrl}/citas/agenda/fechas/?mes=2026-10&medico=12`,
+			`${environment.apiUrl}/citas/agenda/fechas/?mes=2026-10&medico=12&seccion=agenda`,
 		);
 		expect(request.request.method).toBe('GET');
 		request.flush({ mes: '2026-10', fechas: ['2026-10-05'] });
@@ -46,7 +78,7 @@ describe('CitasService', () => {
 		});
 
 		const request = httpTesting.expectOne(
-			`${environment.apiUrl}/citas/agenda/exportar/?medico=12&fecha=2026-10-05`,
+			`${environment.apiUrl}/citas/agenda/exportar/?medico=12&fecha=2026-10-05&seccion=agenda`,
 		);
 		expect(request.request.method).toBe('GET');
 		expect(request.request.responseType).toBe('blob');
@@ -59,7 +91,7 @@ describe('CitasService', () => {
 		});
 
 		const request = httpTesting.expectOne(
-			`${environment.apiUrl}/citas/medico/agenda/exportar/?fecha=2026-10-12`,
+			`${environment.apiUrl}/citas/medico/agenda/exportar/?fecha=2026-10-12&seccion=agenda`,
 		);
 		expect(request.request.method).toBe('GET');
 		expect(request.request.responseType).toBe('blob');

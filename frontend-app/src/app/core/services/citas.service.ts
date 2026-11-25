@@ -9,6 +9,8 @@ interface AgendaResponse {
   resultados: Cita[];
 }
 
+export type SeccionAgenda = 'agenda' | 'historial';
+
 interface AgendaDatesResponse {
   mes: string;
   fechas: string[];
@@ -54,8 +56,12 @@ interface FranjasResponse {
 export class CitasService {
   private readonly api = inject(ApiService);
 
-  getAgenda(medicoId?: number, fecha?: string) {
-    return this.api.get<AgendaResponse>('/citas/agenda/', { medico: medicoId, fecha }).pipe(timeout({ first: 12000 }));
+  getAgenda(medicoId?: number, fecha?: string, seccion: SeccionAgenda = 'agenda') {
+    return this.api.get<AgendaResponse>('/citas/agenda/', {
+      medico: medicoId,
+      fecha,
+      seccion,
+    }).pipe(timeout({ first: 12000 }));
   }
 
   getHistorialPaciente(cedula: string) {
@@ -63,27 +69,32 @@ export class CitasService {
       .pipe(timeout({ first: 12000 }));
   }
 
-  getFechasAgenda(mes: string, medicoId?: number) {
+  getFechasAgenda(mes: string, medicoId?: number, seccion: SeccionAgenda = 'agenda') {
     return this.api.get<AgendaDatesResponse>('/citas/agenda/fechas/', {
       mes,
       medico: medicoId,
+      seccion,
     }).pipe(timeout({ first: 12000 }));
   }
 
-  exportarAgenda(medicoId: number, fecha: string) {
+  exportarAgenda(medicoId: number, fecha: string, seccion: SeccionAgenda = 'agenda') {
     return this.api.getBlob('/citas/agenda/exportar/', {
       medico: medicoId,
       fecha,
+      seccion,
     }).pipe(timeout({ first: 12000 }));
   }
 
-  exportarAgendaMedico(fecha: string) {
-    return this.api.getBlob('/citas/medico/agenda/exportar/', { fecha })
+  exportarAgendaMedico(fecha: string, seccion: SeccionAgenda = 'agenda') {
+    return this.api.getBlob('/citas/medico/agenda/exportar/', { fecha, seccion })
       .pipe(timeout({ first: 12000 }));
   }
 
-  getAgendaMedico(fecha?: string) {
-    return this.api.get<AgendaResponse>('/citas/medico/agenda/', { fecha }).pipe(timeout({ first: 12000 }));
+  getAgendaMedico(fecha?: string, seccion: SeccionAgenda = 'agenda') {
+    return this.api.get<AgendaResponse>('/citas/medico/agenda/', {
+      fecha,
+      seccion,
+    }).pipe(timeout({ first: 12000 }));
   }
 
   getFranjasDisponibles(medicoId: number, fecha: string) {
