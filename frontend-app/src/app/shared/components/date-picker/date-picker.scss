@@ -131,3 +131,15 @@
   background: var(--teal);
   color: #fff;
 }
+
+.calendar-feedback {
+  display: block;
+  padding: 4px 3px 2px;
+  color: #809596;
+  font-size: .65rem;
+  text-align: center;
+}
+
+.calendar-feedback.calendar-error {
+  color: #a84242;
+}

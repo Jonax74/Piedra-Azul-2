@@ -137,8 +137,11 @@
   border-radius: 4px;
   background: #fff;
   color: var(--ink);
+  color-scheme: light;
   font-size: .82rem;
   font-variant-numeric: tabular-nums;
+  accent-color: var(--teal);
+  cursor: pointer;
   transition: border-color .18s ease, box-shadow .18s ease;
 }
 
@@ -149,6 +152,16 @@
 }
 
 .availability-page .time-input::-webkit-calendar-picker-indicator {
+  padding: 4px;
+  border-radius: 4px;
+  background-color: #e5f3f0;
   cursor: pointer;
-  opacity: .7;
+}
+
+.availability-page .time-input::-webkit-datetime-edit-hour-field:focus,
+.availability-page .time-input::-webkit-datetime-edit-minute-field:focus,
+.availability-page .time-input::-webkit-datetime-edit-ampm-field:focus {
+  border-radius: 3px;
+  background: #e5f3f0;
+  color: var(--teal);
 }

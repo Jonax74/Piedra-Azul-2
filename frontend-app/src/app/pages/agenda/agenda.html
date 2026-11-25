@@ -89,7 +89,11 @@
 				<app-date-picker
 					inputId="admin-agenda-date"
 					ariaLabel="Filtrar agenda por fecha"
+					[availableDates]="availableAppointmentDates()"
+					[loading]="isLoadingDates()"
+					[errorMessage]="calendarError()"
 					[(ngModel)]="selectedDate"
+					(monthChange)="onAdminCalendarMonthChange($event)"
 				/>
 			</div>
 		}

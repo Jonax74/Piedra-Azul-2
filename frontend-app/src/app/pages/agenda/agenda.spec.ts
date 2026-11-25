@@ -305,12 +305,19 @@ describe('Agenda', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const month = component.calendarMonth;
-    const date = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}-15`;
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const date = `${month}-12`;
+    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined);
     fixture.nativeElement.querySelector('[aria-label="Filtrar agenda por fecha"]').click();
     fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector(
+        `#admin-agenda-date-calendar [aria-label="${month}-15, sin citas"]`,
+      ) as HTMLButtonElement).disabled,
+    ).toBe(true);
     fixture.nativeElement.querySelector(
-      `#admin-agenda-date-calendar [aria-label="${date}"]`,
+      `#admin-agenda-date-calendar [aria-label="${date}, tiene citas"]`,
     ).click();
     fixture.detectChanges();
 

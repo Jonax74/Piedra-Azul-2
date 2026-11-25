@@ -47,4 +47,15 @@ describe('DatePicker', () => {
     expect(component.selectedDate).toBe('');
     expect(change).not.toHaveBeenCalled();
   });
+
+  it('emits the displayed month when opening and navigating the calendar', () => {
+    const monthChange = vi.fn();
+    component.monthChange.subscribe(monthChange);
+    component.toggleCalendar();
+    component.changeMonth(1);
+
+    expect(monthChange).toHaveBeenCalledTimes(2);
+    expect(monthChange.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}$/);
+    expect(monthChange.mock.calls[1][0]).toMatch(/^\d{4}-\d{2}$/);
+  });
 });

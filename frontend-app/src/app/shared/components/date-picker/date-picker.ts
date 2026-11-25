@@ -1,4 +1,4 @@
-import { Component, forwardRef, Input } from '@angular/core';
+import { Component, EventEmitter, forwardRef, Input, Output } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 export interface CalendarDay {
@@ -22,6 +22,9 @@ export class DatePicker implements ControlValueAccessor {
   @Input() emptyLabel = 'Todas las fechas';
   @Input() ariaLabel = 'Seleccionar fecha';
   @Input() availableDates: ReadonlySet<string> | null = null;
+  @Input() loading = false;
+  @Input() errorMessage = '';
+  @Output() readonly monthChange = new EventEmitter<string>();
 
   readonly weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   selectedDate = '';
@@ -59,6 +62,7 @@ export class DatePicker implements ControlValueAccessor {
     const month = selected ?? new Date();
     this.calendarMonth = new Date(month.getFullYear(), month.getMonth(), 1);
     this.isOpen = true;
+    this.monthChange.emit(this.monthKey());
   }
 
   closeCalendar(): void {
@@ -71,6 +75,7 @@ export class DatePicker implements ControlValueAccessor {
       this.calendarMonth.getMonth() + offset,
       1,
     );
+    this.monthChange.emit(this.monthKey());
   }
 
   calendarMonthLabel(): string {
@@ -108,7 +113,11 @@ export class DatePicker implements ControlValueAccessor {
   }
 
   isDateAvailable(date: string): boolean {
-    return this.availableDates === null || this.availableDates.has(date);
+    return !this.loading && (this.availableDates === null || this.availableDates.has(date));
+  }
+
+  private monthKey(): string {
+    return `${this.calendarMonth.getFullYear()}-${String(this.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
   }
 
   private parseDate(value: string): Date | null {

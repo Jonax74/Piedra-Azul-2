@@ -47,6 +47,15 @@
 					}
 				}
 			</div>
+			@if (loading) {
+				<small class="calendar-feedback" role="status">Cargando fechas con citas...</small>
+			} @else if (errorMessage) {
+				<small class="calendar-feedback calendar-error" role="alert">{{ errorMessage }}</small>
+			} @else if (availableDates !== null && availableDates.size === 0) {
+				<small class="calendar-feedback">No hay citas disponibles en este mes.</small>
+			} @else if (availableDates !== null) {
+				<small class="calendar-feedback">Selecciona un día marcado con citas.</small>
+			}
 		</section>
 	}
 </div>
