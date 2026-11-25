@@ -126,6 +126,37 @@ describe('Agenda', () => {
     expect(fixture.nativeElement.textContent).toContain('Se encontraron 1 citas');
   });
 
+  it('renders NO_ASISTIDA as No asistida in the staff history table', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    getAgenda.mockReturnValue(of({
+      cantidad: 1,
+      resultados: [{
+        id: 1,
+        paciente: 1,
+        medico: 1,
+        fecha_hora: '2026-10-12T08:00:00-05:00',
+        estado: 'NO_ASISTIDA',
+      }],
+    }));
+    fixture.nativeElement.querySelector(
+      'nav[aria-label="Sección de citas"] button:nth-child(2)',
+    ).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const status = fixture.nativeElement.querySelector(
+      '.appointment-row .status-pill',
+    ) as HTMLElement;
+    expect(status.textContent.trim()).toBe('No asistida');
+    expect(status.textContent).not.toContain('NO_ASISTIDA');
+  });
+
   it('renders the initial agenda when the request completes outside Angular', async () => {
     const month = `${component.calendarMonth.getFullYear()}-${String(component.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
 
