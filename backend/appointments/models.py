@@ -57,6 +57,12 @@ class Cita(models.Model):
         null=True,
         db_column="observacion",
     )
+    motivo_cancelacion = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True,
+        db_column="motivo_cancelacion",
+    )
 
     class Meta:
         db_table = "cita"

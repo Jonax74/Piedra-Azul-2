@@ -111,13 +111,53 @@
           }
         </div>
       } @else {
-        <span class="eyebrow">Actualizar cita</span>
-        <h3 id="status-title">{{ pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Cancelar cita' }}</h3>
-        <p>
-          {{ pendingStatus === 'CONFIRMADA'
-            ? 'La cita quedará confirmada. ¿Deseas continuar?'
-            : 'Esta acción liberará el horario para otras personas. ¿Deseas cancelar la cita?' }}
-        </p>
+        @if (cancellationBlocked) {
+          <span class="eyebrow">Plazo de cancelación vencido</span>
+          <h3 id="status-title">No puedes cancelar esta cita</h3>
+          <p>
+            Las citas deben cancelarse con al menos 48 horas de anticipación.
+            El plazo venció el: <strong>{{ cancellationDeadlineLabel() }}</strong>
+            Si necesitas ayuda, comunícate con la clínica.
+          </p>
+        } @else {
+          @if (pendingStatus === 'CANCELADA') {
+            <span class="eyebrow">Actualizar cita</span>
+            <h3 id="status-title">Cancelar cita</h3>
+            <p>Esta acción liberará el horario para otras personas. ¿Deseas cancelar la cita?</p>
+            <div class="cancellation-reason">
+              <label for="cancellation-reason">
+                Motivo de cancelación
+                @if (requiresCancellationReason) {
+                  <span class="required-marker" aria-hidden="true">*</span>
+                }
+              </label>
+              <textarea
+                id="cancellation-reason"
+                name="cancellation-reason"
+                [(ngModel)]="cancellationReason"
+                [ngModelOptions]="{ standalone: true }"
+                maxlength="500"
+                rows="4"
+                [required]="requiresCancellationReason"
+                [attr.aria-required]="requiresCancellationReason"
+                aria-describedby="cancellation-reason-hint cancellation-reason-count"
+                placeholder="Cuéntanos por qué necesitas cancelar..."
+              ></textarea>
+              <div class="cancellation-reason-meta">
+                <small id="cancellation-reason-hint">
+                  {{ requiresCancellationReason
+                    ? 'Obligatorio. Quedará registrado en la cita.'
+                    : 'Opcional para personal. Si lo indicas, quedará registrado en la cita.' }}
+                </small>
+                <small id="cancellation-reason-count">{{ cancellationReason.length }}/500</small>
+              </div>
+            </div>
+          } @else {
+            <span class="eyebrow">Actualizar cita</span>
+            <h3 id="status-title">Confirmar cita</h3>
+            <p>La cita quedará confirmada. ¿Deseas continuar?</p>
+          }
+        }
       }
 
       @if (feedback) {
@@ -125,7 +165,7 @@
       }
 
       <div class="dialog-actions">
-        <button class="secondary-button" type="button" [disabled]="isSaving" (click)="closeDialog()">Volver</button>
+        <button class="secondary-button" type="button" [disabled]="isSaving" (click)="closeDialog()">{{ cancellationBlocked ? 'Entendido' : 'Volver' }}</button>
         @if (isRescheduleOpen) {
           <button
             class="primary-button"
@@ -133,12 +173,12 @@
             [disabled]="isSaving || isLoadingSlots || !selectedSlot"
             (click)="reschedule()"
           >{{ isSaving ? 'Reagendando…' : 'Guardar horario' }}</button>
-        } @else {
+        } @else if (!cancellationBlocked) {
           <button
             class="primary-button"
             [class.danger-button]="pendingStatus === 'CANCELADA'"
             type="button"
-            [disabled]="isSaving"
+            [disabled]="isSaving || (requiresCancellationReason && !cancellationReason.trim())"
             (click)="confirmStatusChange()"
           >{{ isSaving ? 'Guardando…' : (pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Sí, cancelar') }}</button>
         }

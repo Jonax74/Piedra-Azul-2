@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { Auth } from '../../../core/services/auth';
 import { CitasService } from '../../../core/services/citas.service';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
 import { Cita } from '../../models/cita.model';
@@ -15,6 +16,7 @@ describe('AppointmentActions', () => {
     estado: 'CONFIRMADA',
   };
   const actualizarEstadoCita = vi.fn(() => of(updatedAppointment));
+  const authRoles = vi.fn(() => ['PACIENTE']);
   const getFechasDisponibles = vi.fn(() => of({
     medico: 3,
     mes: '2099-01',
@@ -35,6 +37,7 @@ describe('AppointmentActions', () => {
     getFechasDisponibles.mockClear();
     getFranjasDisponibles.mockClear();
     actualizarEstadoCita.mockClear();
+    authRoles.mockReturnValue(['PACIENTE']);
     await TestBed.configureTestingModule({
       imports: [AppointmentActions],
       providers: [
@@ -54,6 +57,10 @@ describe('AppointmentActions', () => {
               activo: true,
             })),
           },
+        },
+        {
+          provide: Auth,
+          useValue: { roles: authRoles },
         },
       ],
     }).compileComponents();
@@ -96,6 +103,87 @@ describe('AppointmentActions', () => {
 
     expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
       estado: 'CONFIRMADA',
+    });
+
+    expect(onUpdated).toHaveBeenCalledWith(updatedAppointment);
+  });
+
+  it('explains why a patient cannot cancel within 48 hours', () => {
+    fixture.componentRef.setInput('cita', {
+      id: 12,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(),
+      estado: 'PROGRAMADA',
+    } satisfies Cita);
+    fixture.componentInstance.openStatusConfirmation('CANCELADA');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#status-title').textContent)
+      .toContain('No puedes cancelar esta cita');
+    expect(fixture.nativeElement.querySelector('.danger-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.dialog-actions').textContent)
+      .toContain('Entendido');
+    expect(actualizarEstadoCita).not.toHaveBeenCalled();
+  });
+
+  it('keeps staff cancellation available without requiring a reason', () => {
+    authRoles.mockReturnValue(['AGENDADOR']);
+    fixture.componentRef.setInput('cita', {
+      id: 12,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(),
+      estado: 'PROGRAMADA',
+    } satisfies Cita);
+    fixture.componentInstance.openStatusConfirmation('CANCELADA');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#status-title').textContent)
+      .toContain('Cancelar cita');
+    expect(fixture.nativeElement.querySelector('.danger-button')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#cancellation-reason')).not.toBeNull();
+    expect((fixture.nativeElement.querySelector('.danger-button') as HTMLButtonElement).disabled)
+      .toBe(false);
+
+    (fixture.nativeElement.querySelector('.danger-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
+      estado: 'CANCELADA',
+    });
+  });
+
+  it('requires and submits a trimmed cancellation reason for a patient', () => {
+    const onUpdated = vi.fn();
+    fixture.componentInstance.citaActualizada.subscribe(onUpdated);
+    const cancelButton = fixture.nativeElement.querySelector(
+      '[aria-label="Cancelar cita"]',
+    ) as HTMLButtonElement;
+    cancelButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.requiresCancellationReason).toBe(true);
+    const reasonInput = fixture.nativeElement.querySelector(
+      '#cancellation-reason',
+    ) as HTMLTextAreaElement;
+    const submitButton = fixture.nativeElement.querySelector(
+      '.dialog-actions .primary-button',
+    ) as HTMLButtonElement;
+
+    expect(reasonInput).not.toBeNull();
+    expect(submitButton.disabled).toBe(true);
+
+    reasonInput.value = '  No puedo asistir.  ';
+    reasonInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(submitButton.disabled).toBe(false);
+
+    submitButton.click();
+    fixture.detectChanges();
+
+    expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
+      estado: 'CANCELADA',
+      motivo_cancelacion: 'No puedo asistir.',
     });
     expect(onUpdated).toHaveBeenCalledWith(updatedAppointment);
   });

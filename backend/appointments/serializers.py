@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
@@ -23,6 +25,7 @@ class CitaSerializer(serializers.ModelSerializer):
             "fecha_hora",
             "estado",
             "observacion",
+            "motivo_cancelacion",
             "paciente_detalle",
             "medico_detalle",
         ]
@@ -145,6 +148,53 @@ class CitaSerializer(serializers.ModelSerializer):
             self.instance.estado if self.instance else "PROGRAMADA",
         )
         fecha_hora = attrs.get("fecha_hora")
+
+        roles = set(getattr(self.context["request"].user, "roles", []))
+        roles_ampliados = {"ADMIN", "AGENDADOR", "MEDICO"}
+        es_cancelacion = (
+            self.instance is not None
+            and self.instance.estado != "CANCELADA"
+            and estado == "CANCELADA"
+        )
+        es_paciente = (
+            "PACIENTE" in roles
+            and not roles.intersection(roles_ampliados)
+        )
+
+        if "motivo_cancelacion" in attrs and not es_cancelacion:
+            raise serializers.ValidationError(
+                {
+                    "motivo_cancelacion": (
+                        "El motivo solo se puede registrar al cancelar una cita."
+                    ),
+                },
+            )
+
+        if es_cancelacion and es_paciente:
+            motivo = attrs.get("motivo_cancelacion")
+            if not motivo or not motivo.strip():
+                raise serializers.ValidationError(
+                    {
+                        "motivo_cancelacion": (
+                            "Debes indicar el motivo de la cancelación."
+                        ),
+                    },
+                )
+            attrs["motivo_cancelacion"] = motivo.strip()
+
+        if (
+            es_cancelacion
+            and es_paciente
+            and self.instance.fecha_hora < timezone.now() + timedelta(hours=48)
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": (
+                        "Solo puedes cancelar una cita con al menos "
+                        "48 horas de anticipación."
+                    ),
+                },
+            )
 
         if (
             self.instance is not None
