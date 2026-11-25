@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
@@ -145,6 +147,25 @@ class CitaSerializer(serializers.ModelSerializer):
             self.instance.estado if self.instance else "PROGRAMADA",
         )
         fecha_hora = attrs.get("fecha_hora")
+
+        roles = set(getattr(self.context["request"].user, "roles", []))
+        roles_ampliados = {"ADMIN", "AGENDADOR", "MEDICO"}
+        if (
+            self.instance is not None
+            and self.instance.estado != "CANCELADA"
+            and estado == "CANCELADA"
+            and "PACIENTE" in roles
+            and not roles.intersection(roles_ampliados)
+            and self.instance.fecha_hora < timezone.now() + timedelta(hours=48)
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": (
+                        "Solo puedes cancelar una cita con al menos "
+                        "48 horas de anticipación."
+                    ),
+                },
+            )
 
         if (
             self.instance is not None

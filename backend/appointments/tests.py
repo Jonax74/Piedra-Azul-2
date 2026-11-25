@@ -1,5 +1,5 @@
 import csv
-from datetime import date, time
+from datetime import date, datetime, time, timedelta, timezone as datetime_timezone
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -244,6 +244,51 @@ class CitaPacienteScopeTests(TestCase):
 			"Un paciente solo puede agendar citas para sí mismo.",
 			serializer.errors["non_field_errors"],
 		)
+
+	def test_patient_can_cancel_appointment_exactly_48_hours_ahead(self):
+		now = datetime(2099, 1, 1, 10, tzinfo=datetime_timezone.utc)
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora=now + timedelta(hours=48),
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"estado": "CANCELADA"},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		with patch("appointments.serializers.timezone.now", return_value=now):
+			response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 200)
+		cita.refresh_from_db()
+		self.assertEqual(cita.estado, "CANCELADA")
+
+	def test_patient_cannot_cancel_appointment_less_than_48_hours_ahead(self):
+		now = datetime(2099, 1, 1, 10, tzinfo=datetime_timezone.utc)
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora=now + timedelta(hours=48) - timedelta(seconds=1),
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"estado": "CANCELADA"},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		with patch("appointments.serializers.timezone.now", return_value=now):
+			response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn("estado", response.data)
+		cita.refresh_from_db()
+		self.assertEqual(cita.estado, "PROGRAMADA")
 
 	def test_cita_includes_patient_and_medico_names(self):
 		cita = Cita.objects.create(
