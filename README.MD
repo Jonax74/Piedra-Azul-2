@@ -10,30 +10,59 @@ instalar Python, Node.js ni las dependencias del proyecto en el equipo anfitrió
 - Docker Desktop con Docker Compose v2 (en Windows, usar contenedores Linux).
 - PowerShell para los scripts de apoyo incluidos en `scripts/`.
 
+### Servicios del entorno local
+
+`docker-compose.yml` levanta la aplicación completa. No ejecutes Django ni
+Angular directamente en el equipo anfitrión para el flujo normal de desarrollo:
+
+| Servicio | URL o puerto local | Uso |
+| --- | --- | --- |
+| `frontend` | <http://localhost:4200> | Aplicación Angular; los cambios del código se recargan automáticamente. |
+| `backend` | <http://localhost:8000/api/> | API Django; aplica migraciones al iniciar. |
+| `keycloak` | <http://localhost:8080> | Inicio de sesión, realm `piedrazul` y usuarios. |
+| `postgres` | `localhost:5432` | Base `piedra_db`; los datos se guardan en un volumen Docker. |
+
+Las URLs son las predeterminadas. La aplicación que corre en el navegador usa
+`localhost`; entre contenedores se usan los nombres DNS de Compose (`backend`,
+`frontend`, `keycloak` y `postgres`).
+
 ### Preparar y levantar el proyecto
 
-Desde la raíz del repositorio, copia la configuración local y levanta los
-servicios:
+Desde la raíz del repositorio, crea `.env` a partir de la plantilla **solo si
+aún no existe**. Luego construye e inicia los contenedores:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose config --quiet
 docker compose up --build -d
 docker compose ps
 ```
 
-La primera ejecución puede tardar mientras Docker descarga imágenes e instala
-dependencias. Django aplica las migraciones automáticamente al iniciar. Cuando
-los servicios estén listos, abre:
+En macOS/Linux, crea `.env` con:
+
+```sh
+[ -f .env ] || cp .env.example .env
+```
+
+`docker compose config --quiet` valida la configuración sin imprimir sus
+valores. Si informa variables sin definir, confirma que `.env` esté en la raíz
+y tenga los valores de `.env.example`.
+
+La primera ejecución puede tardar mientras Docker descarga imágenes y construye
+las dependencias. Espera a que `backend` figure como `healthy` y `frontend`
+esté iniciado en `docker compose ps`. Django aplica las migraciones
+automáticamente al iniciar. Keycloak importa el realm, el cliente público y los
+roles iniciales. Después, abre:
 
 - Aplicación Angular: <http://localhost:4200>
 - API Django: <http://localhost:8000/api/>
 - Keycloak: <http://localhost:8080>
 - PostgreSQL: `localhost:5432` (base de datos `piedra_db`)
 
-Keycloak importa al iniciar el realm `piedrazul`, el cliente público
-`piedrazul-frontend` y los roles `ADMIN`, `AGENDADOR`, `MEDICO` y `PACIENTE`.
-La base de datos de PostgreSQL conserva los datos entre reinicios. No se debe
-eliminar el volumen si se quieren conservar.
+La base PostgreSQL conserva los datos en el volumen `postgres_data` entre
+reinicios. El script `docker/postgres/init-databases.sql` se ejecuta únicamente
+cuando PostgreSQL inicializa un volumen vacío; cambiarlo no recrea bases de
+datos en un volumen ya existente.
 
 Para activar el tema Piedrazul en el realm y crear los usuarios de prueba,
 ejecuta una vez cada script desde la raíz:
@@ -71,6 +100,16 @@ desarrollo local; no reutilices estas credenciales en otros entornos.
 - `.env` contiene configuración local y no se debe subir al repositorio.
   Comparte cambios de configuración actualizando `.env.example`, nunca
   publicando contraseñas o claves reales.
+- Para iniciar Compose, la configuración que se lee es el `.env` de la raíz.
+  Ahí se definen `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
+  `KEYCLOAK_DB`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`,
+  `POSTGRES_PORT`, `KEYCLOAK_PORT`, `DJANGO_DEBUG`, `DJANGO_SECRET_KEY` y
+  `DJANGO_ALLOWED_HOSTS`. La plantilla `.env.example` contiene valores locales
+  de ejemplo; no son credenciales seguras ni deben usarse en producción.
+- `POSTGRES_PORT` y `KEYCLOAK_PORT` cambian los puertos publicados en el equipo.
+  Los puertos de Django (`8000`) y Angular (`4200`) están definidos en
+  `docker-compose.yml`; si se cambian, también hay que revisar las URLs que usa
+  el frontend y el cliente de Keycloak.
 - Los valores predeterminados de `.env.example` son solo para desarrollo local.
   Cambia las credenciales de prueba si expones los servicios en una red; no uses
   esta configuración para producción.
@@ -83,6 +122,9 @@ desarrollo local; no reutilices estas credenciales en otros entornos.
   `keycloak`) son los nombres DNS dentro de la red Docker. El navegador usa
   `localhost`; no cambies las URLs internas por `localhost` en la configuración
   del backend.
+- Este Compose está preparado para desarrollo: usa `start-dev` de Keycloak,
+  `runserver` de Django y el servidor de desarrollo de Angular. No lo expongas
+  como configuración de producción.
 - Si se agregan servicios, dependencias o variables necesarias para desarrollar,
   documenta y versiona sus archivos de configuración de ejemplo para que todos
   puedan reproducir el entorno.
