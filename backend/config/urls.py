@@ -17,11 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from config.health import health, ready
 from config.api_views import MeView, ProfileView, RegistroPacienteView
 
 
 
 urlpatterns = [
+    path("api/health/", health),
+    path("api/health/ready/", ready),
     path("admin/", admin.site.urls),
     path("api/me/", MeView.as_view()),
     path("api/me/profile/", ProfileView.as_view()),
