@@ -1,15 +1,17 @@
 import { NgZone } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { Auth } from '../../core/services/auth';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { PersonasService } from '../../core/services/personas.service';
 import { Agenda } from './agenda';
+import { Cita } from '../../shared/models/cita.model';
 
 describe('Agenda', () => {
   let component: Agenda;
   let fixture: ComponentFixture<Agenda>;
+  let citasService: { getAgenda: ReturnType<typeof vi.fn> };
   let getAgendaMedico: ReturnType<typeof vi.fn>;
   let getAgenda: ReturnType<typeof vi.fn>;
   let getFechasAgenda: ReturnType<typeof vi.fn>;
@@ -39,8 +41,6 @@ describe('Agenda', () => {
   beforeEach(async () => {
     agendaResponse = new Subject();
     getAgendaMedico = vi.fn(() => agendaResponse.asObservable());
-    const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     getFechasAgenda = vi.fn((requestedMonth: string) => of({
       mes: requestedMonth,
       fechas: [`${requestedMonth}-12`],
@@ -77,6 +77,7 @@ describe('Agenda', () => {
       },
     }]));
     roles = ['MEDICO'];
+    citasService = { getAgenda };
     await TestBed.configureTestingModule({
       imports: [Agenda],
       providers: [
@@ -103,8 +104,50 @@ describe('Agenda', () => {
     await fixture.whenStable();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('requests the selected doctor/date filters and resets pagination', () => {
+    roles = ['ADMIN'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const appointment = { id: 3, paciente: 10, medico: 8 } as Cita;
+    citasService.getAgenda.mockReturnValue(
+      of({ cantidad: 1, resultados: [appointment] }),
+    );
+    component.currentPage = 4;
+    component.selectedProfessional = '8';
+    component.selectedDate = '2099-01-05';
+
+    component.search();
+
+    expect(citasService.getAgenda).toHaveBeenCalledWith(8, '2099-01-05');
+    expect(component.appointments()).toEqual([appointment]);
+    expect(component.currentPage).toBe(1);
+    expect(component.feedback()).toContain('Se encontraron 1 citas');
+  });
+
+  it('paginates appointments without moving beyond either end', () => {
+    component.appointments.set(Array.from(
+      { length: 21 },
+      (_, index) => ({ id: index + 1 }) as Cita,
+    ));
+
+    expect(component.totalPages).toBe(3);
+    expect(component.paginatedAppointments).toHaveLength(10);
+    component.previousPage();
+    expect(component.currentPage).toBe(1);
+    component.nextPage();
+    component.nextPage();
+    component.nextPage();
+    expect(component.currentPage).toBe(3);
+    expect(component.paginatedAppointments).toHaveLength(1);
+  });
+
+  it('uses appointment identifiers when patient details are absent', () => {
+    const appointment = { paciente: 10 } as Cita;
+
+    expect(component.patientName(appointment)).toBe('Paciente #10');
   });
 
   it('renders the initial agenda as soon as the request completes', async () => {
@@ -419,7 +462,7 @@ describe('Agenda', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
 
-    component.patientDocument = '10000001';
+    component.patientDocument = ' 10000001 ';
     component.searchPatientHistory();
     fixture.detectChanges();
 
@@ -427,6 +470,29 @@ describe('Agenda', () => {
     expect(fixture.nativeElement.textContent).toContain('Ana Paciente');
     expect(fixture.nativeElement.textContent).toContain('Carlos Medico');
     expect(fixture.nativeElement.textContent).toContain('Programada');
+  });
+
+  it('shows the API error when a patient cannot be found by ID', async () => {
+    roles = ['AGENDADOR'];
+    getHistorialPaciente.mockReturnValue(throwError(() => ({
+      error: { detail: 'No se encontró un paciente con esa cédula.' },
+    })));
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.openPatientHistory();
+    component.patientDocument = '10000001';
+    component.searchPatientHistory();
+    fixture.detectChanges();
+
+    expect(getHistorialPaciente).toHaveBeenCalledWith('10000001');
+    expect(component.isSearchingPatient()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain(
+      'No se encontró un paciente con esa cédula.',
+    );
   });
 
   it('shows a clear message when patient ID contains non-digits', async () => {
