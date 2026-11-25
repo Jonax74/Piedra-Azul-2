@@ -2,7 +2,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Auth } from '../../core/services/auth';
-import { CitasService, HistorialPacienteResponse } from '../../core/services/citas.service';
+import { CitasService, HistorialPacienteResponse, SeccionAgenda } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { Cita } from '../../shared/models/cita.model';
 import { Medico } from '../../shared/models/medico.model';
@@ -11,6 +11,9 @@ import { Paciente, PersonasService } from '../../core/services/personas.service'
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 import { DatePicker } from '../../shared/components/date-picker/date-picker';
+
+const ESTADOS_AGENDA = new Set(['PROGRAMADA', 'CONFIRMADA', 'REAGENDADA']);
+const ESTADOS_HISTORIAL = new Set(['ATENDIDA', 'CANCELADA', 'NO_ASISTIDA']);
 
 @Component({
   imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker],
@@ -29,6 +32,7 @@ export class Agenda {
   people: Persona[] = [];
   patientSuggestions: Paciente[] = [];
   readonly appointments = signal<Cita[]>([]);
+  readonly seccion = signal<SeccionAgenda>('agenda');
   private doctorAppointments: Cita[] = [];
   selectedProfessional = '';
   selectedDate = '';
@@ -139,6 +143,27 @@ export class Agenda {
     this.search();
   }
 
+  cambiarSeccion(seccion: SeccionAgenda): void {
+    if (this.seccion() === seccion) return;
+
+    this.seccion.set(seccion);
+    this.selectedDate = '';
+    this.appointments.set([]);
+    this.doctorAppointments = [];
+    this.currentPage = 1;
+    this.availableAppointmentDates.set(new Set());
+    this.feedback.set('');
+
+    if (this.isDoctorOnly) {
+      this.loadAppointmentDates();
+      return;
+    }
+
+    if (this.isSchedulerOnly) this.loadSchedulerAppointmentDates();
+    if (this.isAdministrator) this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    this.search();
+  }
+
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
@@ -164,16 +189,19 @@ export class Agenda {
   }
 
   private loadAppointmentDates(): void {
+    const seccion = this.seccion();
     this.isLoadingDates.set(true);
     this.calendarError.set('');
     this.isLoading.set(true);
 
-    this.citasService.getAgendaMedico().subscribe({
+    this.citasService.getAgendaMedico(undefined, seccion).subscribe({
       next: (response) => {
-        this.doctorAppointments = response.resultados;
+        if (seccion !== this.seccion()) return;
+        this.doctorAppointments = response.resultados.filter(
+          (appointment) => this.isAppointmentInSection(appointment),
+        );
         this.availableAppointmentDates.set(new Set(
           this.doctorAppointments
-            .filter((appointment) => appointment.estado !== 'CANCELADA')
             .map((appointment) => appointment.fecha_hora.slice(0, 10)),
         ));
         this.isLoadingDates.set(false);
@@ -181,6 +209,7 @@ export class Agenda {
         this.search();
       },
       error: (error: { error?: { detail?: string } }) => {
+        if (seccion !== this.seccion()) return;
         const message = error.error?.detail
           ?? 'No fue posible cargar tus citas para el calendario. Inténtalo de nuevo.';
         this.calendarError.set(message);
@@ -195,13 +224,15 @@ export class Agenda {
   private loadSchedulerAppointmentDates(): void {
     const month = this.currentCalendarMonth();
     const medicoId = this.selectedProfessional ? Number(this.selectedProfessional) : undefined;
+    const seccion = this.seccion();
     this.isLoadingDates.set(true);
     this.calendarError.set('');
 
-    this.citasService.getFechasAgenda(month, medicoId).subscribe({
+    this.citasService.getFechasAgenda(month, medicoId, seccion).subscribe({
       next: (response) => {
         if (response.mes !== this.currentCalendarMonth()
-          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)) {
+          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)
+          || seccion !== this.seccion()) {
           return;
         }
         this.availableAppointmentDates.set(new Set(response.fechas));
@@ -210,7 +241,8 @@ export class Agenda {
       },
       error: (error: { error?: { detail?: string } }) => {
         if (month !== this.currentCalendarMonth()
-          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)) {
+          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)
+          || seccion !== this.seccion()) {
           return;
         }
         this.calendarError.set(error.error?.detail
@@ -224,7 +256,8 @@ export class Agenda {
 
   private loadAdminAppointmentDates(month: string): void {
     const medicoId = this.selectedProfessional ? Number(this.selectedProfessional) : undefined;
-    const requestKey = `${month}:${medicoId ?? ''}`;
+    const seccion = this.seccion();
+    const requestKey = `${month}:${medicoId ?? ''}:${seccion}`;
     if (this.adminDatesLoadedKey === requestKey
       || (this.isLoadingDates() && this.adminDatesRequestedKey === requestKey)) {
       return;
@@ -236,7 +269,7 @@ export class Agenda {
     this.isLoadingDates.set(true);
     this.calendarError.set('');
 
-    this.citasService.getFechasAgenda(month, medicoId).subscribe({
+    this.citasService.getFechasAgenda(month, medicoId, seccion).subscribe({
       next: (response) => {
         if (requestId !== this.adminDatesRequestId) return;
         if (response.mes !== this.adminCalendarMonth
@@ -293,8 +326,8 @@ export class Agenda {
     this.isExporting.set(true);
 
     const request = this.isDoctorOnly
-      ? this.citasService.exportarAgendaMedico(date)
-      : this.citasService.exportarAgenda(Number(this.selectedProfessional), date);
+      ? this.citasService.exportarAgendaMedico(date, this.seccion())
+      : this.citasService.exportarAgenda(Number(this.selectedProfessional), date, this.seccion());
 
     request.subscribe({
       next: (file) => {
@@ -482,6 +515,7 @@ export class Agenda {
   search(): void {
     this.isLoading.set(true);
     this.feedback.set('');
+    const seccion = this.seccion();
     if (this.isDoctorOnly) {
       const filteredAppointments = this.selectedDate
         ? this.doctorAppointments.filter(
@@ -501,23 +535,29 @@ export class Agenda {
     const request = this.citasService.getAgenda(
       this.selectedProfessional ? Number(this.selectedProfessional) : undefined,
       fecha,
+      seccion,
     );
 
     request.subscribe({
       next: (response) => {
-        this.appointments.set(response.resultados);
+        if (seccion !== this.seccion()) return;
+        const appointments = response.resultados.filter(
+          (appointment) => this.isAppointmentInSection(appointment),
+        );
+        this.appointments.set(appointments);
         this.currentPage = 1;
         const filtro = [
           this.selectedDate ? `el ${this.selectedDate}` : 'todas las fechas',
           this.selectedProfessional ? 'el profesional seleccionado' : 'todos los profesionales',
         ].join(' y ');
-        this.feedback.set(response.cantidad
-          ? `Se encontraron ${response.cantidad} citas para ${filtro}.`
+        this.feedback.set(appointments.length
+          ? `Se encontraron ${appointments.length} citas para ${filtro}.`
           : `No hay citas registradas para ${filtro}.`);
         this.isLoading.set(false);
         this.changeDetector.markForCheck();
       },
       error: (error: { name?: string; error?: { detail?: string } }) => {
+        if (seccion !== this.seccion()) return;
         this.feedback.set(error.name === 'TimeoutError' ? 'La consulta tardó demasiado. Revisa que Django y PostgreSQL estén activos e inténtalo nuevamente.' : error.error?.detail ?? 'No fue posible consultar la agenda. Verifica el médico y la fecha.');
         this.isLoading.set(false);
         this.changeDetector.markForCheck();
@@ -539,21 +579,30 @@ export class Agenda {
       : `Profesional #${appointment.medico}`;
   }
 
+  private isAppointmentInSection(appointment: Cita): boolean {
+    const estados = this.seccion() === 'agenda' ? ESTADOS_AGENDA : ESTADOS_HISTORIAL;
+    return estados.has(appointment.estado);
+  }
+
   updateAppointment(updated: Cita): void {
-    this.doctorAppointments = this.doctorAppointments.map((appointment) =>
-      appointment.id === updated.id ? updated : appointment,
-    );
+    this.doctorAppointments = this.doctorAppointments
+      .map((appointment) => appointment.id === updated.id ? updated : appointment)
+      .filter((appointment) => this.isAppointmentInSection(appointment));
     this.doctorAppointments.sort((a, b) =>
       new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime(),
     );
 
     if (this.isDoctorOnly) {
+      this.availableAppointmentDates.set(new Set(
+        this.doctorAppointments.map((appointment) => appointment.fecha_hora.slice(0, 10)),
+      ));
       this.search();
       return;
     }
 
     const updatedAppointments = this.appointments()
       .map((appointment) => appointment.id === updated.id ? updated : appointment)
+      .filter((appointment) => this.isAppointmentInSection(appointment))
       .filter((appointment) =>
         !this.selectedDate
         || appointment.fecha_hora.slice(0, 10) === this.selectedDate,
@@ -568,6 +617,12 @@ export class Agenda {
     this.currentPage = updatedIndex >= 0
       ? Math.floor(updatedIndex / this.pageSize) + 1
       : Math.min(this.currentPage, this.totalPages);
+    if (this.isSchedulerOnly) this.loadSchedulerAppointmentDates();
+    if (this.isAdministrator) {
+      this.adminDatesLoadedKey = '';
+      this.adminDatesRequestedKey = '';
+      this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    }
     this.changeDetector.markForCheck();
   }
 

@@ -178,7 +178,7 @@ describe('Agenda', () => {
     fixture.detectChanges();
 
     expect(component.isDoctorOnly).toBe(true);
-    expect(getAgendaMedico).toHaveBeenCalledTimes(1);
+    expect(getAgendaMedico).toHaveBeenCalledWith(undefined, 'agenda');
     expect(getMedicos).not.toHaveBeenCalled();
     expect(getPersonas).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
@@ -220,9 +220,46 @@ describe('Agenda', () => {
         expect(this.download).toBe(`citas-valentina-pabon-${availableDate}.csv`);
       });
     component.exportAppointments();
-    expect(exportarAgendaMedico).toHaveBeenCalledWith(availableDate);
+    expect(exportarAgendaMedico).toHaveBeenCalledWith(availableDate, 'agenda');
     expect(downloadClick).toHaveBeenCalledOnce();
     downloadClick.mockRestore();
+  });
+
+  it('reloads the scheduler agenda and calendar when changing section', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const month = `${component.calendarMonth.getFullYear()}-${String(component.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
+    component.cambiarSeccion('historial');
+
+    expect(component.seccion()).toBe('historial');
+    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined, 'historial');
+    expect(getAgenda).toHaveBeenLastCalledWith(undefined, undefined, 'historial');
+  });
+
+  it('removes an appointment when its updated state leaves the current section', async () => {
+    roles = ['AGENDADOR'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const appointment = {
+      id: 1,
+      paciente: 1,
+      medico: 1,
+      fecha_hora: '2026-10-12T08:00:00-05:00',
+      estado: 'PROGRAMADA',
+    };
+    component.appointments.set([appointment]);
+    component.updateAppointment({ ...appointment, estado: 'ATENDIDA' });
+
+    expect(component.appointments()).toEqual([]);
   });
 
   it('filters scheduler calendar by selected professional and shows CSV export only with both filters', () => {
@@ -240,12 +277,12 @@ describe('Agenda', () => {
 
     const month = `${component.calendarMonth.getFullYear()}-${String(component.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
     expect(component.isSchedulerOnly).toBe(true);
-    expect(getFechasAgenda).toHaveBeenCalledWith(month, undefined);
+    expect(getFechasAgenda).toHaveBeenCalledWith(month, undefined, 'agenda');
     expect(fixture.nativeElement.querySelector('.export-button')).toBeNull();
 
     component.selectedProfessional = '12';
     component.onProfessionalChange();
-    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, 12);
+    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, 12, 'agenda');
     expect(component.availableAppointmentDates().has(`${month}-12`)).toBe(true);
 
     fixture.nativeElement.querySelector('.calendar-trigger').click();
@@ -256,7 +293,7 @@ describe('Agenda', () => {
     appointmentDay.click();
     fixture.detectChanges();
     expect(component.selectedDate).toBe(`${month}-12`);
-    expect(getAgenda).toHaveBeenLastCalledWith(12, `${month}-12`);
+    expect(getAgenda).toHaveBeenLastCalledWith(12, `${month}-12`, 'agenda');
     expect(fixture.nativeElement.querySelector('.export-button')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Exportar CSV');
 
@@ -265,7 +302,7 @@ describe('Agenda', () => {
         expect(this.download).toBe(`citas-carlos-medico-${month}-12.csv`);
       });
     component.exportAppointments();
-    expect(exportarAgenda).toHaveBeenCalledWith(12, `${month}-12`);
+    expect(exportarAgenda).toHaveBeenCalledWith(12, `${month}-12`, 'agenda');
     expect(downloadClick).toHaveBeenCalledOnce();
   });
 
@@ -308,7 +345,7 @@ describe('Agenda', () => {
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const date = `${month}-12`;
-    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined);
+    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined, 'agenda');
     fixture.nativeElement.querySelector('[aria-label="Filtrar agenda por fecha"]').click();
     fixture.detectChanges();
     expect(
@@ -323,7 +360,7 @@ describe('Agenda', () => {
 
     expect(component.selectedDate).toBe(date);
     fixture.nativeElement.querySelector('.filter-bar .primary-button').click();
-    expect(getAgenda).toHaveBeenLastCalledWith(undefined, date);
+    expect(getAgenda).toHaveBeenLastCalledWith(undefined, date, 'agenda');
   });
 
   it('lets an agendador search a patient by ID and displays appointment history', async () => {
