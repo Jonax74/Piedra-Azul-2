@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { CitasService } from '../../core/services/citas.service';
 import { AgendarCita } from './agendar-cita';
 import { CitasService } from '../../core/services/citas.service';
 import { MedicosService } from '../../core/services/medicos.service';
@@ -102,7 +101,7 @@ describe('AgendarCita', () => {
     component.selectedProfessional = '8';
     component.selectedDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     component.selectedSlot = `${component.selectedDate}T09:00:00-05:00`;
-    component.slots = [{ fecha_hora: component.selectedSlot, hora: '09:00' }];
+    component.slots.set([{ fecha_hora: component.selectedSlot, hora: '09:00' }]);
     const selectedSlot = component.selectedSlot;
 
     component.book();
@@ -113,8 +112,8 @@ describe('AgendarCita', () => {
       fecha_hora: selectedSlot,
     });
     expect(citasService.crearCita.mock.calls[0][0]).not.toHaveProperty('estado');
-    expect(component.showConfirmation).toBe(true);
-    expect(component.confirmationMessage).toContain('Carlos Médico');
+    expect(component.showConfirmation()).toBe(true);
+    expect(component.confirmationMessage()).toContain('Carlos Médico');
     expect(component.selectedProfessional).toBe('');
   });
 
