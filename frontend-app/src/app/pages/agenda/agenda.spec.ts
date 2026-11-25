@@ -111,7 +111,7 @@ describe('Agenda', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    const appointment = { id: 3, paciente: 10, medico: 8 } as Cita;
+    const appointment = { id: 3, paciente: 10, medico: 8, estado: 'PROGRAMADA' } as Cita;
     citasService.getAgenda.mockReturnValue(
       of({ cantidad: 1, resultados: [appointment] }),
     );
@@ -121,7 +121,7 @@ describe('Agenda', () => {
 
     component.search();
 
-    expect(citasService.getAgenda).toHaveBeenCalledWith(8, '2099-01-05');
+    expect(citasService.getAgenda).toHaveBeenCalledWith(8, '2099-01-05', 'agenda');
     expect(component.appointments()).toEqual([appointment]);
     expect(component.currentPage).toBe(1);
     expect(component.feedback()).toContain('Se encontraron 1 citas');
