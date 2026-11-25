@@ -160,7 +160,12 @@ export class Agenda {
     }
 
     if (this.isSchedulerOnly) this.loadSchedulerAppointmentDates();
-    if (this.isAdministrator) this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    if (this.isAdministrator) {
+      this.adminDatesLoadedKey = '';
+      this.adminDatesRequestedKey = '';
+      ++this.adminDatesRequestId;
+      this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    }
     this.search();
   }
 
@@ -271,7 +276,7 @@ export class Agenda {
 
     this.citasService.getFechasAgenda(month, medicoId, seccion).subscribe({
       next: (response) => {
-        if (requestId !== this.adminDatesRequestId) return;
+        if (requestId !== this.adminDatesRequestId || seccion !== this.seccion()) return;
         if (response.mes !== this.adminCalendarMonth
           || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)) {
           return;
@@ -282,7 +287,7 @@ export class Agenda {
         this.changeDetector.markForCheck();
       },
       error: (error: { error?: { detail?: string } }) => {
-        if (requestId !== this.adminDatesRequestId) return;
+        if (requestId !== this.adminDatesRequestId || seccion !== this.seccion()) return;
         this.calendarError.set(error.error?.detail
           ?? 'No fue posible cargar las fechas con citas.');
         this.availableAppointmentDates.set(new Set());

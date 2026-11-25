@@ -127,6 +127,44 @@ describe('Agenda', () => {
     expect(component.feedback()).toContain('Se encontraron 1 citas');
   });
 
+  it('ignores stale admin calendar dates after switching sections', async () => {
+    const month = `${component.calendarMonth.getFullYear()}-${String(component.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
+    const agendaDate = `${month}-10`;
+    const historyDate = `${month}-20`;
+    const historyDates = new Subject<{ mes: string; fechas: string[] }>();
+    getFechasAgenda
+      .mockReturnValueOnce(of({ mes: month, fechas: [agendaDate] }))
+      .mockReturnValueOnce(historyDates.asObservable())
+      .mockReturnValueOnce(of({ mes: month, fechas: [agendaDate] }));
+
+    roles = ['ADMIN'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(component.availableAppointmentDates().has(agendaDate)).toBe(true);
+
+    const historyTab = fixture.nativeElement.querySelector(
+      'nav[aria-label="Sección de citas"] button:nth-child(2)',
+    ) as HTMLButtonElement;
+    const agendaTab = fixture.nativeElement.querySelector(
+      'nav[aria-label="Sección de citas"] button:nth-child(1)',
+    ) as HTMLButtonElement;
+    historyTab.click();
+    fixture.detectChanges();
+    agendaTab.click();
+    fixture.detectChanges();
+
+    historyDates.next({ mes: month, fechas: [historyDate] });
+    fixture.detectChanges();
+
+    expect(component.seccion()).toBe('agenda');
+    expect(component.availableAppointmentDates().has(agendaDate)).toBe(true);
+    expect(component.availableAppointmentDates().has(historyDate)).toBe(false);
+  });
+
   it('paginates appointments without moving beyond either end', () => {
     component.appointments.set(Array.from(
       { length: 21 },
