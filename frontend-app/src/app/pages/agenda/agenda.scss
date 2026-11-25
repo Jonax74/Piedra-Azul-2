@@ -2,6 +2,28 @@
   min-height: 100%;
 }
 
+.agenda-page .nav-tabs .nav-link {
+  border-color: transparent;
+  color: var(--teal);
+}
+
+.agenda-page .nav-tabs .nav-link:hover:not(.active) {
+  border-color: transparent;
+  background: #e8f5f3;
+  color: var(--teal);
+}
+
+.agenda-page .nav-tabs .nav-link.active {
+  border-color: transparent transparent var(--teal);
+  background: transparent;
+  color: var(--ink);
+}
+
+.agenda-page .nav-tabs .nav-link:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
 .agenda-page .filter-bar {
   align-items: end;
 }
