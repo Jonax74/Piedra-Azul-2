@@ -127,7 +127,7 @@ describe('AppointmentActions', () => {
     expect(actualizarEstadoCita).not.toHaveBeenCalled();
   });
 
-  it('keeps staff cancellation available within 48 hours', () => {
+  it('keeps staff cancellation available without requiring a reason', () => {
     authRoles.mockReturnValue(['AGENDADOR']);
     fixture.componentRef.setInput('cita', {
       id: 12,
@@ -142,6 +142,50 @@ describe('AppointmentActions', () => {
     expect(fixture.nativeElement.querySelector('#status-title').textContent)
       .toContain('Cancelar cita');
     expect(fixture.nativeElement.querySelector('.danger-button')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#cancellation-reason')).not.toBeNull();
+    expect((fixture.nativeElement.querySelector('.danger-button') as HTMLButtonElement).disabled)
+      .toBe(false);
+
+    (fixture.nativeElement.querySelector('.danger-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
+      estado: 'CANCELADA',
+    });
+  });
+
+  it('requires and submits a trimmed cancellation reason for a patient', () => {
+    const onUpdated = vi.fn();
+    fixture.componentInstance.citaActualizada.subscribe(onUpdated);
+    const cancelButton = fixture.nativeElement.querySelector(
+      '[aria-label="Cancelar cita"]',
+    ) as HTMLButtonElement;
+    cancelButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.requiresCancellationReason).toBe(true);
+    const reasonInput = fixture.nativeElement.querySelector(
+      '#cancellation-reason',
+    ) as HTMLTextAreaElement;
+    const submitButton = fixture.nativeElement.querySelector(
+      '.dialog-actions .primary-button',
+    ) as HTMLButtonElement;
+
+    expect(reasonInput).not.toBeNull();
+    expect(submitButton.disabled).toBe(true);
+
+    reasonInput.value = '  No puedo asistir.  ';
+    reasonInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(submitButton.disabled).toBe(false);
+
+    submitButton.click();
+    fixture.detectChanges();
+
+    expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
+      estado: 'CANCELADA',
+      motivo_cancelacion: 'No puedo asistir.',
+    });
+    expect(onUpdated).toHaveBeenCalledWith(updatedAppointment);
   });
 
   it('loads the availability calendar and fetches slots when a date is selected', () => {

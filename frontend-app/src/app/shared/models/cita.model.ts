@@ -6,6 +6,7 @@ export interface Cita {
   fecha_hora: string;
   estado: string;
   observacion?: string | null;
+  motivo_cancelacion?: string | null;
   paciente_detalle?: {
     persona?: {
       id?: number;

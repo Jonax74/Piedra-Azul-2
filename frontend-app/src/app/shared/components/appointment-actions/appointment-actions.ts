@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../../core/services/citas.service';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
 import { Auth } from '../../../core/services/auth';
@@ -8,7 +9,7 @@ import { Cita } from '../../models/cita.model';
 type AppointmentStatus = 'CONFIRMADA' | 'CANCELADA';
 
 @Component({
-  imports: [],
+  imports: [FormsModule],
   selector: 'app-appointment-actions',
   styleUrl: './appointment-actions.scss',
   templateUrl: './appointment-actions.html',
@@ -23,6 +24,7 @@ export class AppointmentActions {
   @Output() readonly citaActualizada = new EventEmitter<Cita>();
 
   pendingStatus: AppointmentStatus | null = null;
+  cancellationReason = '';
   cancellationBlocked = false;
   isRescheduleOpen = false;
   isLoadingDates = false;
@@ -42,11 +44,18 @@ export class AppointmentActions {
     return ['PROGRAMADA', 'CONFIRMADA', 'REAGENDADA'].includes(this.cita.estado);
   }
 
+  get requiresCancellationReason(): boolean {
+    return this.pendingStatus === 'CANCELADA'
+      && this.isPatient()
+      && !this.cancellationBlocked;
+  }
+
   openStatusConfirmation(status: AppointmentStatus): void {
     this.cancellationBlocked = status === 'CANCELADA'
       && this.isPatient()
       && Date.parse(this.cita.fecha_hora) - Date.now() < 48 * 60 * 60 * 1000;
     this.pendingStatus = status;
+    this.cancellationReason = '';
     this.feedback = '';
   }
 
@@ -152,6 +161,7 @@ export class AppointmentActions {
     this.pendingStatus = null;
     this.cancellationBlocked = false;
     this.isRescheduleOpen = false;
+    this.cancellationReason = '';
     this.feedback = '';
   }
 
@@ -210,14 +220,27 @@ export class AppointmentActions {
   confirmStatusChange(): void {
     if (!this.pendingStatus || this.cancellationBlocked || this.cita.id === undefined) return;
     const status = this.pendingStatus;
+    const reason = this.cancellationReason.trim();
+    if (status === 'CANCELADA' && this.isPatient() && !reason) {
+      this.feedback = 'Escribe el motivo de la cancelación para continuar.';
+      return;
+    }
+
     this.isSaving = true;
     this.feedback = '';
 
-    this.citasService.actualizarEstadoCita(this.cita.id, { estado: status }).subscribe({
+    const payload: Pick<Cita, 'estado'>
+      & Partial<Pick<Cita, 'motivo_cancelacion'>> = { estado: status };
+    if (status === 'CANCELADA' && reason) {
+      payload.motivo_cancelacion = reason;
+    }
+
+    this.citasService.actualizarEstadoCita(this.cita.id, payload).subscribe({
       next: (updated) => {
         this.citaActualizada.emit(updated);
         this.isSaving = false;
         this.pendingStatus = null;
+        this.cancellationReason = '';
       },
       error: (error: unknown) => {
         this.feedback = this.errorMessage(
@@ -259,7 +282,13 @@ export class AppointmentActions {
     if (!response || typeof response !== 'object') return fallback;
 
     const details = response as Record<string, unknown>;
-    for (const key of ['detail', 'estado', 'fecha_hora', 'non_field_errors']) {
+    for (const key of [
+      'detail',
+      'estado',
+      'fecha_hora',
+      'motivo_cancelacion',
+      'non_field_errors',
+    ]) {
       const message = this.flattenMessage(details[key]);
       if (message) return message;
     }

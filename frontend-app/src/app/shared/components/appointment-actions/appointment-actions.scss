@@ -111,6 +111,55 @@
   line-height: 1.6;
 }
 
+.cancellation-reason {
+  display: grid;
+  gap: 7px;
+  margin-top: 17px;
+}
+
+.cancellation-reason label {
+  color: var(--ink);
+  font-size: .76rem;
+  font-weight: 700;
+}
+
+.cancellation-reason label .required-marker {
+  color: #b34e50;
+}
+
+.cancellation-reason textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid #cbdcda;
+  border-radius: 6px;
+  background: #fbfdfc;
+  color: var(--ink);
+  font: inherit;
+  font-size: .8rem;
+  line-height: 1.5;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.cancellation-reason textarea::placeholder {
+  color: #91a5a4;
+}
+
+.cancellation-reason textarea:focus {
+  border-color: var(--teal);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(68 145 133 / 14%);
+}
+
+.cancellation-reason-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #7d9697;
+  font-size: .68rem;
+}
+
 .calendar-field {
   margin-top: 20px;
 }

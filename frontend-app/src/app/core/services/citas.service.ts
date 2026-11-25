@@ -120,7 +120,11 @@ export class CitasService {
     return this.api.put<Cita>(`/citas/${id}/`, payload);
   }
 
-  actualizarEstadoCita(id: number, payload: Pick<Cita, 'estado'> & Partial<Pick<Cita, 'fecha_hora'>>) {
+  actualizarEstadoCita(
+    id: number,
+    payload: Pick<Cita, 'estado'>
+      & Partial<Pick<Cita, 'fecha_hora' | 'motivo_cancelacion'>>,
+  ) {
     return this.api.patch<Cita>(`/citas/${id}/`, payload);
   }
 }
