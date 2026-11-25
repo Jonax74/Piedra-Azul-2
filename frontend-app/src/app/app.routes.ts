@@ -16,6 +16,7 @@ export const routes: Routes = [
 		canActivate: [authGuard],
 		children: [
 			{ path: 'dashboard', component: Dashboard },
+			{ path: 'registrar-paciente', component: RegistroPaciente, canActivate: [roleGuard], data: { roles: ['AGENDADOR'], staffRegistration: true } },
 			{ path: 'agenda', loadComponent: () => import('./pages/agenda/agenda').then((m) => m.Agenda), canActivate: [roleGuard], data: { roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] } },
 			{ path: 'agendar-cita', loadComponent: () => import('./pages/agendar-cita/agendar-cita').then((m) => m.AgendarCita), canActivate: [roleGuard], data: { roles: ['PACIENTE', 'AGENDADOR'] } },
 			{ path: 'mis-citas', loadComponent: () => import('./pages/mis-citas/mis-citas').then((m) => m.MisCitas), canActivate: [roleGuard], data: { roles: ['PACIENTE'] } },

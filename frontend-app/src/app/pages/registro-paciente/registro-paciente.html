@@ -1,23 +1,28 @@
-<main class="registration-page">
-	<section class="registration-visual">
-		<a class="visual-brand" routerLink="/login" aria-label="Piedrazul, volver al inicio">
-			<img class="brand-logo" src="/assets/logito.png" alt=""><strong>Piedrazul</strong>
-		</a>
-		<div class="visual-copy">
-			<span class="eyebrow">Cuidado que acompaña</span>
-			<h1>Un espacio para cuidar de ti.</h1>
-			<p>Crea tu cuenta y encuentra atención cuando la necesites.</p>
-		</div>
-		<div class="visual-line"></div>
-	</section>
+<main class="registration-page" [class.staff-registration]="isStaffRegistration">
+	@if (!isStaffRegistration) {
+		<section class="registration-visual">
+			<a class="visual-brand" routerLink="/login" aria-label="Piedrazul, volver al inicio">
+				<img class="brand-logo" src="/assets/logito.png" alt=""><strong>Piedrazul</strong>
+			</a>
+			<div class="visual-copy">
+				<span class="eyebrow">Cuidado que acompaña</span>
+				<h1>Un espacio para cuidar de ti.</h1>
+				<p>Crea tu cuenta y encuentra atención cuando la necesites.</p>
+			</div>
+			<div class="visual-line"></div>
+		</section>
+	}
 
 	<section class="registration-panel">
 		<div class="registration-card">
 			<span class="eyebrow">Portal Piedrazul</span>
-			<h2>Crear cuenta</h2>
-			<p class="registration-intro">Completa tus datos para registrarte como paciente.</p>
+			<h2>{{ isStaffRegistration ? 'Registrar paciente' : 'Crear cuenta' }}</h2>
+			<p class="registration-intro">{{ isStaffRegistration ? 'Completa los datos para crear la cuenta del paciente.' : 'Completa tus datos para registrarte como paciente.' }}</p>
 			@if (errorMessage) {
 				<div class="registration-error" role="alert">{{ errorMessage }}</div>
+			}
+			@if (successMessage) {
+				<div class="registration-success" role="status">{{ successMessage }}</div>
 			}
 
 			<form #registrationForm="ngForm" (ngSubmit)="register()">
@@ -93,14 +98,20 @@
 						</div>
 				</fieldset>
 				<button class="primary-button submit-button" type="submit" [disabled]="registrationForm.invalid || form.password !== form.passwordConfirmation || isSubmitting">
-					{{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta de paciente' }}
+					{{ isSubmitting ? 'Creando cuenta...' : (isStaffRegistration ? 'Registrar paciente' : 'Crear cuenta de paciente') }}
 				</button>
 				@if (isSubmitting) {
 					<p class="submission-status" role="status">Estamos verificando tus datos y creando tu cuenta. Esto puede tardar unos segundos.</p>
 				}
 			</form>
-			<p class="login-prompt">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+			@if (isStaffRegistration) {
+				<p class="login-prompt"><a routerLink="/dashboard">Volver al resumen</a></p>
+			} @else {
+				<p class="login-prompt">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+			}
 		</div>
-		<small class="registration-footer">Piedrazul Clínica de bienestar</small>
+		@if (!isStaffRegistration) {
+			<small class="registration-footer">Piedrazul Clínica de bienestar</small>
+		}
 	</section>
 </main>

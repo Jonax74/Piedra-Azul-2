@@ -4,6 +4,7 @@
 			<span class="eyebrow">{{ isDoctorOnly ? 'Tu consulta' : 'Operación diaria' }}</span>
 			<h2>{{ seccion() === 'historial' ? 'Historial de citas' : (isDoctorOnly ? 'Mi agenda' : 'Agenda de citas') }}</h2>
 			<p>{{ seccion() === 'historial' ? 'Consulta las citas finalizadas o canceladas.' : (isDoctorOnly ? 'Consulta tus citas y filtra por fecha.' : 'Consulta todas las citas o filtra por profesional y fecha.') }}</p>
+			<app-registrar-paciente-link />
 		</div>
 		<span class="status-pill">{{ selectedDate || 'Todas las fechas' }}</span>
 	</div>

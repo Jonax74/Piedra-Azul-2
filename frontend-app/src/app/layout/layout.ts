@@ -15,6 +15,7 @@ export class Layout {
   readonly navigation = [
     { label: 'Resumen', path: '/dashboard', roles: [] },
     { label: 'Agendar cita', path: '/agendar-cita', roles: ['PACIENTE', 'AGENDADOR'] },
+    { label: 'Registrar Paciente', path: '/registrar-paciente', roles: ['AGENDADOR'] },
     { label: 'Mis citas', path: '/mis-citas', roles: ['PACIENTE'] },
     { label: 'Historial de Citas', path: '/historial', roles: ['PACIENTE'] },
     { label: 'Agenda', path: '/agenda', roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] },

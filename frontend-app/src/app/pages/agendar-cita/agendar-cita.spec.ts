@@ -7,6 +7,7 @@ import { PersonasService } from '../../core/services/personas.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
 import { DisponibilidadService } from '../../core/services/disponibilidad.service';
+import { Auth } from '../../core/services/auth';
 
 describe('AgendarCita', () => {
   let component: AgendarCita;
@@ -43,6 +44,7 @@ describe('AgendarCita', () => {
           },
         },
         { provide: AuthService, useValue: { getProfile: () => of({ roles: ['PACIENTE'], persona_id: 10 }) } },
+        { provide: Auth, useValue: { hasAnyRole: (roles: string[]) => roles.includes('PACIENTE') } },
         {
           provide: ConfiguracionService,
           useValue: { getConfiguracion: () => of({ semanas_agendamiento: 4, activo: true }) },

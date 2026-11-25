@@ -11,12 +11,13 @@ import { Paciente, PersonasService } from '../../core/services/personas.service'
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 import { DatePicker } from '../../shared/components/date-picker/date-picker';
+import { RegistrarPacienteLink } from '../../shared/components/registrar-paciente-link/registrar-paciente-link';
 
 const ESTADOS_AGENDA = new Set(['PROGRAMADA', 'CONFIRMADA', 'REAGENDADA']);
 const ESTADOS_HISTORIAL = new Set(['ATENDIDA', 'CANCELADA', 'NO_ASISTIDA']);
 
 @Component({
-  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker],
+  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker, RegistrarPacienteLink],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',

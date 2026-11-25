@@ -232,6 +232,11 @@ Al completar el formulario, el backend crea la cuenta en Keycloak con el rol
 paciente. El usuario puede iniciar sesión inmediatamente con el nombre de
 usuario y contraseña elegidos.
 
+Los usuarios con rol `AGENDADOR` también pueden registrar pacientes desde la
+navegación principal o desde **Resumen**, **Agendar cita** y **Agenda**. El
+formulario reutiliza el mismo flujo de creación de cuenta y confirma el
+resultado dentro de la aplicación.
+
 Las migraciones se aplican automáticamente cuando inicia el contenedor backend.
 También se pueden aplicar manualmente desde la raíz del proyecto:
 

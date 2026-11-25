@@ -1,5 +1,6 @@
 import { NgZone } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { Auth } from '../../core/services/auth';
 import { CitasService } from '../../core/services/citas.service';
@@ -81,7 +82,8 @@ describe('Agenda', () => {
     await TestBed.configureTestingModule({
       imports: [Agenda],
       providers: [
-        { provide: Auth, useValue: { roles: () => roles } },
+        provideRouter([]),
+        { provide: Auth, useValue: { roles: () => roles, hasAnyRole: (allowed: string[]) => roles.some((role) => allowed.includes(role)) } },
         {
           provide: CitasService,
           useValue: {
