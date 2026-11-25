@@ -10,8 +10,8 @@ export class MedicosService {
   private readonly api = inject(ApiService);
   private readonly especialidades$ = this.api.get<Especialidad[]>('/especialidades/').pipe(shareReplay({ bufferSize: 1, refCount: false }));
 
-  getMedicos() {
-    return this.api.get<Medico[]>('/medicos/');
+  getMedicos(params?: { q?: string; dni?: string }) {
+    return this.api.get<Medico[]>('/medicos/', params);
   }
 
   getEspecialidades() {

@@ -1,0 +1,8 @@
+.env
+.env.*
+node_modules/
+dist/
+.angular/
+.cache/
+coverage/
+npm-debug.log*

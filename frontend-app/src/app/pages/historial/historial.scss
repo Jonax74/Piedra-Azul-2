@@ -1,0 +1,77 @@
+.historial-page {
+  display: grid;
+  gap: 20px;
+}
+
+.historial-page .page-heading {
+  margin-bottom: 0;
+}
+
+.historial-page .filter-bar {
+  align-items: end;
+  gap: 16px;
+  padding: 18px 22px;
+}
+
+.historial-page .filter-bar label {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  color: #557174;
+  font-size: .73rem;
+  font-weight: 700;
+}
+
+.historial-page .filters-clear {
+  min-height: 43px;
+  white-space: nowrap;
+}
+
+.historial-page .filter-reset-link {
+  margin-top: 16px;
+}
+
+.historial-page .appointment-list {
+  min-height: 320px;
+  padding: 25px;
+}
+
+.historial-page .pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+  color: #718a8a;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.historial-page .pagination-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #cbdcd8;
+  border-radius: 50%;
+  background: white;
+  color: var(--teal);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.historial-page .pagination-button:hover:not(:disabled) {
+  border-color: var(--teal);
+  background: #e8f5f3;
+}
+
+.historial-page .pagination-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+@media (max-width: 560px) {
+  .historial-page .filter-bar {
+    display: grid;
+  }
+}

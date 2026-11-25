@@ -269,6 +269,63 @@ describe('Agenda', () => {
     expect(downloadClick).toHaveBeenCalledOnce();
   });
 
+  it('filters scheduler professional options by name and document', () => {
+    roles = ['AGENDADOR'];
+    getMedicos.mockReturnValue(of([
+      { persona: 12, estado: 'ACTIVO', tipo_profesional: 'MEDICO' },
+      { persona: 13, estado: 'ACTIVO', tipo_profesional: 'TERAPISTA' },
+    ]));
+    getPersonas.mockReturnValue(of([
+      { id: 12, primer_nombre: 'Carlos', primer_apellido: 'Medico', dni: 12345678 },
+      { id: 13, primer_nombre: 'María', primer_apellido: 'Ruiz', dni: 87654321 },
+    ]));
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector(
+      '#agenda-professional',
+    ) as HTMLInputElement;
+    input.value = '876543';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const options = fixture.nativeElement.querySelectorAll(
+      '#agenda-professional-options [role="option"]',
+    ) as NodeListOf<HTMLElement>;
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toContain('María Ruiz');
+  });
+
+  it('uses the custom date picker for the administrator agenda filter', async () => {
+    roles = ['ADMIN'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const date = `${month}-12`;
+    expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined);
+    fixture.nativeElement.querySelector('[aria-label="Filtrar agenda por fecha"]').click();
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector(
+        `#admin-agenda-date-calendar [aria-label="${month}-15, sin citas"]`,
+      ) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    fixture.nativeElement.querySelector(
+      `#admin-agenda-date-calendar [aria-label="${date}, tiene citas"]`,
+    ).click();
+    fixture.detectChanges();
+
+    expect(component.selectedDate).toBe(date);
+    fixture.nativeElement.querySelector('.filter-bar .primary-button').click();
+    expect(getAgenda).toHaveBeenLastCalledWith(undefined, date);
+  });
+
   it('lets an agendador search a patient by ID and displays appointment history', async () => {
     roles = ['AGENDADOR'];
     fixture.destroy();

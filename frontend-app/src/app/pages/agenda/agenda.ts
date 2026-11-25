@@ -9,9 +9,11 @@ import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
 import { Paciente, PersonasService } from '../../core/services/personas.service';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [FormsModule, DatePipe, AppointmentActions],
+  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect, DatePicker],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',
@@ -47,11 +49,16 @@ export class Agenda {
   readonly feedback = signal('');
   readonly calendarError = signal('');
   calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  private adminCalendarMonth = this.currentCalendarMonth();
+  private adminDatesRequestedKey = '';
+  private adminDatesLoadedKey = '';
+  private adminDatesRequestId = 0;
   readonly availableAppointmentDates = signal(new Set<string>());
   readonly isDoctorOnly = this.auth.roles().includes('MEDICO')
     && !this.auth.roles().some((role) => ['ADMIN', 'AGENDADOR'].includes(role));
   readonly isSchedulerOnly = this.auth.roles().includes('AGENDADOR')
     && !this.auth.roles().includes('ADMIN');
+  readonly isAdministrator = this.auth.roles().includes('ADMIN');
   readonly pageSize = 10;
   currentPage = 1;
 
@@ -108,10 +115,19 @@ export class Agenda {
   }
 
   onProfessionalChange(): void {
-    if (!this.isSchedulerOnly) return;
+    if (!this.isSchedulerOnly && !this.isAdministrator) return;
     this.selectedDate = '';
-    this.loadSchedulerAppointmentDates();
+    if (this.isSchedulerOnly) {
+      this.loadSchedulerAppointmentDates();
+    } else {
+      this.loadAdminAppointmentDates(this.adminCalendarMonth);
+    }
     this.search();
+  }
+
+  onAdminCalendarMonthChange(month: string): void {
+    this.adminCalendarMonth = month;
+    this.loadAdminAppointmentDates(month);
   }
 
   toggleCalendar(): void {
@@ -143,6 +159,7 @@ export class Agenda {
       });
     }
     if (this.isSchedulerOnly) this.loadSchedulerAppointmentDates();
+    if (this.isAdministrator) this.loadAdminAppointmentDates(this.adminCalendarMonth);
     if (!this.isDoctorOnly) this.search();
   }
 
@@ -205,6 +222,43 @@ export class Agenda {
     });
   }
 
+  private loadAdminAppointmentDates(month: string): void {
+    const medicoId = this.selectedProfessional ? Number(this.selectedProfessional) : undefined;
+    const requestKey = `${month}:${medicoId ?? ''}`;
+    if (this.adminDatesLoadedKey === requestKey
+      || (this.isLoadingDates() && this.adminDatesRequestedKey === requestKey)) {
+      return;
+    }
+
+    const requestId = ++this.adminDatesRequestId;
+    this.adminDatesRequestedKey = requestKey;
+    this.availableAppointmentDates.set(new Set());
+    this.isLoadingDates.set(true);
+    this.calendarError.set('');
+
+    this.citasService.getFechasAgenda(month, medicoId).subscribe({
+      next: (response) => {
+        if (requestId !== this.adminDatesRequestId) return;
+        if (response.mes !== this.adminCalendarMonth
+          || medicoId !== (this.selectedProfessional ? Number(this.selectedProfessional) : undefined)) {
+          return;
+        }
+        this.adminDatesLoadedKey = requestKey;
+        this.availableAppointmentDates.set(new Set(response.fechas));
+        this.isLoadingDates.set(false);
+        this.changeDetector.markForCheck();
+      },
+      error: (error: { error?: { detail?: string } }) => {
+        if (requestId !== this.adminDatesRequestId) return;
+        this.calendarError.set(error.error?.detail
+          ?? 'No fue posible cargar las fechas con citas.');
+        this.availableAppointmentDates.set(new Set());
+        this.isLoadingDates.set(false);
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
   private currentCalendarMonth(): string {
     return `${this.calendarMonth.getFullYear()}-${String(this.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
   }
@@ -212,6 +266,22 @@ export class Agenda {
   professionalName(professional: Medico): string {
     const person = this.people.find((item) => item.id === professional.persona);
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : 'Profesional';
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los profesionales' },
+      ...this.professionals.map((professional) => {
+        const person = this.people.find((item) => item.id === professional.persona);
+        const name = this.professionalName(professional);
+        return {
+          value: professional.persona.toString(),
+          label: name,
+          detail: person ? `CC ${person.dni}` : professional.tipo_profesional,
+          searchText: `${person?.dni ?? ''} ${professional.tipo_profesional}`,
+        };
+      }),
+    ];
   }
 
   exportAppointments(): void {

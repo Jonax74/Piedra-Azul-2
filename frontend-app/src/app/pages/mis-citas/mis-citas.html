@@ -7,12 +7,41 @@
     </div>
     <a routerLink="/agendar-cita" class="primary-button compact">Agendar una cita</a>
   </div>
-  <section class="surface appointment-list">
+
+  <section class="filter-bar surface" aria-label="Filtros de próximas citas">
+    <label>Fecha
+      <app-date-picker
+        inputId="upcoming-date"
+        ariaLabel="Filtrar por fecha"
+        [availableDates]="availableAppointmentDates"
+        [(ngModel)]="selectedDate"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
+    <label>Médico asignado
+      <app-searchable-select
+        inputId="upcoming-professional"
+        ariaLabel="Filtrar por médico asignado"
+        placeholder="Buscar por nombre..."
+        [options]="professionalOptions"
+        [(ngModel)]="selectedProfessional"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
+    <button
+      class="secondary-button filters-clear"
+      type="button"
+      [disabled]="!selectedDate && !selectedProfessional"
+      (click)="clearFilters()"
+    >Limpiar filtros</button>
+  </section>
+
+  <section class="surface appointment-list" aria-labelledby="upcoming-title">
     <div class="section-header">
-      <div><span class="eyebrow">Tu agenda</span><h3>Próximas citas</h3></div>
-      <span class="status-pill">{{ appointments.length }} citas</span>
+      <div><span class="eyebrow">Tu agenda</span><h3 id="upcoming-title">Próximas citas</h3></div>
+      <span class="status-pill">{{ filteredAppointments.length }} de {{ upcomingAppointments.length }} citas</span>
     </div>
-    @if (appointments.length) {
+    @if (filteredAppointments.length) {
       <div class="appointment-rows">
         @for (appointment of paginatedAppointments; track appointment.id) {
           <article class="appointment-row">
@@ -29,12 +58,18 @@
         }
       </div>
       @if (totalPages > 1) {
-        <nav class="pagination-controls" aria-label="Paginación de mis citas">
+        <nav class="pagination-controls" aria-label="Paginación de próximas citas">
           <button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentPage === 1" (click)="previousPage()">←</button>
           <span>Página {{ currentPage }} de {{ totalPages }}</span>
           <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPage === totalPages" (click)="nextPage()">→</button>
         </nav>
       }
+    } @else if (upcomingAppointments.length) {
+      <div class="empty-state">
+        <strong>No hay citas que coincidan con los filtros</strong>
+        <p>Prueba con otra fecha o médico asignado.</p>
+        <button class="secondary-button filter-reset-link" type="button" (click)="clearFilters()">Limpiar filtros</button>
+      </div>
     } @else {
       <div class="empty-state">
         <span class="empty-icon">+</span>

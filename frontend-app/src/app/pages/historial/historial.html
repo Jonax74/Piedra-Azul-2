@@ -1,0 +1,76 @@
+<div class="page-shell historial-page">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Seguimiento personal</span>
+      <h2>Historial de citas</h2>
+      <p>Consulta tus citas anteriores y las que cancelaste.</p>
+    </div>
+  </div>
+
+  <section class="filter-bar surface" aria-label="Filtros del historial">
+    <label>Fecha
+      <app-date-picker
+        inputId="history-date"
+        ariaLabel="Filtrar por fecha"
+        [availableDates]="availableAppointmentDates"
+        [(ngModel)]="selectedDate"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
+    <label>Médico asignado
+      <app-searchable-select
+        inputId="history-professional"
+        ariaLabel="Filtrar por médico asignado"
+        placeholder="Buscar por nombre..."
+        [options]="professionalOptions"
+        [(ngModel)]="selectedProfessional"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
+    <button
+      class="secondary-button filters-clear"
+      type="button"
+      [disabled]="!selectedDate && !selectedProfessional"
+      (click)="clearFilters()"
+    >Limpiar filtros</button>
+  </section>
+
+  <section class="surface appointment-list" aria-labelledby="history-title">
+    <div class="section-header">
+      <div><span class="eyebrow">Citas anteriores</span><h3 id="history-title">Historial</h3></div>
+      <span class="status-pill">{{ filteredAppointments.length }} de {{ historyAppointments.length }} citas</span>
+    </div>
+    @if (filteredAppointments.length) {
+      <div class="appointment-rows">
+        @for (appointment of paginatedAppointments; track appointment.id) {
+          <article class="appointment-row">
+            <div class="appointment-details">
+              <strong>{{ appointment.fecha_hora | date:'medium' }}</strong>
+              <small>{{ professionalName(appointment) }}</small>
+            </div>
+            <span class="status-pill">{{ appointment.estado }}</span>
+          </article>
+        }
+      </div>
+      @if (totalPages > 1) {
+        <nav class="pagination-controls" aria-label="Paginación del historial de citas">
+          <button type="button" class="pagination-button" aria-label="Página anterior" title="Página anterior" [disabled]="currentPage === 1" (click)="previousPage()">←</button>
+          <span>Página {{ currentPage }} de {{ totalPages }}</span>
+          <button type="button" class="pagination-button" aria-label="Página siguiente" title="Página siguiente" [disabled]="currentPage === totalPages" (click)="nextPage()">→</button>
+        </nav>
+      }
+    } @else if (historyAppointments.length) {
+      <div class="empty-state">
+        <strong>No hay citas que coincidan con los filtros</strong>
+        <p>Prueba con otra fecha o médico asignado.</p>
+        <button class="secondary-button filter-reset-link" type="button" (click)="clearFilters()">Limpiar filtros</button>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <strong>Aún no tienes citas anteriores ni canceladas</strong>
+        <p>Las citas finalizadas o canceladas aparecerán aquí.</p>
+      </div>
+    }
+  </section>
+  @if (feedback) { <p class="feedback-message">{{ feedback }}</p> }
+</div>

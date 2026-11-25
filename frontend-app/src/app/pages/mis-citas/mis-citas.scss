@@ -1,3 +1,36 @@
+.mis-citas-page {
+  display: grid;
+  gap: 20px;
+}
+
+.mis-citas-page .page-heading {
+  margin-bottom: 0;
+}
+
+.mis-citas-page .filter-bar {
+  align-items: end;
+  gap: 16px;
+  padding: 18px 22px;
+}
+
+.mis-citas-page .filter-bar label {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  color: #557174;
+  font-size: .73rem;
+  font-weight: 700;
+}
+
+.mis-citas-page .filters-clear {
+  min-height: 43px;
+  white-space: nowrap;
+}
+
+.mis-citas-page .filter-reset-link {
+  margin-top: 16px;
+}
+
 .appointment-list {
   min-height: 320px;
 }
@@ -72,6 +105,10 @@
 }
 
 @media (max-width: 560px) {
+  .mis-citas-page .filter-bar {
+    display: grid;
+  }
+
   .mis-citas-page .appointment-row {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
