@@ -150,6 +150,38 @@ class CitaPacienteScopeTests(TestCase):
 			context={"request": self.request},
 		)
 
+	def create_section_test_appointments(self, same_date=False):
+		estados = (
+			"PROGRAMADA",
+			"CONFIRMADA",
+			"REAGENDADA",
+			"ATENDIDA",
+			"CANCELADA",
+			"NO_ASISTIDA",
+		)
+		for offset, estado in enumerate(estados):
+			day = 5 if same_date else 5 + offset
+			hour = 15 + offset if same_date else 15
+			Cita.objects.create(
+				usuario=self.usuario,
+				paciente=self.paciente,
+				medico=self.medico,
+				fecha_hora=f"2099-01-{day:02d}T{hour:02d}:00:00Z",
+				estado=estado,
+			)
+
+	def linked_doctor_user(self):
+		keycloak_user_id = "medico-seccion-test"
+		Usuario.objects.create(
+			username="medico.seccion.test",
+			keycloak_user_id=keycloak_user_id,
+			persona=self.medico.persona,
+		)
+		return SimpleNamespace(
+			roles=["MEDICO"],
+			user_id=keycloak_user_id,
+		)
+
 	@patch("appointments.serializers.validar_cita_programable")
 	def test_patient_can_schedule_for_self(self, validar_cita):
 		serializer = self.serializer_for(self.paciente)
@@ -707,6 +739,44 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(filtered_response.data["fechas"], ["2099-01-05"])
 		self.assertEqual(all_response.data["fechas"], ["2099-01-05", "2099-01-07"])
 
+	def test_scheduler_calendar_filters_sections_by_status(self):
+		self.create_section_test_appointments()
+		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
+		factory = APIRequestFactory()
+		test_cases = (
+			("agenda", ["2099-01-05", "2099-01-06", "2099-01-07"]),
+			("historial", ["2099-01-08", "2099-01-09", "2099-01-10"]),
+		)
+
+		for seccion, fechas_esperadas in test_cases:
+			with self.subTest(seccion=seccion):
+				request = factory.get(
+					"/api/citas/agenda/fechas/",
+					{
+						"mes": "2099-01",
+						"medico": self.medico.pk,
+						"seccion": seccion,
+					},
+				)
+				force_authenticate(request, user=user)
+				response = FechasAgendaCitasView.as_view()(request)
+
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(response.data["fechas"], fechas_esperadas)
+
+		request = factory.get(
+			"/api/citas/agenda/fechas/",
+			{
+				"mes": "2099-01",
+				"medico": self.medico.pk,
+				"seccion": "otra",
+			},
+		)
+		force_authenticate(request, user=user)
+		response = FechasAgendaCitasView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
+
 	def test_scheduler_can_export_selected_doctor_and_date_as_csv(self):
 		Cita.objects.create(
 			usuario=self.usuario,
@@ -747,6 +817,54 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(len(rows[3]), 6)
 		self.assertIn("Ana Paciente", rows[3])
 		self.assertIn("Confirmada", rows[3])
+
+	def test_scheduler_csv_filters_sections_by_status(self):
+		self.create_section_test_appointments(same_date=True)
+		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
+		factory = APIRequestFactory()
+		test_cases = (
+			("agenda", ["Programada", "Confirmada", "Reagendada"]),
+			("historial", ["Atendida", "Cancelada", "No asistida"]),
+		)
+
+		for seccion, estados_esperados in test_cases:
+			with self.subTest(seccion=seccion):
+				request = factory.get(
+					"/api/citas/agenda/exportar/",
+					{
+						"medico": self.medico.pk,
+						"fecha": "2099-01-05",
+						"seccion": seccion,
+					},
+				)
+				force_authenticate(request, user=user)
+				response = ExportarAgendaCitasView.as_view()(request)
+				rows = list(csv.reader(
+					StringIO(response.content.decode("utf-8-sig")),
+					delimiter=";",
+				))
+
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(
+					[row[5] for row in rows[3:]],
+					estados_esperados,
+				)
+				self.assertTrue(
+					all(row[2] == "Ana Paciente" for row in rows[3:]),
+				)
+
+		request = factory.get(
+			"/api/citas/agenda/exportar/",
+			{
+				"medico": self.medico.pk,
+				"fecha": "2099-01-05",
+				"seccion": "otra",
+			},
+		)
+		force_authenticate(request, user=user)
+		response = ExportarAgendaCitasView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
 
 	def test_scheduler_csv_export_requires_doctor_and_valid_date(self):
 		user = SimpleNamespace(roles=["AGENDADOR"], user_id="agendador-test")
@@ -882,6 +1000,46 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["cantidad"], 1)
 		self.assertEqual(response.data["resultados"][0]["id"], own_appointment.id)
+
+	def test_doctor_agenda_filters_sections_by_status(self):
+		self.create_section_test_appointments()
+		doctor_user = self.linked_doctor_user()
+		factory = APIRequestFactory()
+		test_cases = (
+			("agenda", ["PROGRAMADA", "CONFIRMADA", "REAGENDADA"]),
+			("historial", ["ATENDIDA", "CANCELADA", "NO_ASISTIDA"]),
+		)
+
+		for seccion, estados_esperados in test_cases:
+			with self.subTest(seccion=seccion):
+				request = factory.get(
+					"/api/citas/medico/agenda/",
+					{"seccion": seccion},
+				)
+				force_authenticate(request, user=doctor_user)
+				response = AgendaMedicoView.as_view()(request)
+
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(
+					[
+						cita["estado"]
+						for cita in response.data["resultados"]
+					],
+					estados_esperados,
+				)
+				self.assertEqual(
+					response.data["cantidad"],
+					len(estados_esperados),
+				)
+
+		request = factory.get(
+			"/api/citas/medico/agenda/",
+			{"seccion": "otra"},
+		)
+		force_authenticate(request, user=doctor_user)
+		response = AgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
 
 	def test_doctor_agenda_rejects_invalid_date(self):
 		request = APIRequestFactory().get(
@@ -1067,6 +1225,46 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertEqual(len(rows), 4)
 		self.assertIn("Ana Paciente", rows[3])
 		self.assertNotIn("Laura Paciente", rows[3])
+
+	def test_doctor_csv_filters_sections_by_status(self):
+		self.create_section_test_appointments(same_date=True)
+		doctor_user = self.linked_doctor_user()
+		factory = APIRequestFactory()
+		test_cases = (
+			("agenda", ["Programada", "Confirmada", "Reagendada"]),
+			("historial", ["Atendida", "Cancelada", "No asistida"]),
+		)
+
+		for seccion, estados_esperados in test_cases:
+			with self.subTest(seccion=seccion):
+				request = factory.get(
+					"/api/citas/medico/agenda/exportar/",
+					{"fecha": "2099-01-05", "seccion": seccion},
+				)
+				force_authenticate(request, user=doctor_user)
+				response = ExportarAgendaMedicoView.as_view()(request)
+				rows = list(csv.reader(
+					StringIO(response.content.decode("utf-8-sig")),
+					delimiter=";",
+				))
+
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(
+					[row[5] for row in rows[3:]],
+					estados_esperados,
+				)
+				self.assertTrue(
+					all(row[2] == "Ana Paciente" for row in rows[3:]),
+				)
+
+		request = factory.get(
+			"/api/citas/medico/agenda/exportar/",
+			{"fecha": "2099-01-05", "seccion": "otra"},
+		)
+		force_authenticate(request, user=doctor_user)
+		response = ExportarAgendaMedicoView.as_view()(request)
+
+		self.assertEqual(response.status_code, 400)
 
 	def test_doctor_export_requires_linked_profile_and_valid_date(self):
 		request = APIRequestFactory().get(
