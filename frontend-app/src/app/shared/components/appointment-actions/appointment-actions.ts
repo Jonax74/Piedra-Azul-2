@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CitasService } from '../../../core/services/citas.service';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
+import { Auth } from '../../../core/services/auth';
 import { Cita } from '../../models/cita.model';
 
 type AppointmentStatus = 'CONFIRMADA' | 'CANCELADA';
@@ -15,12 +16,14 @@ type AppointmentStatus = 'CONFIRMADA' | 'CANCELADA';
 export class AppointmentActions {
   private readonly citasService = inject(CitasService);
   private readonly configuracionService = inject(ConfiguracionService);
+  private readonly auth = inject(Auth);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   @Input({ required: true }) cita!: Cita;
   @Output() readonly citaActualizada = new EventEmitter<Cita>();
 
   pendingStatus: AppointmentStatus | null = null;
+  cancellationBlocked = false;
   isRescheduleOpen = false;
   isLoadingDates = false;
   isLoadingSlots = false;
@@ -40,8 +43,21 @@ export class AppointmentActions {
   }
 
   openStatusConfirmation(status: AppointmentStatus): void {
+    this.cancellationBlocked = status === 'CANCELADA'
+      && this.isPatient()
+      && Date.parse(this.cita.fecha_hora) - Date.now() < 48 * 60 * 60 * 1000;
     this.pendingStatus = status;
     this.feedback = '';
+  }
+
+  cancellationDeadlineLabel(): string {
+    const deadline = new Date(
+      Date.parse(this.cita.fecha_hora) - 48 * 60 * 60 * 1000,
+    );
+    return deadline.toLocaleString('es-CO', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    });
   }
 
   openReschedule(): void {
@@ -134,6 +150,7 @@ export class AppointmentActions {
   closeDialog(): void {
     if (this.isSaving) return;
     this.pendingStatus = null;
+    this.cancellationBlocked = false;
     this.isRescheduleOpen = false;
     this.feedback = '';
   }
@@ -191,7 +208,7 @@ export class AppointmentActions {
   }
 
   confirmStatusChange(): void {
-    if (!this.pendingStatus || this.cita.id === undefined) return;
+    if (!this.pendingStatus || this.cancellationBlocked || this.cita.id === undefined) return;
     const status = this.pendingStatus;
     this.isSaving = true;
     this.feedback = '';
@@ -242,7 +259,7 @@ export class AppointmentActions {
     if (!response || typeof response !== 'object') return fallback;
 
     const details = response as Record<string, unknown>;
-    for (const key of ['detail', 'fecha_hora', 'non_field_errors']) {
+    for (const key of ['detail', 'estado', 'fecha_hora', 'non_field_errors']) {
       const message = this.flattenMessage(details[key]);
       if (message) return message;
     }
@@ -256,6 +273,12 @@ export class AppointmentActions {
       return value.map((item) => this.flattenMessage(item)).filter(Boolean).join(' ');
     }
     return '';
+  }
+
+  private isPatient(): boolean {
+    const roles = this.auth.roles();
+    return roles.includes('PACIENTE')
+      && !roles.some((role) => ['ADMIN', 'AGENDADOR', 'MEDICO'].includes(role));
   }
 
   private currentCalendarMonth(): string {

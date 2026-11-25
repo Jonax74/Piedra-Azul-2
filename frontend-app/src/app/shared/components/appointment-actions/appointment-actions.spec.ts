@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { Auth } from '../../../core/services/auth';
 import { CitasService } from '../../../core/services/citas.service';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
 import { Cita } from '../../models/cita.model';
@@ -15,6 +16,7 @@ describe('AppointmentActions', () => {
     estado: 'CONFIRMADA',
   };
   const actualizarEstadoCita = vi.fn(() => of(updatedAppointment));
+  const authRoles = vi.fn(() => ['PACIENTE']);
   const getFechasDisponibles = vi.fn(() => of({
     medico: 3,
     mes: '2099-01',
@@ -35,6 +37,7 @@ describe('AppointmentActions', () => {
     getFechasDisponibles.mockClear();
     getFranjasDisponibles.mockClear();
     actualizarEstadoCita.mockClear();
+    authRoles.mockReturnValue(['PACIENTE']);
     await TestBed.configureTestingModule({
       imports: [AppointmentActions],
       providers: [
@@ -54,6 +57,10 @@ describe('AppointmentActions', () => {
               activo: true,
             })),
           },
+        },
+        {
+          provide: Auth,
+          useValue: { roles: authRoles },
         },
       ],
     }).compileComponents();
@@ -97,7 +104,44 @@ describe('AppointmentActions', () => {
     expect(actualizarEstadoCita).toHaveBeenCalledWith(12, {
       estado: 'CONFIRMADA',
     });
+
     expect(onUpdated).toHaveBeenCalledWith(updatedAppointment);
+  });
+
+  it('explains why a patient cannot cancel within 48 hours', () => {
+    fixture.componentRef.setInput('cita', {
+      id: 12,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(),
+      estado: 'PROGRAMADA',
+    } satisfies Cita);
+    fixture.componentInstance.openStatusConfirmation('CANCELADA');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#status-title').textContent)
+      .toContain('No puedes cancelar esta cita');
+    expect(fixture.nativeElement.querySelector('.danger-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.dialog-actions').textContent)
+      .toContain('Entendido');
+    expect(actualizarEstadoCita).not.toHaveBeenCalled();
+  });
+
+  it('keeps staff cancellation available within 48 hours', () => {
+    authRoles.mockReturnValue(['AGENDADOR']);
+    fixture.componentRef.setInput('cita', {
+      id: 12,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(),
+      estado: 'PROGRAMADA',
+    } satisfies Cita);
+    fixture.componentInstance.openStatusConfirmation('CANCELADA');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#status-title').textContent)
+      .toContain('Cancelar cita');
+    expect(fixture.nativeElement.querySelector('.danger-button')).not.toBeNull();
   });
 
   it('loads the availability calendar and fetches slots when a date is selected', () => {

@@ -111,13 +111,23 @@
           }
         </div>
       } @else {
-        <span class="eyebrow">Actualizar cita</span>
-        <h3 id="status-title">{{ pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Cancelar cita' }}</h3>
-        <p>
-          {{ pendingStatus === 'CONFIRMADA'
-            ? 'La cita quedará confirmada. ¿Deseas continuar?'
-            : 'Esta acción liberará el horario para otras personas. ¿Deseas cancelar la cita?' }}
-        </p>
+        @if (cancellationBlocked) {
+          <span class="eyebrow">Plazo de cancelación vencido</span>
+          <h3 id="status-title">No puedes cancelar esta cita</h3>
+          <p>
+            Las citas deben cancelarse con al menos 48 horas de anticipación.
+            El plazo venció el: <strong>{{ cancellationDeadlineLabel() }}</strong>
+            Si necesitas ayuda, comunícate con la clínica.
+          </p>
+        } @else {
+          <span class="eyebrow">Actualizar cita</span>
+          <h3 id="status-title">{{ pendingStatus === 'CONFIRMADA' ? 'Confirmar cita' : 'Cancelar cita' }}</h3>
+          <p>
+            {{ pendingStatus === 'CONFIRMADA'
+              ? 'La cita quedará confirmada. ¿Deseas continuar?'
+              : 'Esta acción liberará el horario para otras personas. ¿Deseas cancelar la cita?' }}
+          </p>
+        }
       }
 
       @if (feedback) {
@@ -125,7 +135,7 @@
       }
 
       <div class="dialog-actions">
-        <button class="secondary-button" type="button" [disabled]="isSaving" (click)="closeDialog()">Volver</button>
+        <button class="secondary-button" type="button" [disabled]="isSaving" (click)="closeDialog()">{{ cancellationBlocked ? 'Entendido' : 'Volver' }}</button>
         @if (isRescheduleOpen) {
           <button
             class="primary-button"
@@ -133,7 +143,7 @@
             [disabled]="isSaving || isLoadingSlots || !selectedSlot"
             (click)="reschedule()"
           >{{ isSaving ? 'Reagendando…' : 'Guardar horario' }}</button>
-        } @else {
+        } @else if (!cancellationBlocked) {
           <button
             class="primary-button"
             [class.danger-button]="pendingStatus === 'CANCELADA'"
