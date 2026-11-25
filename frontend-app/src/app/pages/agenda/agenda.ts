@@ -9,9 +9,10 @@ import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
 import { Paciente, PersonasService } from '../../core/services/personas.service';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 @Component({
-  imports: [FormsModule, DatePipe, AppointmentActions],
+  imports: [FormsModule, DatePipe, AppointmentActions, SearchableSelect],
   selector: 'app-agenda',
   styleUrl: './agenda.scss',
   templateUrl: './agenda.html',
@@ -212,6 +213,22 @@ export class Agenda {
   professionalName(professional: Medico): string {
     const person = this.people.find((item) => item.id === professional.persona);
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : 'Profesional';
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los profesionales' },
+      ...this.professionals.map((professional) => {
+        const person = this.people.find((item) => item.id === professional.persona);
+        const name = this.professionalName(professional);
+        return {
+          value: professional.persona.toString(),
+          label: name,
+          detail: person ? `CC ${person.dni}` : professional.tipo_profesional,
+          searchText: `${person?.dni ?? ''} ${professional.tipo_profesional}`,
+        };
+      }),
+    ];
   }
 
   exportAppointments(): void {

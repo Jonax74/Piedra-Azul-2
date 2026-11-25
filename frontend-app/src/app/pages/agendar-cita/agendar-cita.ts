@@ -10,6 +10,7 @@ import { DisponibilidadService } from '../../core/services/disponibilidad.servic
 import { Medico } from '../../shared/models/medico.model';
 import { Especialidad } from '../../shared/models/especialidad.model';
 import { Persona } from '../../shared/models/persona.model';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 interface BookingFieldErrors {
   patient?: string;
@@ -24,7 +25,7 @@ interface CalendarDay {
 }
 
 @Component({
-  imports: [FormsModule],
+  imports: [FormsModule, SearchableSelect],
   selector: 'app-agendar-cita',
   styleUrl: './agendar-cita.scss',
   templateUrl: './agendar-cita.html',
@@ -426,6 +427,39 @@ export class AgendarCita {
   get filteredProfessionals(): Medico[] {
     if (!this.selectedSpecialty) return this.professionals;
     return this.professionals.filter((professional) => professional.especialidades?.some((specialty) => specialty.id?.toString() === this.selectedSpecialty));
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return this.filteredProfessionals.map((professional) => {
+      const dni = this.professionalDni(professional);
+      return {
+        value: professional.persona.toString(),
+        label: this.professionalName(professional),
+        detail: `${professional.tipo_profesional === 'MEDICO' ? 'Médico' : 'Terapeuta'}${dni ? ` · CC ${dni}` : ''}`,
+        searchText: `${dni ?? ''} ${professional.tipo_profesional}`,
+      };
+    });
+  }
+
+  onProfessionalDropdownChange(open: boolean): void {
+    this.professionalDropdownOpen = open;
+    if (open) {
+      this.patientDropdownOpen = false;
+      this.specialtyDropdownOpen = false;
+    }
+  }
+
+  selectProfessionalById(value: string): void {
+    const professional = this.professionals.find((item) => item.persona.toString() === value);
+    if (professional) {
+      this.selectProfessional(professional);
+      return;
+    }
+
+    this.selectedProfessional = '';
+    this.fieldErrors.professional = '';
+    this.selectedDate = '';
+    this.dateChanged();
   }
 
   professionalName(professional?: Medico): string {

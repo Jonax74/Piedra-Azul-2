@@ -269,6 +269,34 @@ describe('Agenda', () => {
     expect(downloadClick).toHaveBeenCalledOnce();
   });
 
+  it('filters scheduler professional options by name and document', () => {
+    roles = ['AGENDADOR'];
+    getMedicos.mockReturnValue(of([
+      { persona: 12, estado: 'ACTIVO', tipo_profesional: 'MEDICO' },
+      { persona: 13, estado: 'ACTIVO', tipo_profesional: 'TERAPISTA' },
+    ]));
+    getPersonas.mockReturnValue(of([
+      { id: 12, primer_nombre: 'Carlos', primer_apellido: 'Medico', dni: 12345678 },
+      { id: 13, primer_nombre: 'María', primer_apellido: 'Ruiz', dni: 87654321 },
+    ]));
+    fixture.destroy();
+    fixture = TestBed.createComponent(Agenda);
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector(
+      '#agenda-professional',
+    ) as HTMLInputElement;
+    input.value = '876543';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const options = fixture.nativeElement.querySelectorAll(
+      '#agenda-professional-options [role="option"]',
+    ) as NodeListOf<HTMLElement>;
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toContain('María Ruiz');
+  });
+
   it('lets an agendador search a patient by ID and displays appointment history', async () => {
     roles = ['AGENDADOR'];
     fixture.destroy();

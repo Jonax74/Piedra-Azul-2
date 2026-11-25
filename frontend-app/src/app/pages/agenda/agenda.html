@@ -20,16 +20,14 @@
 	<section class="filter-bar surface row g-3 mt-3">
 		@if (!isDoctorOnly) {
 			<label class="col-12 col-md">Profesional
-				<select
-					class="form-select"
+				<app-searchable-select
+					inputId="agenda-professional"
+					ariaLabel="Profesionales"
+					placeholder="Buscar por nombre o cédula..."
+					[options]="professionalOptions"
 					[(ngModel)]="selectedProfessional"
 					(ngModelChange)="onProfessionalChange()"
-				>
-					<option value="">Todos los profesionales</option>
-					@for (professional of professionals; track professional.persona) {
-						<option [value]="professional.persona">{{ professionalName(professional) }}</option>
-					}
-				</select>
+				/>
 			</label>
 		}
 		@if (isDoctorOnly || isSchedulerOnly) {

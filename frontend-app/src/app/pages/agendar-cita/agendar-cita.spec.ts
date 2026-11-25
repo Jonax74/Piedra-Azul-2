@@ -39,7 +39,7 @@ describe('AgendarCita', () => {
   });
 
   it('reloads available slots when the professional changes and the date is still valid', () => {
-    const date = '2026-11-23';
+    const date = component.minBookingDate;
     const getSlots = vi.spyOn(TestBed.inject(CitasService), 'getFranjasDisponibles')
       .mockReturnValue(of({ medico: 10, fecha: date, cantidad: 0, franjas: [] }));
     vi.spyOn(component, 'isDateSelectable').mockReturnValue(true);
