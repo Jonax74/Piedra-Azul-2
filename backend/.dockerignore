@@ -1,8 +1,12 @@
 .env
 .env.*
+!.env.example
 .venv/
 venv/
 __pycache__/
+*.pyc
 *.py[cod]
+.git
 staticfiles/
 media/
+*.sqlite3
