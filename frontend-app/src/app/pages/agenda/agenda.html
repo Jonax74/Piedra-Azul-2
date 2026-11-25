@@ -162,7 +162,7 @@
 						<strong>{{ appointment.fecha_hora | date:'shortTime' }}</strong>
 						@if (!isDoctorOnly) { <span>{{ professionalNameFromAppointment(appointment) }}</span> }
 						<span>{{ patientName(appointment) }}</span>
-						<span class="status-pill">{{ appointment.estado === 'NO_ASISTIDA' ? 'No asistida' : appointment.estado }}</span>
+						<span class="status-pill">{{ appointment.estado === 'NO_ASISTIDA' ? 'NO ASISTIDA' : appointment.estado }}</span>
 						<app-appointment-actions
 							[cita]="appointment"
 							(citaActualizada)="updateAppointment($event)"

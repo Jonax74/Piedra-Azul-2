@@ -126,7 +126,7 @@ describe('Agenda', () => {
     expect(fixture.nativeElement.textContent).toContain('Se encontraron 1 citas');
   });
 
-  it('renders NO_ASISTIDA as No asistida in the staff history table', async () => {
+  it('renders NO_ASISTIDA as NO ASISTIDA in the staff history table', async () => {
     roles = ['AGENDADOR'];
     fixture.destroy();
     fixture = TestBed.createComponent(Agenda);
@@ -153,7 +153,7 @@ describe('Agenda', () => {
     const status = fixture.nativeElement.querySelector(
       '.appointment-row .status-pill',
     ) as HTMLElement;
-    expect(status.textContent.trim()).toBe('No asistida');
+    expect(status.textContent.trim()).toBe('NO ASISTIDA');
     expect(status.textContent).not.toContain('NO_ASISTIDA');
   });
 
