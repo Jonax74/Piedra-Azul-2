@@ -234,9 +234,16 @@ describe('Agenda', () => {
     await fixture.whenStable();
 
     const month = `${component.calendarMonth.getFullYear()}-${String(component.calendarMonth.getMonth() + 1).padStart(2, '0')}`;
-    component.cambiarSeccion('historial');
+    component.selectedDate = `${month}-12`;
+    const historyTab = fixture.nativeElement.querySelector(
+      'nav[aria-label="Sección de citas"] button:nth-child(2)',
+    ) as HTMLButtonElement;
+    historyTab.click();
+    fixture.detectChanges();
 
     expect(component.seccion()).toBe('historial');
+    expect(component.selectedDate).toBe('');
+    expect(historyTab.getAttribute('aria-pressed')).toBe('true');
     expect(getFechasAgenda).toHaveBeenLastCalledWith(month, undefined, 'historial');
     expect(getAgenda).toHaveBeenLastCalledWith(undefined, undefined, 'historial');
   });
