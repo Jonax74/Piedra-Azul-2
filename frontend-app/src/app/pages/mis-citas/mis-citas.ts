@@ -6,9 +6,10 @@ import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions, SearchableSelect],
+  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions, SearchableSelect, DatePicker],
   selector: 'app-mis-citas',
   styleUrl: './mis-citas.scss',
   templateUrl: './mis-citas.html',

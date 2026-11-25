@@ -10,7 +10,12 @@
 
   <section class="filter-bar surface" aria-label="Filtros de próximas citas">
     <label>Fecha
-      <input type="date" [(ngModel)]="selectedDate" (ngModelChange)="onFilterChange()">
+      <app-date-picker
+        inputId="upcoming-date"
+        ariaLabel="Filtrar por fecha"
+        [(ngModel)]="selectedDate"
+        (ngModelChange)="onFilterChange()"
+      />
     </label>
     <label>Médico asignado
       <app-searchable-select

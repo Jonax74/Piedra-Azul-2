@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 import { MisCitas } from './mis-citas';
 
 describe('MisCitas', () => {
@@ -119,6 +121,39 @@ describe('MisCitas', () => {
       { value: '', label: 'Todos los médicos' },
       { value: '3', label: 'Lucía Médica', searchText: 'Lucía Médica' },
     ]);
+  });
+
+  it('filters appointments when choosing a day from the custom calendar', () => {
+    component.appointments = [
+      {
+        id: 1,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2099-01-10T10:00:00-05:00',
+        estado: 'PROGRAMADA',
+      },
+      {
+        id: 2,
+        paciente: 5,
+        medico: 3,
+        fecha_hora: '2099-01-11T10:00:00-05:00',
+        estado: 'PROGRAMADA',
+      },
+    ];
+    const datePicker = fixture.debugElement.query(By.directive(DatePicker))
+      .componentInstance as DatePicker;
+    datePicker.writeValue('2099-01-10');
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('[aria-label="Filtrar por fecha"]').click();
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector(
+      '#upcoming-date-calendar [aria-label="2099-01-11"]',
+    ).click();
+    fixture.detectChanges();
+
+    expect(component.selectedDate).toBe('2099-01-11');
+    expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([2]);
   });
 
   it('resets pagination when filters change', () => {

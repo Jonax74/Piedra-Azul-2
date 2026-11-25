@@ -1,0 +1,50 @@
+<div class="date-picker">
+	<button
+		type="button"
+		class="calendar-trigger"
+		[disabled]="isDisabled"
+		(click)="toggleCalendar()"
+		[attr.aria-expanded]="isOpen"
+		[attr.aria-label]="ariaLabel"
+		aria-haspopup="dialog"
+		[attr.aria-controls]="inputId + '-calendar'"
+	>
+		<span>{{ label }}</span>
+		<strong>{{ selectedDate || emptyLabel }}</strong>
+		<span class="calendar-trigger-icon" aria-hidden="true">▾</span>
+	</button>
+	@if (isOpen) {
+		<section
+			class="calendar-popup"
+			[id]="inputId + '-calendar'"
+			role="dialog"
+			[attr.aria-label]="ariaLabel"
+			(keydown.escape)="closeCalendar()"
+		>
+			<div class="calendar-header">
+				<button type="button" class="calendar-nav" (click)="changeMonth(-1)" aria-label="Mes anterior">‹</button>
+				<strong>{{ calendarMonthLabel() }}</strong>
+				<button type="button" class="calendar-nav" (click)="changeMonth(1)" aria-label="Mes siguiente">›</button>
+			</div>
+			<div class="calendar-weekdays" aria-hidden="true">
+				@for (weekday of weekdays; track $index) { <span>{{ weekday }}</span> }
+			</div>
+			<div class="calendar-grid">
+				@for (day of calendarCells(); track $index) {
+					@if (day) {
+						<button
+							type="button"
+							class="calendar-day available-day"
+							[class.selected-day]="selectedDate === day.iso"
+							[attr.aria-label]="day.iso"
+							[attr.aria-pressed]="selectedDate === day.iso"
+							(click)="selectDate(day.iso)"
+						>{{ day.number }}</button>
+					} @else {
+						<span class="calendar-empty"></span>
+					}
+				}
+			</div>
+		</section>
+	}
+</div>

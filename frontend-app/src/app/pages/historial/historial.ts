@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
 import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
+import { DatePicker } from '../../shared/components/date-picker/date-picker';
 
 @Component({
-  imports: [DatePipe, FormsModule, SearchableSelect],
+  imports: [DatePipe, FormsModule, SearchableSelect, DatePicker],
   selector: 'app-historial',
   styleUrl: './historial.scss',
   templateUrl: './historial.html',
