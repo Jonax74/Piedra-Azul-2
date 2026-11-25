@@ -4,7 +4,14 @@
 		<section class="surface settings-form">
 			<span class="eyebrow">Profesional</span><h3>Configurar horario</h3>
 			<label>Médico o terapeuta
-				<select [(ngModel)]="selectedProfessional" (ngModelChange)="professionalChanged()"><option value="">Selecciona un profesional</option>@for (professional of professionals; track professional.persona) {<option [value]="professional.persona">{{ professionalName(professional) }}</option>}</select>
+				<app-searchable-select
+					inputId="availability-professional"
+					ariaLabel="Profesionales para configurar disponibilidad"
+					placeholder="Buscar por cédula o nombre..."
+					[options]="professionalOptions"
+					[(ngModel)]="selectedProfessional"
+					(ngModelChange)="professionalChanged()"
+				/>
 				@if (fieldErrors.professional) { <small class="field-error">{{ fieldErrors.professional }}</small> }
 			</label>
 			<label>Día de atención

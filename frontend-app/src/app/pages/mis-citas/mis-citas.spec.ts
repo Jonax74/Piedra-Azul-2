@@ -103,6 +103,24 @@ describe('MisCitas', () => {
     expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([2]);
   });
 
+  it('builds searchable doctor options from upcoming appointments', () => {
+    component.appointments = [{
+      id: 2,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: '2099-01-10T10:00:00-05:00',
+      estado: 'PROGRAMADA',
+      medico_detalle: {
+        persona: { primer_nombre: 'Lucía', primer_apellido: 'Médica' },
+      },
+    }];
+
+    expect(component.professionalOptions).toEqual([
+      { value: '', label: 'Todos los médicos' },
+      { value: '3', label: 'Lucía Médica', searchText: 'Lucía Médica' },
+    ]);
+  });
+
   it('resets pagination when filters change', () => {
     component.appointments = [
       ...Array.from({ length: 12 }, (_, index) => ({

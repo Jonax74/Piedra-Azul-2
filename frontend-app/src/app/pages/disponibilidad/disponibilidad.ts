@@ -7,6 +7,7 @@ import { PersonasService } from '../../core/services/personas.service';
 import { Medico } from '../../shared/models/medico.model';
 import { Persona } from '../../shared/models/persona.model';
 import { Disponibilidad as DisponibilidadModel } from '../../shared/models/disponibilidad.model';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 interface AvailabilityFieldErrors {
   professional?: string;
@@ -17,7 +18,7 @@ interface AvailabilityFieldErrors {
 }
 
 @Component({
-  imports: [FormsModule],
+  imports: [FormsModule, SearchableSelect],
   selector: 'app-disponibilidad',
   styleUrl: './disponibilidad.scss',
   templateUrl: './disponibilidad.html',
@@ -124,6 +125,22 @@ export class Disponibilidad {
   professionalName(professional: Medico): string {
     const person = this.people.find((item) => item.id === professional.persona);
     return person ? `${person.primer_nombre} ${person.primer_apellido}` : `Profesional #${professional.persona}`;
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Selecciona un profesional' },
+      ...this.professionals.map((professional) => {
+        const person = this.people.find((item) => item.id === professional.persona);
+        const name = this.professionalName(professional);
+        return {
+          value: professional.persona.toString(),
+          label: name,
+          detail: person ? `CC ${person.dni}` : professional.tipo_profesional,
+          searchText: `${person?.dni ?? ''} ${professional.tipo_profesional}`,
+        };
+      }),
+    ];
   }
 
   saveSchedule(): void {

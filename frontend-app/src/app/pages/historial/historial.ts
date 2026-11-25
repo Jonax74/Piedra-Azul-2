@@ -3,9 +3,10 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 @Component({
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, SearchableSelect],
   selector: 'app-historial',
   styleUrl: './historial.scss',
   templateUrl: './historial.html',
@@ -46,6 +47,17 @@ export class Historial {
     return [...namesById]
       .map(([id, name]) => ({ id, name }))
       .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los médicos' },
+      ...this.professionals.map(({ id, name }) => ({
+        value: id.toString(),
+        label: name,
+        searchText: name,
+      })),
+    ];
   }
 
   get totalPages(): number {

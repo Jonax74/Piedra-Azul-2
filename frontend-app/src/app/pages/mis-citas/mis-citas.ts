@@ -5,9 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
 import { AppointmentActions } from '../../shared/components/appointment-actions/appointment-actions';
+import { SearchableSelect, SearchableSelectOption } from '../../shared/components/searchable-select/searchable-select';
 
 @Component({
-  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions],
+  imports: [RouterLink, DatePipe, FormsModule, AppointmentActions, SearchableSelect],
   selector: 'app-mis-citas',
   styleUrl: './mis-citas.scss',
   templateUrl: './mis-citas.html',
@@ -47,6 +48,17 @@ export class MisCitas {
     return [...namesById]
       .map(([id, name]) => ({ id, name }))
       .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+  }
+
+  get professionalOptions(): SearchableSelectOption[] {
+    return [
+      { value: '', label: 'Todos los médicos' },
+      ...this.professionals.map(({ id, name }) => ({
+        value: id.toString(),
+        label: name,
+        searchText: name,
+      })),
+    ];
   }
 
   get totalPages(): number {

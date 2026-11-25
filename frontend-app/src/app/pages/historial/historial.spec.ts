@@ -86,4 +86,22 @@ describe('Historial', () => {
 
     expect(component.filteredAppointments.map((appointment) => appointment.id)).toEqual([2]);
   });
+
+  it('builds searchable doctor options from historical appointments', () => {
+    component.appointments = [{
+      id: 1,
+      paciente: 5,
+      medico: 3,
+      fecha_hora: '2020-01-10T10:00:00-05:00',
+      estado: 'ATENDIDA',
+      medico_detalle: {
+        persona: { primer_nombre: 'Lucía', primer_apellido: 'Médica' },
+      },
+    }];
+
+    expect(component.professionalOptions).toEqual([
+      { value: '', label: 'Todos los médicos' },
+      { value: '3', label: 'Lucía Médica', searchText: 'Lucía Médica' },
+    ]);
+  });
 });

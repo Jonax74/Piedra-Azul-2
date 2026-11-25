@@ -12,12 +12,14 @@
       <input type="date" [(ngModel)]="selectedDate" (ngModelChange)="onFilterChange()">
     </label>
     <label>Médico asignado
-      <select [(ngModel)]="selectedProfessional" (ngModelChange)="onFilterChange()">
-        <option value="">Todos los médicos</option>
-        @for (professional of professionals; track professional.id) {
-          <option [value]="professional.id">{{ professional.name }}</option>
-        }
-      </select>
+      <app-searchable-select
+        inputId="history-professional"
+        ariaLabel="Filtrar por médico asignado"
+        placeholder="Buscar por nombre..."
+        [options]="professionalOptions"
+        [(ngModel)]="selectedProfessional"
+        (ngModelChange)="onFilterChange()"
+      />
     </label>
     <button
       class="secondary-button filters-clear"
