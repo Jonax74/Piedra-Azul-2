@@ -498,6 +498,18 @@ class AgendaMedicoView(APIView):
     permission_classes = [IsDoctorRole]
 
     def get(self, request):
+        seccion = request.query_params.get("seccion", "agenda")
+        if seccion not in {"agenda", "historial"}:
+            return Response(
+                {"detail": "seccion debe ser agenda o historial."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        estados = (
+            ESTADOS_OCUPADOS
+            if seccion == "agenda"
+            else ESTADOS_HISTORIAL
+        )
         keycloak_user_id = request.user.user_id
         fecha_texto = request.query_params.get("fecha")
         filtros = {
@@ -540,6 +552,7 @@ class AgendaMedicoView(APIView):
                 "usuario",
             )
             .filter(**filtros)
+            .filter(estado__in=estados)
             .order_by("fecha_hora")
         )
 
