@@ -13,6 +13,7 @@ describe('Dashboard', () => {
     const auth = {
       username: () => 'Ana',
       roles: () => ['PACIENTE'],
+      hasAnyRole: (roles: string[]) => roles.includes('PACIENTE'),
     };
     const citasService = {
       getCitas: () => of([

@@ -4,9 +4,10 @@ import { RouterLink } from '@angular/router';
 import { Auth } from '../../core/services/auth';
 import { CitasService } from '../../core/services/citas.service';
 import { Cita } from '../../shared/models/cita.model';
+import { RegistrarPacienteLink } from '../../shared/components/registrar-paciente-link/registrar-paciente-link';
 
 @Component({
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, RegistrarPacienteLink],
   selector: 'app-dashboard',
   styleUrl: './dashboard.scss',
   templateUrl: './dashboard.html',
