@@ -104,8 +104,12 @@ describe('RegistroPaciente', () => {
 
 		const request = httpTesting.expectOne(`${environment.apiUrl}/registro/`);
 		request.flush({ detail: 'Cuenta creada.', username: 'paciente.nuevo' });
+		fixture.detectChanges();
 
 		expect(component.successMessage).toContain('paciente.nuevo');
+		expect(component.isSubmitting).toBe(false);
+		expect(fixture.nativeElement.textContent).toContain('El paciente paciente.nuevo fue registrado correctamente.');
+		expect(fixture.nativeElement.querySelector('[role="status"]')).not.toBeNull();
 		expect(component.form.username).toBe('');
 		expect(component.form.password).toBe('');
 		expect(navigate).not.toHaveBeenCalled();

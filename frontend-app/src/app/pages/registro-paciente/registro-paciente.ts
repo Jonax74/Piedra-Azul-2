@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { timeout } from 'rxjs';
@@ -24,6 +24,7 @@ interface RegistroError {
 export class RegistroPaciente {
 	private readonly api = inject(ApiService);
 	private readonly router = inject(Router);
+	private readonly changeDetector = inject(ChangeDetectorRef);
 	readonly isStaffRegistration = inject(ActivatedRoute).snapshot.data['staffRegistration'] === true;
 	readonly maxBirthDate = new Date().toISOString().slice(0, 10);
 	isSubmitting = false;
@@ -67,8 +68,10 @@ export class RegistroPaciente {
 				if (this.isStaffRegistration) {
 					this.successMessage = `El paciente ${response.username} fue registrado correctamente.`;
 					this.clearForm();
+					this.changeDetector.markForCheck();
 					return;
 				}
+				this.changeDetector.markForCheck();
 				void this.router.navigate(['/login'], {
 					queryParams: {
 						registro: 'exitoso',
@@ -79,6 +82,7 @@ export class RegistroPaciente {
 			error: (error: unknown) => {
 				this.errorMessage = this.errorMessageFrom(error);
 				this.isSubmitting = false;
+				this.changeDetector.markForCheck();
 			},
 		});
 	}
