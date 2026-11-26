@@ -22,7 +22,7 @@
 				<div class="registration-error" role="alert">{{ errorMessage }}</div>
 			}
 			@if (successMessage) {
-				<div class="registration-success" role="status">{{ successMessage }}</div>
+				<p class="feedback-message" role="status">{{ successMessage }}</p>
 			}
 
 			<form #registrationForm="ngForm" (ngSubmit)="register()">
