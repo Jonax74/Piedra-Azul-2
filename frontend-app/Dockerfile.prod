@@ -1,0 +1,41 @@
+# ---------- Etapa 1: construir ----------
+FROM node:24-alpine AS build
+WORKDIR /app
+
+# URLs públicas (no son secretos). apiUrl debe incluir el sufijo /api.
+ARG API_URL
+ARG KEYCLOAK_URL
+ARG KEYCLOAK_REALM=piedrazul
+ARG KEYCLOAK_CLIENT_ID=piedrazul-frontend
+
+RUN test -n "$API_URL" && test -n "$KEYCLOAK_URL" || \
+    (echo "ERROR: API_URL y KEYCLOAK_URL son obligatorios (--build-arg)" && exit 1)
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# Genera environment.prod.ts con los valores recibidos.
+RUN printf "export const environment = {\n  production: true,\n  apiUrl: '%s',\n  keycloakUrl: '%s',\n  keycloakRealm: '%s',\n  keycloakClientId: '%s',\n};\n" \
+    "$API_URL" "$KEYCLOAK_URL" "$KEYCLOAK_REALM" "$KEYCLOAK_CLIENT_ID" \
+    > src/environments/environment.prod.ts
+
+RUN npm run build -- --configuration production
+
+# ---------- Etapa 2: ejecutar ----------
+FROM node:24-alpine AS runtime
+ENV NODE_ENV=production \
+    PORT=4000
+WORKDIR /app
+
+# Solo el resultado del build: sin código fuente ni node_modules de desarrollo.
+COPY --from=build --chown=node:node /app/dist/frontend-app ./dist/frontend-app
+
+USER node
+EXPOSE 4000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -q --spider "http://127.0.0.1:${PORT}/healthz" || exit 1
+
+CMD ["node", "dist/frontend-app/server/server.mjs"]
