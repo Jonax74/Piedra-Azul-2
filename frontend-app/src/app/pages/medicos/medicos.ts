@@ -9,6 +9,7 @@ import { PersonasService } from '../../core/services/personas.service';
 import { Persona } from '../../shared/models/persona.model';
 import { Medico } from '../../shared/models/medico.model';
 import { Disponibilidad as DisponibilidadModel } from '../../shared/models/disponibilidad.model';
+import { Especialidad } from '../../shared/models/especialidad.model';
 
 @Component({
   imports: [FormsModule, RouterLink],
@@ -24,7 +25,9 @@ export class Medicos {
   professionals: Medico[] = [];
   people: Persona[] = [];
   schedules: DisponibilidadModel[] = [];
+  specialties: Especialidad[] = [];
   relations: Array<{ medico: number; disponibilidad: number }> = [];
+  specialtyLoadError = '';
   searchTerm = '';
   feedback = '';
   isCreating = false;
@@ -40,6 +43,7 @@ export class Medicos {
     dni: '',
     correo: '',
     tipo_profesional: 'MEDICO',
+    especialidad_id: '',
     username: '',
     password: '',
     password_confirmation: '',
@@ -47,6 +51,13 @@ export class Medicos {
 
   ngOnInit(): void {
     this.loadProfessionals();
+    this.medicosService.getEspecialidades().subscribe({
+      next: (items) => { this.specialties = items; this.changeDetector.markForCheck(); },
+      error: () => {
+        this.specialtyLoadError = 'No fue posible cargar las opciones de especialidad.';
+        this.changeDetector.markForCheck();
+      },
+    });
     this.personasService.getPersonas().subscribe({
       next: (people) => { this.people = people; this.changeDetector.markForCheck(); },
       error: () => { this.feedback = 'No se pudieron cargar los nombres de las personas.'; this.changeDetector.markForCheck(); },
@@ -95,6 +106,9 @@ export class Medicos {
     this.medicosService.crearMedico({
       tipo_profesional: this.professionalForm.tipo_profesional,
       estado: 'ACTIVO',
+      especialidad_ids: this.professionalForm.especialidad_id
+        ? [Number(this.professionalForm.especialidad_id)]
+        : [],
       persona_data: {
         primer_nombre: this.professionalForm.primer_nombre.trim(),
         segundo_nombre: this.professionalForm.segundo_nombre.trim() || null,
@@ -124,6 +138,7 @@ export class Medicos {
           dni: '',
           correo: '',
           tipo_profesional: 'MEDICO',
+          especialidad_id: '',
           username: '',
           password: '',
           password_confirmation: '',

@@ -71,6 +71,28 @@ describe('AgendarCita', () => {
     expect(component.patientName()).toBe('Ana Paciente');
   });
 
+  it('allows any professional for general medicine and filters other specialties', () => {
+    component.professionals = [
+      { persona: 8, tipo_profesional: 'MEDICO', estado: 'ACTIVO', especialidades: [] },
+      {
+        persona: 9,
+        tipo_profesional: 'TERAPISTA',
+        estado: 'ACTIVO',
+        especialidades: [{ id: 2, nombre: 'Fisioterapia' }],
+      },
+    ];
+    component.specialties = [
+      { id: 1, nombre: 'Medicina General' },
+      { id: 2, nombre: 'Fisioterapia' },
+    ];
+    component.selectedSpecialty = '1';
+
+    expect(component.filteredProfessionals.map((item) => item.persona)).toEqual([8, 9]);
+
+    component.selectedSpecialty = '2';
+    expect(component.filteredProfessionals.map((item) => item.persona)).toEqual([9]);
+  });
+
   it('enables calendar dates only on configured weekdays within the booking window', () => {
     component.selectedProfessional = '8';
     const nextMonday = new Date();

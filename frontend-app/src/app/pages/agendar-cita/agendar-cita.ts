@@ -427,6 +427,13 @@ export class AgendarCita {
 
   get filteredProfessionals(): Medico[] {
     if (!this.selectedSpecialty) return this.professionals;
+    const selectedSpecialty = this.specialties.find(
+      (specialty) => specialty.id?.toString() === this.selectedSpecialty,
+    );
+    if (selectedSpecialty?.nombre.toLocaleLowerCase('es') === 'medicina general') {
+      return this.professionals;
+    }
+
     return this.professionals.filter((professional) => professional.especialidades?.some((specialty) => specialty.id?.toString() === this.selectedSpecialty));
   }
 

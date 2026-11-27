@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from persons.models import Medico, Paciente, Persona
+from persons.models import Especialidad, Medico, Paciente, Persona
 from persons.serializers import MedicoSerializer, PacienteSerializer
 from persons.views import MedicoListCreateView, PacienteListCreateView
 from users.models import Rol, Usuario, UsuarioRol
@@ -164,6 +164,7 @@ class PersonaUsuarioLinkTests(TestCase):
 		return_value=("keycloak-medico-nuevo", "test-token"),
 	)
 	def test_creates_medico_with_new_user_account(self, create_user):
+		fisioterapia = Especialidad.objects.get(nombre="Fisioterapia")
 		persona_data = {
 			"primer_nombre": "Medico",
 			"primer_apellido": "Prueba",
@@ -178,6 +179,7 @@ class PersonaUsuarioLinkTests(TestCase):
 				"persona_data": persona_data,
 				"tipo_profesional": "MEDICO",
 				"estado": "ACTIVO",
+				"especialidad_ids": [fisioterapia.pk],
 				"username": "medico.prueba",
 				"password": "ClaveSegura123",
 				"password_confirmation": "ClaveSegura123",
@@ -191,6 +193,10 @@ class PersonaUsuarioLinkTests(TestCase):
 		self.assertEqual(usuario.persona_id, medico.persona_id)
 		self.assertTrue(
 			usuario.relaciones_rol.filter(rol__nombre="MEDICO").exists()
+		)
+		self.assertEqual(
+			list(medico.especialidades.values_list("especialidad__nombre", flat=True)),
+			["Fisioterapia"],
 		)
 		create_user.assert_called_once()
 

@@ -8,8 +8,10 @@ import { PersonasService } from '../../core/services/personas.service';
 describe('Medicos', () => {
   let component: Medicos;
   let fixture: ComponentFixture<Medicos>;
+  let createMedico: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
+    createMedico = vi.fn(() => of({ persona: 3, tipo_profesional: 'MEDICO', estado: 'ACTIVO' }));
     await TestBed.configureTestingModule({
       imports: [Medicos],
       providers: [
@@ -21,6 +23,8 @@ describe('Medicos', () => {
               { persona: 1, tipo_profesional: 'MEDICO' },
               { persona: 2, tipo_profesional: 'TERAPISTA' },
             ]),
+            getEspecialidades: () => of([{ id: 1, nombre: 'Fisioterapia' }]),
+            crearMedico: createMedico,
           },
         },
         {
@@ -50,5 +54,35 @@ describe('Medicos', () => {
 
   it('returns a stable fallback name when a person is not loaded', () => {
     expect(component.professionalName({ persona: 99 } as never)).toBe('Profesional #99');
+  });
+
+  it('creates a doctor and a linked login account from the same form', () => {
+    Object.assign(component.professionalForm, {
+      primer_nombre: 'Luis',
+      primer_apellido: 'Mendez',
+      fecha_nacimiento: '1985-01-01',
+      telefono: '3000000001',
+      dni: '98765432',
+      correo: 'luis@example.com',
+      especialidad_id: '1',
+      username: 'medico.luis',
+      password: 'ClaveSegura123',
+      password_confirmation: 'ClaveSegura123',
+    });
+
+    component.saveProfessional();
+
+    expect(createMedico).toHaveBeenCalledWith(expect.objectContaining({
+      username: 'medico.luis',
+      password: 'ClaveSegura123',
+      password_confirmation: 'ClaveSegura123',
+      especialidad_ids: [1],
+      persona_data: expect.objectContaining({
+        correo: 'luis@example.com',
+        dni: 98765432,
+      }),
+    }));
+    expect(component.feedback).toContain('cuenta de acceso');
+    expect(component.professionalForm.password).toBe('');
   });
 });

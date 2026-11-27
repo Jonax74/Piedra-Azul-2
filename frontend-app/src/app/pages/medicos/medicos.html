@@ -38,7 +38,19 @@
             <option value="TERAPISTA">Terapista</option>
           </select>
         </label>
+        <label>Especialidad (opcional)
+          <select name="especialidad_id" [(ngModel)]="professionalForm.especialidad_id">
+            <option value="">Sin especialidad</option>
+            @for (specialty of specialties; track specialty.id) {
+              <option [value]="specialty.id">{{ specialty.nombre }}</option>
+            }
+          </select>
+        </label>
       </div>
+      <p class="account-hint">Cualquier profesional puede atender Medicina General; las demás especialidades se asignan al profesional elegido.</p>
+      @if (specialtyLoadError) {
+        <p class="form-error" role="status">{{ specialtyLoadError }} Puedes registrar al profesional sin especialidad.</p>
+      }
       <div>
         <span class="eyebrow">Acceso al sistema</span>
         <p class="account-hint">Se creará una cuenta con el rol de médico para este profesional.</p>
@@ -76,6 +88,11 @@
           <div class="professional-details">
             <strong>{{ professionalName(professional) }}</strong>
             <small>{{ professional.tipo_profesional }} · {{ professional.estado }}</small>
+            @if (professional.especialidades?.length) {
+              <small>Especialidad: {{ professional.especialidades?.[0]?.nombre }}</small>
+            } @else {
+              <small>Sin especialidad asignada</small>
+            }
             @for (schedule of professionalSchedules(professional); track schedule.id) {
               <small class="schedule-summary">{{ schedule.dia_semana }}: {{ schedule.hora_inicio }}–{{ schedule.hora_fin }} (cada {{ schedule.intervalo }} min)</small>
             } @empty {
