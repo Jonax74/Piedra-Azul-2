@@ -1,5 +1,11 @@
+import logging
+
+from django.db import IntegrityError
+from django.db.utils import OperationalError
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from rest_framework.response import Response
 from django.db.models import Q
 
 from persons.models import (
@@ -18,6 +24,9 @@ from persons.serializers import (
     DisponibilidadSerializer,
     MedicoDisponibilidadSerializer,
 )
+from users.registration import KeycloakAdminError, RegistrationConflict
+
+logger = logging.getLogger(__name__)
 
 
 class PacienteListCreateView(generics.ListCreateAPIView):
@@ -81,6 +90,38 @@ class MedicoListCreateView(generics.ListCreateAPIView):
     )
     serializer_class = MedicoSerializer
     permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except RegistrationConflict as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_409_CONFLICT,
+            )
+        except KeycloakAdminError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except IntegrityError:
+            return Response(
+                {"detail": "El usuario o documento ya está registrado."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        except OperationalError:
+            logger.exception(
+                "La base de datos no pudo guardar el registro del médico.",
+            )
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible guardar el registro en la base de datos. "
+                        "Verifica que PostgreSQL esté activo e inténtalo nuevamente."
+                    )
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
     def get_queryset(self):
         queryset = super().get_queryset()
