@@ -82,6 +82,18 @@
   margin: 4px 0 0;
 }
 
+.account-hint {
+  margin: 6px 0 0;
+  color: #758e90;
+  font-size: 0.8rem;
+}
+
+.form-error {
+  margin: 0;
+  color: #a63d3d;
+  font-size: 0.8rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -106,6 +118,15 @@
   background: #fff;
   color: #233b3d;
   font: inherit;
+}
+
+.form-grid .invalid-field {
+  border-color: #b94a48;
+}
+
+.form-grid .invalid-field:focus {
+  outline: 2px solid rgba(185, 74, 72, 0.18);
+  outline-offset: 1px;
 }
 
 .professional-details {

@@ -62,11 +62,14 @@ BEGIN
         WHERE username = 'paciente.ana';
 
     INSERT INTO especialidad (esp_nombre)
-    VALUES ('Medicina General')
-    ON CONFLICT (esp_nombre) DO NOTHING;
-
-    INSERT INTO especialidad (esp_nombre)
-    VALUES ('Fisioterapia')
+    VALUES
+        ('Medicina General'),
+        ('Fisioterapia'),
+        ('Cardiología'),
+        ('Kinesiología'),
+        ('Pediatría'),
+        ('Neurología'),
+        ('Dermatología')
     ON CONFLICT (esp_nombre) DO NOTHING;
 
     SELECT esp_id INTO medicina_id

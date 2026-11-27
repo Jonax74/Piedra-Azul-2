@@ -1,10 +1,11 @@
 from datetime import date
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from persons.models import Medico, Paciente, Persona
+from persons.models import Especialidad, Medico, Paciente, Persona
 from persons.serializers import MedicoSerializer, PacienteSerializer
 from persons.views import MedicoListCreateView, PacienteListCreateView
 from users.models import Rol, Usuario, UsuarioRol
@@ -157,6 +158,122 @@ class PersonaUsuarioLinkTests(TestCase):
 
 		self.assertEqual(medico.persona.primer_nombre, "Medico")
 		self.assertEqual(Medico.objects.count(), 1)
+
+	@patch(
+		"users.registration._create_keycloak_user",
+		return_value=("keycloak-medico-nuevo", "test-token"),
+	)
+	def test_creates_medico_with_new_user_account(self, create_user):
+		fisioterapia = Especialidad.objects.get(nombre="Fisioterapia")
+		persona_data = {
+			"primer_nombre": "Medico",
+			"primer_apellido": "Prueba",
+			"genero": "OTRO",
+			"fecha_nacimiento": date(1985, 1, 1),
+			"telefono": "3000000001",
+			"dni": 98765432,
+			"correo": "medico@example.com",
+		}
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": persona_data,
+				"tipo_profesional": "MEDICO",
+				"estado": "ACTIVO",
+				"especialidad_ids": [fisioterapia.pk],
+				"username": "medico.prueba",
+				"password": "ClaveSegura123",
+				"password_confirmation": "ClaveSegura123",
+			},
+		)
+
+		self.assertTrue(serializer.is_valid(), serializer.errors)
+		medico = serializer.save()
+		usuario = Usuario.objects.get(username="medico.prueba")
+
+		self.assertEqual(usuario.persona_id, medico.persona_id)
+		self.assertTrue(
+			usuario.relaciones_rol.filter(rol__nombre="MEDICO").exists()
+		)
+		self.assertEqual(
+			list(medico.especialidades.values_list("especialidad__nombre", flat=True)),
+			["Fisioterapia"],
+		)
+		create_user.assert_called_once()
+
+	@patch("users.registration._create_keycloak_user")
+	def test_rejects_mismatched_medico_account_passwords(self, create_user):
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					**self.persona_data(98765432),
+					"correo": "medico@example.com",
+				},
+				"tipo_profesional": "MEDICO",
+				"username": "medico.prueba",
+				"password": "ClaveSegura123",
+				"password_confirmation": "OtraClave123",
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("password_confirmation", serializer.errors)
+		create_user.assert_not_called()
+
+	def test_rejects_medico_account_with_short_or_invalid_username(self):
+		for username in ("ab", "medico prueba"):
+			with self.subTest(username=username):
+				serializer = MedicoSerializer(
+					data={
+						"persona_data": {
+							**self.persona_data(98765432),
+							"correo": "medico@example.com",
+						},
+						"tipo_profesional": "MEDICO",
+						"username": username,
+						"password": "ClaveSegura123",
+						"password_confirmation": "ClaveSegura123",
+					},
+				)
+
+				self.assertFalse(serializer.is_valid())
+				self.assertIn("username", serializer.errors)
+
+	def test_rejects_medico_account_with_invalid_phone_format(self):
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					**self.persona_data(98765432),
+					"telefono": "abcdefgh",
+					"correo": "medico@example.com",
+				},
+				"tipo_profesional": "MEDICO",
+				"username": "medico.prueba",
+				"password": "ClaveSegura123",
+				"password_confirmation": "ClaveSegura123",
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("telefono", serializer.errors["persona_data"])
+
+	def test_rejects_medico_account_password_over_maximum_length(self):
+		password = "x" * 129
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					**self.persona_data(98765432),
+					"correo": "medico@example.com",
+				},
+				"tipo_profesional": "MEDICO",
+				"username": "medico.prueba",
+				"password": password,
+				"password_confirmation": password,
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("password", serializer.errors)
+		self.assertIn("password_confirmation", serializer.errors)
 
 	def test_medico_requires_existing_person_or_persona_data(self):
 		serializer = MedicoSerializer(

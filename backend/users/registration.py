@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 from django.db import IntegrityError, transaction
 
-from persons.models import Paciente, Persona
+from persons.models import Medico, MedicoEspecialidad, Paciente, Persona
 from users.models import Rol, Usuario, UsuarioRol
 
 logger = logging.getLogger(__name__)
@@ -122,15 +122,15 @@ def _admin_token():
     return result["access_token"]
 
 
-def _patient_role(token):
-    role_path = "/admin/realms/piedrazul/roles/PACIENTE"
+def _keycloak_role(token, role_name):
+    role_path = f"/admin/realms/piedrazul/roles/{role_name}"
     try:
         _, role, _ = _request("GET", role_path, token=token)
         return role
     except KeycloakRequestError as error:
         if error.status_code != 404:
             raise KeycloakAdminError(
-                "No fue posible consultar el rol de paciente en Keycloak."
+                f"No fue posible consultar el rol {role_name} en Keycloak."
             ) from error
 
     try:
@@ -138,13 +138,13 @@ def _patient_role(token):
             "POST",
             "/admin/realms/piedrazul/roles",
             token=token,
-            payload={"name": "PACIENTE"},
+            payload={"name": role_name},
         )
         _, role, _ = _request("GET", role_path, token=token)
         return role
     except KeycloakRequestError as error:
         raise KeycloakAdminError(
-            "No fue posible preparar el rol de paciente en Keycloak."
+            f"No fue posible preparar el rol {role_name} en Keycloak."
         ) from error
 
 
@@ -162,9 +162,9 @@ def _delete_keycloak_user(token, user_id):
             ) from error
 
 
-def _create_keycloak_user(*, username, persona, password):
+def _create_keycloak_user(*, username, persona, password, role_name="PACIENTE"):
     token = _admin_token()
-    role = _patient_role(token)
+    role = _keycloak_role(token, role_name)
     first_name = " ".join(
         part
         for part in (persona["primer_nombre"], persona.get("segundo_nombre"))
@@ -232,10 +232,10 @@ def _create_keycloak_user(*, username, persona, password):
             _delete_keycloak_user(token, user_id)
         except KeycloakAdminError:
             logger.exception(
-                "No se pudo limpiar un usuario de Keycloak sin el rol PACIENTE."
+                "No se pudo limpiar un usuario de Keycloak sin el rol requerido."
             )
         raise KeycloakAdminError(
-            "La cuenta se creó, pero no fue posible asignarle el rol de paciente."
+            f"La cuenta se creó, pero no fue posible asignarle el rol {role_name}."
         ) from error
 
     return user_id, token
@@ -276,5 +276,64 @@ def registrar_paciente(*, username, password, persona):
         except KeycloakAdminError:
             logger.exception(
                 "No se pudo limpiar una cuenta de Keycloak tras fallar el registro local."
+            )
+        raise
+
+
+def registrar_medico(
+    *,
+    username,
+    password,
+    persona,
+    tipo_profesional,
+    estado,
+    especialidades=(),
+):
+    keycloak_user_id, token = _create_keycloak_user(
+        username=username,
+        persona=persona,
+        password=password,
+        role_name="MEDICO",
+    )
+
+    try:
+        with transaction.atomic():
+            persona_creada = Persona.objects.create(**persona)
+            medico = Medico.objects.create(
+                persona=persona_creada,
+                tipo_profesional=tipo_profesional,
+                estado=estado,
+            )
+            usuario = Usuario.objects.create(
+                persona=persona_creada,
+                username=username,
+                keycloak_user_id=keycloak_user_id,
+            )
+            rol, _ = Rol.objects.get_or_create(nombre="MEDICO")
+            UsuarioRol.objects.create(usuario=usuario, rol=rol)
+
+            for especialidad in especialidades:
+                MedicoEspecialidad.objects.create(
+                    medico=medico,
+                    especialidad=especialidad,
+                )
+
+            return medico
+    except IntegrityError as error:
+        try:
+            _delete_keycloak_user(token, keycloak_user_id)
+        except KeycloakAdminError:
+            logger.exception(
+                "No se pudo limpiar una cuenta de Keycloak tras conflicto de base de datos."
+            )
+        raise RegistrationConflict(
+            "El usuario o documento ya está registrado."
+        ) from error
+    except Exception:
+        try:
+            _delete_keycloak_user(token, keycloak_user_id)
+        except KeycloakAdminError:
+            logger.exception(
+                "No se pudo limpiar una cuenta de Keycloak tras fallar el registro del médico."
             )
         raise

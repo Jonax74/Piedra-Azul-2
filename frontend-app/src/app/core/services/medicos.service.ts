@@ -18,7 +18,13 @@ export class MedicosService {
     return this.especialidades$;
   }
 
-  crearMedico(payload: Partial<Medico> & { persona_data?: Partial<Persona> }) {
+  crearMedico(payload: Partial<Medico> & {
+    persona_data?: Partial<Persona>;
+    username?: string;
+    password?: string;
+    password_confirmation?: string;
+    especialidad_ids?: number[];
+  }) {
     return this.api.post<Medico>('/medicos/', payload);
   }
 

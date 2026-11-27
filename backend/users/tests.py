@@ -1,10 +1,13 @@
+from datetime import date
+
 from django.test import TestCase
 
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
-from persons.models import Paciente, Persona
+from persons.models import Medico, Paciente, Persona
 from users.models import Usuario
+from users.registration import registrar_medico
 from users.services import sincronizar_usuario_keycloak
 
 
@@ -67,6 +70,45 @@ class SincronizarUsuarioKeycloakTests(TestCase):
 		)
 
 		self.assertFalse(usuario.relaciones_rol.exists())
+
+
+class RegistroMedicoTests(TestCase):
+	@patch(
+		"users.registration._create_keycloak_user",
+		return_value=("keycloak-medico-nuevo", "test-token"),
+	)
+	def test_creates_medico_and_linked_user_with_medico_role(self, create_user):
+		persona_data = {
+			"primer_nombre": "Luis",
+			"primer_apellido": "Mendez",
+			"genero": "HOMBRE",
+			"fecha_nacimiento": date(1985, 1, 1),
+			"telefono": "3000000001",
+			"dni": 98765432,
+			"correo": "luis.mendez@example.com",
+		}
+
+		medico = registrar_medico(
+			username="medico.luis",
+			password="ClaveSegura123",
+			persona=persona_data,
+			tipo_profesional="MEDICO",
+			estado="ACTIVO",
+		)
+
+		usuario = Usuario.objects.get(username="medico.luis")
+		self.assertEqual(Medico.objects.get().persona_id, medico.persona_id)
+		self.assertEqual(usuario.persona_id, medico.persona_id)
+		self.assertEqual(usuario.keycloak_user_id, "keycloak-medico-nuevo")
+		self.assertTrue(
+			usuario.relaciones_rol.filter(rol__nombre="MEDICO").exists()
+		)
+		create_user.assert_called_once_with(
+			username="medico.luis",
+			persona=persona_data,
+			password="ClaveSegura123",
+			role_name="MEDICO",
+		)
 
 
 class RegistroPacienteApiTests(TestCase):

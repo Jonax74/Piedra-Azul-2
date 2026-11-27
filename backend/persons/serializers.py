@@ -1,3 +1,5 @@
+import re
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -11,6 +13,7 @@ from persons.models import (
     MedicoDisponibilidad,
 )
 from users.models import Usuario
+from users.registration import registrar_medico
 
 
 def _validar_usuario_vinculable(usuario, rol_requerido, persona_actual_id):
@@ -164,6 +167,40 @@ class EspecialidadSerializer(serializers.ModelSerializer):
 
 
 class MedicoSerializer(serializers.ModelSerializer):
+    username = serializers.RegexField(
+        regex=r"^[A-Za-z0-9._-]+$",
+        min_length=3,
+        max_length=20,
+        required=False,
+        write_only=True,
+        error_messages={
+            "invalid": "Usa solo letras, números, puntos, guiones y guiones bajos.",
+            "min_length": "El usuario debe tener al menos 3 caracteres.",
+            "max_length": "El usuario no puede superar los 20 caracteres.",
+        },
+    )
+    password = serializers.CharField(
+        min_length=8,
+        max_length=128,
+        required=False,
+        write_only=True,
+        trim_whitespace=False,
+        error_messages={
+            "min_length": "La contraseña debe tener al menos 8 caracteres.",
+            "max_length": "La contraseña no puede superar los 128 caracteres.",
+        },
+    )
+    password_confirmation = serializers.CharField(
+        min_length=8,
+        max_length=128,
+        required=False,
+        write_only=True,
+        trim_whitespace=False,
+        error_messages={
+            "min_length": "La contraseña debe tener al menos 8 caracteres.",
+            "max_length": "La contraseña no puede superar los 128 caracteres.",
+        },
+    )
     persona = serializers.PrimaryKeyRelatedField(
         queryset=Persona.objects.all(),
         required=False,
@@ -197,11 +234,18 @@ class MedicoSerializer(serializers.ModelSerializer):
             "especialidades",
             "especialidad_ids",
             "usuario_id",
+            "username",
+            "password",
+            "password_confirmation",
         ]
 
     def validate(self, attrs):
         persona_data = attrs.get("persona_data")
         persona = attrs.get("persona")
+        username = attrs.get("username")
+        password = attrs.get("password")
+        password_confirmation = attrs.get("password_confirmation")
+        usuario = attrs.get("_usuario")
 
         if persona_data is not None and persona is not None:
             raise serializers.ValidationError(
@@ -212,6 +256,58 @@ class MedicoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"persona_data": "Debes enviar los datos del profesional."}
             )
+
+        if any(
+            value is not None
+            for value in (username, password, password_confirmation)
+        ):
+            account_errors = {}
+            for field, value in (
+                ("username", username),
+                ("password", password),
+                ("password_confirmation", password_confirmation),
+            ):
+                if value is None:
+                    account_errors[field] = "Este campo es obligatorio para crear la cuenta."
+
+            if persona_data is None:
+                account_errors["persona_data"] = (
+                    "Debes registrar una nueva persona para crear su cuenta."
+                )
+            elif not persona_data.get("correo"):
+                account_errors["persona_data"] = {
+                    "correo": "El correo electrónico es obligatorio para crear la cuenta."
+                }
+            elif not re.fullmatch(
+                r"[0-9+() -]{7,15}",
+                persona_data.get("telefono", ""),
+            ):
+                account_errors["persona_data"] = {
+                    "telefono": (
+                        "El teléfono debe tener entre 7 y 15 caracteres y usar "
+                        "solo números, espacios, +, paréntesis o guiones."
+                    )
+                }
+            if usuario is not None:
+                account_errors["usuario_id"] = (
+                    "No puedes vincular una cuenta existente y crear otra a la vez."
+                )
+            if (
+                password is not None
+                and password_confirmation is not None
+                and password != password_confirmation
+            ):
+                account_errors["password_confirmation"] = (
+                    "Las contraseñas no coinciden."
+                )
+            if username and Usuario.objects.filter(
+                username__iexact=username,
+            ).exists():
+                account_errors["username"] = (
+                    "Este nombre de usuario ya está registrado."
+                )
+            if account_errors:
+                raise serializers.ValidationError(account_errors)
 
         return attrs
 
@@ -241,6 +337,19 @@ class MedicoSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         persona_data = validated_data.pop("persona_data", None)
+        username = validated_data.pop("username", None)
+        password = validated_data.pop("password", None)
+        validated_data.pop("password_confirmation", None)
+        if username is not None:
+            return registrar_medico(
+                username=username,
+                password=password,
+                persona=persona_data,
+                tipo_profesional=validated_data["tipo_profesional"],
+                estado=validated_data["estado"],
+                especialidades=validated_data.pop("especialidad_ids", []),
+            )
+
         if persona_data is not None:
             validated_data["persona"] = Persona.objects.create(**persona_data)
 
