@@ -82,6 +82,12 @@
   margin: 4px 0 0;
 }
 
+.account-hint {
+  margin: 6px 0 0;
+  color: #758e90;
+  font-size: 0.8rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

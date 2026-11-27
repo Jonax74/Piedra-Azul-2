@@ -1,6 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { timeout } from 'rxjs';
 import { DisponibilidadService } from '../../core/services/disponibilidad.service';
 import { MedicosService } from '../../core/services/medicos.service';
 import { PersonasService } from '../../core/services/personas.service';
@@ -38,6 +40,9 @@ export class Medicos {
     dni: '',
     correo: '',
     tipo_profesional: 'MEDICO',
+    username: '',
+    password: '',
+    password_confirmation: '',
   };
 
   ngOnInit(): void {
@@ -99,9 +104,12 @@ export class Medicos {
         fecha_nacimiento: this.professionalForm.fecha_nacimiento,
         telefono: this.professionalForm.telefono.trim(),
         dni: Number(this.professionalForm.dni),
-        correo: this.professionalForm.correo.trim() || null,
+        correo: this.professionalForm.correo.trim(),
       },
-    }).subscribe({
+      username: this.professionalForm.username.trim(),
+      password: this.professionalForm.password,
+      password_confirmation: this.professionalForm.password_confirmation,
+    }).pipe(timeout({ first: 45000 })).subscribe({
       next: () => {
         this.isSaving = false;
         this.isCreating = false;
@@ -116,8 +124,11 @@ export class Medicos {
           dni: '',
           correo: '',
           tipo_profesional: 'MEDICO',
+          username: '',
+          password: '',
+          password_confirmation: '',
         };
-        this.feedback = 'Profesional registrado correctamente. Ahora puedes configurar su disponibilidad.';
+        this.feedback = 'Profesional y cuenta de acceso registrados correctamente. Ahora puedes configurar su disponibilidad.';
         this.loadProfessionals();
         this.personasService.getPersonas().subscribe({
           next: (people) => { this.people = people; this.changeDetector.markForCheck(); },
@@ -125,11 +136,39 @@ export class Medicos {
         });
         this.changeDetector.markForCheck();
       },
-      error: () => {
+      error: (error: unknown) => {
         this.isSaving = false;
-        this.feedback = 'No fue posible registrar al profesional. Revisa que el documento no esté ya registrado.';
+        this.feedback = this.registrationError(error);
         this.changeDetector.markForCheck();
       },
     });
+  }
+
+  private registrationError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const messages = this.collectErrorMessages(error.error);
+      if (messages.length) return messages[0];
+      if (error.status === 0) {
+        return 'No se pudo conectar con el servidor. Verifica que el backend y Keycloak estén activos.';
+      }
+      if (error.status >= 500) {
+        return 'No fue posible crear el profesional y su cuenta. Inténtalo nuevamente más tarde.';
+      }
+    }
+
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      return 'El registro tardó demasiado. Verifica que el backend y Keycloak estén activos antes de volver a intentarlo.';
+    }
+
+    return 'No fue posible registrar al profesional. Revisa los datos ingresados e inténtalo nuevamente.';
+  }
+
+  private collectErrorMessages(value: unknown): string[] {
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap((item) => this.collectErrorMessages(item));
+    if (value && typeof value === 'object') {
+      return Object.values(value).flatMap((item) => this.collectErrorMessages(item));
+    }
+    return [];
   }
 }

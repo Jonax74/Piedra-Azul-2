@@ -31,7 +31,7 @@
         <label>Fecha de nacimiento<input name="fecha_nacimiento" type="date" [(ngModel)]="professionalForm.fecha_nacimiento" required></label>
         <label>Teléfono<input name="telefono" type="tel" [(ngModel)]="professionalForm.telefono" required maxlength="15"></label>
         <label>Documento<input name="dni" type="number" [(ngModel)]="professionalForm.dni" required min="1"></label>
-        <label>Correo electrónico<input name="correo" type="email" [(ngModel)]="professionalForm.correo"></label>
+        <label>Correo electrónico<input name="correo" type="email" [(ngModel)]="professionalForm.correo" required maxlength="70"></label>
         <label>Tipo de profesional
           <select name="tipo_profesional" [(ngModel)]="professionalForm.tipo_profesional" required>
             <option value="MEDICO">Médico</option>
@@ -39,8 +39,23 @@
           </select>
         </label>
       </div>
+      <div>
+        <span class="eyebrow">Acceso al sistema</span>
+        <p class="account-hint">Se creará una cuenta con el rol de médico para este profesional.</p>
+      </div>
+      <div class="form-grid">
+        <label>Nombre de usuario
+          <input name="username" [(ngModel)]="professionalForm.username" required maxlength="20" autocomplete="username">
+        </label>
+        <label>Contraseña
+          <input name="password" type="password" [(ngModel)]="professionalForm.password" required minlength="8" autocomplete="new-password">
+        </label>
+        <label>Confirmar contraseña
+          <input name="password_confirmation" type="password" [(ngModel)]="professionalForm.password_confirmation" required minlength="8" autocomplete="new-password">
+        </label>
+      </div>
       <button class="primary-button" type="submit" [disabled]="isSaving">
-        {{ isSaving ? 'Guardando...' : 'Registrar profesional' }}
+        {{ isSaving ? 'Guardando...' : 'Registrar profesional y cuenta' }}
       </button>
     </form>
   }
