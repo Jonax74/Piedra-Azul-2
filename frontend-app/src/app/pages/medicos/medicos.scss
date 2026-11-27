@@ -120,6 +120,15 @@
   font: inherit;
 }
 
+.form-grid .invalid-field {
+  border-color: #b94a48;
+}
+
+.form-grid .invalid-field:focus {
+  outline: 2px solid rgba(185, 74, 72, 0.18);
+  outline-offset: 1px;
+}
+
 .professional-details {
   min-width: 0;
 }

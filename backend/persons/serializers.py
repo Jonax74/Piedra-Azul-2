@@ -1,3 +1,5 @@
+import re
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -165,27 +167,38 @@ class EspecialidadSerializer(serializers.ModelSerializer):
 
 
 class MedicoSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
+    username = serializers.RegexField(
+        regex=r"^[A-Za-z0-9._-]+$",
+        min_length=3,
         max_length=20,
         required=False,
         write_only=True,
+        error_messages={
+            "invalid": "Usa solo letras, números, puntos, guiones y guiones bajos.",
+            "min_length": "El usuario debe tener al menos 3 caracteres.",
+            "max_length": "El usuario no puede superar los 20 caracteres.",
+        },
     )
     password = serializers.CharField(
         min_length=8,
+        max_length=128,
         required=False,
         write_only=True,
         trim_whitespace=False,
         error_messages={
             "min_length": "La contraseña debe tener al menos 8 caracteres.",
+            "max_length": "La contraseña no puede superar los 128 caracteres.",
         },
     )
     password_confirmation = serializers.CharField(
         min_length=8,
+        max_length=128,
         required=False,
         write_only=True,
         trim_whitespace=False,
         error_messages={
             "min_length": "La contraseña debe tener al menos 8 caracteres.",
+            "max_length": "La contraseña no puede superar los 128 caracteres.",
         },
     )
     persona = serializers.PrimaryKeyRelatedField(
@@ -264,6 +277,16 @@ class MedicoSerializer(serializers.ModelSerializer):
             elif not persona_data.get("correo"):
                 account_errors["persona_data"] = {
                     "correo": "El correo electrónico es obligatorio para crear la cuenta."
+                }
+            elif not re.fullmatch(
+                r"[0-9+() -]{7,15}",
+                persona_data.get("telefono", ""),
+            ):
+                account_errors["persona_data"] = {
+                    "telefono": (
+                        "El teléfono debe tener entre 7 y 15 caracteres y usar "
+                        "solo números, espacios, +, paréntesis o guiones."
+                    )
                 }
             if usuario is not None:
                 account_errors["usuario_id"] = (

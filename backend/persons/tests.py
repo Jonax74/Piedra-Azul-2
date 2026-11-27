@@ -219,6 +219,62 @@ class PersonaUsuarioLinkTests(TestCase):
 		self.assertIn("password_confirmation", serializer.errors)
 		create_user.assert_not_called()
 
+	def test_rejects_medico_account_with_short_or_invalid_username(self):
+		for username in ("ab", "medico prueba"):
+			with self.subTest(username=username):
+				serializer = MedicoSerializer(
+					data={
+						"persona_data": {
+							**self.persona_data(98765432),
+							"correo": "medico@example.com",
+						},
+						"tipo_profesional": "MEDICO",
+						"username": username,
+						"password": "ClaveSegura123",
+						"password_confirmation": "ClaveSegura123",
+					},
+				)
+
+				self.assertFalse(serializer.is_valid())
+				self.assertIn("username", serializer.errors)
+
+	def test_rejects_medico_account_with_invalid_phone_format(self):
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					**self.persona_data(98765432),
+					"telefono": "abcdefgh",
+					"correo": "medico@example.com",
+				},
+				"tipo_profesional": "MEDICO",
+				"username": "medico.prueba",
+				"password": "ClaveSegura123",
+				"password_confirmation": "ClaveSegura123",
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("telefono", serializer.errors["persona_data"])
+
+	def test_rejects_medico_account_password_over_maximum_length(self):
+		password = "x" * 129
+		serializer = MedicoSerializer(
+			data={
+				"persona_data": {
+					**self.persona_data(98765432),
+					"correo": "medico@example.com",
+				},
+				"tipo_profesional": "MEDICO",
+				"username": "medico.prueba",
+				"password": password,
+				"password_confirmation": password,
+			},
+		)
+
+		self.assertFalse(serializer.is_valid())
+		self.assertIn("password", serializer.errors)
+		self.assertIn("password_confirmation", serializer.errors)
+
 	def test_medico_requires_existing_person_or_persona_data(self):
 		serializer = MedicoSerializer(
 			data={

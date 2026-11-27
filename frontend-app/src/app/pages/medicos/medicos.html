@@ -5,41 +5,67 @@
       <h2>Médicos y terapeutas</h2>
       <p>Administra los profesionales y consulta sus horarios de atención.</p>
     </div>
-    <button class="primary-button compact" type="button" (click)="isCreating = !isCreating">
+    <button class="primary-button compact" type="button" (click)="toggleCreationForm()">
       {{ isCreating ? 'Cancelar' : 'Agregar profesional' }}
     </button>
   </div>
 
   @if (isCreating) {
-    <form class="surface professional-form" (ngSubmit)="saveProfessional()">
+    <form #professionalFormRef="ngForm" class="surface professional-form" (ngSubmit)="saveProfessional(professionalFormRef)">
       <div>
         <span class="eyebrow">Nuevo registro</span>
         <h3>Datos del profesional</h3>
       </div>
       <div class="form-grid">
-        <label>Primer nombre<input name="primer_nombre" [(ngModel)]="professionalForm.primer_nombre" required maxlength="50"></label>
-        <label>Segundo nombre<input name="segundo_nombre" [(ngModel)]="professionalForm.segundo_nombre" maxlength="50"></label>
-        <label>Primer apellido<input name="primer_apellido" [(ngModel)]="professionalForm.primer_apellido" required maxlength="50"></label>
-        <label>Segundo apellido<input name="segundo_apellido" [(ngModel)]="professionalForm.segundo_apellido" maxlength="50"></label>
-        <label>Género
-          <select name="genero" [(ngModel)]="professionalForm.genero" required>
+        <label for="primer_nombre">Primer nombre
+          <input id="primer_nombre" name="primer_nombre" type="text" [(ngModel)]="professionalForm.primer_nombre" required maxlength="50" [class.invalid-field]="fieldError(professionalFormRef, 'primer_nombre')" [attr.aria-invalid]="fieldError(professionalFormRef, 'primer_nombre') ? 'true' : null" aria-describedby="primer_nombre-error" (ngModelChange)="clearServerError('primer_nombre')">
+          @if (fieldError(professionalFormRef, 'primer_nombre'); as error) { <small id="primer_nombre-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="segundo_nombre">Segundo nombre
+          <input id="segundo_nombre" name="segundo_nombre" type="text" [(ngModel)]="professionalForm.segundo_nombre" maxlength="50" [class.invalid-field]="fieldError(professionalFormRef, 'segundo_nombre')" [attr.aria-invalid]="fieldError(professionalFormRef, 'segundo_nombre') ? 'true' : null" aria-describedby="segundo_nombre-error" (ngModelChange)="clearServerError('segundo_nombre')">
+          @if (fieldError(professionalFormRef, 'segundo_nombre'); as error) { <small id="segundo_nombre-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="primer_apellido">Primer apellido
+          <input id="primer_apellido" name="primer_apellido" type="text" [(ngModel)]="professionalForm.primer_apellido" required maxlength="50" [class.invalid-field]="fieldError(professionalFormRef, 'primer_apellido')" [attr.aria-invalid]="fieldError(professionalFormRef, 'primer_apellido') ? 'true' : null" aria-describedby="primer_apellido-error" (ngModelChange)="clearServerError('primer_apellido')">
+          @if (fieldError(professionalFormRef, 'primer_apellido'); as error) { <small id="primer_apellido-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="segundo_apellido">Segundo apellido
+          <input id="segundo_apellido" name="segundo_apellido" type="text" [(ngModel)]="professionalForm.segundo_apellido" maxlength="50" [class.invalid-field]="fieldError(professionalFormRef, 'segundo_apellido')" [attr.aria-invalid]="fieldError(professionalFormRef, 'segundo_apellido') ? 'true' : null" aria-describedby="segundo_apellido-error" (ngModelChange)="clearServerError('segundo_apellido')">
+          @if (fieldError(professionalFormRef, 'segundo_apellido'); as error) { <small id="segundo_apellido-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="genero">Género
+          <select id="genero" name="genero" [(ngModel)]="professionalForm.genero" required [class.invalid-field]="fieldError(professionalFormRef, 'genero')" [attr.aria-invalid]="fieldError(professionalFormRef, 'genero') ? 'true' : null" aria-describedby="genero-error" (ngModelChange)="clearServerError('genero')">
             <option value="MUJER">Mujer</option>
             <option value="HOMBRE">Hombre</option>
             <option value="OTRO">Otro</option>
           </select>
+          @if (fieldError(professionalFormRef, 'genero'); as error) { <small id="genero-error" class="form-error">{{ error }}</small> }
         </label>
-        <label>Fecha de nacimiento<input name="fecha_nacimiento" type="date" [(ngModel)]="professionalForm.fecha_nacimiento" required></label>
-        <label>Teléfono<input name="telefono" type="tel" [(ngModel)]="professionalForm.telefono" required maxlength="15"></label>
-        <label>Documento<input name="dni" type="number" [(ngModel)]="professionalForm.dni" required min="1"></label>
-        <label>Correo electrónico<input name="correo" type="email" [(ngModel)]="professionalForm.correo" required maxlength="70"></label>
-        <label>Tipo de profesional
-          <select name="tipo_profesional" [(ngModel)]="professionalForm.tipo_profesional" required>
+        <label for="fecha_nacimiento">Fecha de nacimiento
+          <input id="fecha_nacimiento" name="fecha_nacimiento" type="date" [(ngModel)]="professionalForm.fecha_nacimiento" [max]="maxBirthDate" required [class.invalid-field]="fieldError(professionalFormRef, 'fecha_nacimiento')" [attr.aria-invalid]="fieldError(professionalFormRef, 'fecha_nacimiento') ? 'true' : null" aria-describedby="fecha_nacimiento-error" (ngModelChange)="clearServerError('fecha_nacimiento')">
+          @if (fieldError(professionalFormRef, 'fecha_nacimiento'); as error) { <small id="fecha_nacimiento-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="telefono">Teléfono
+          <input id="telefono" name="telefono" type="tel" inputmode="tel" [(ngModel)]="professionalForm.telefono" required minlength="7" maxlength="15" pattern="[0-9+() -]{7,15}" [class.invalid-field]="fieldError(professionalFormRef, 'telefono')" [attr.aria-invalid]="fieldError(professionalFormRef, 'telefono') ? 'true' : null" aria-describedby="telefono-error" (ngModelChange)="clearServerError('telefono')">
+          @if (fieldError(professionalFormRef, 'telefono'); as error) { <small id="telefono-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="dni">Documento
+          <input id="dni" name="dni" type="text" inputmode="numeric" [(ngModel)]="professionalForm.dni" required minlength="1" maxlength="10" pattern="[0-9]+" [class.invalid-field]="fieldError(professionalFormRef, 'dni')" [attr.aria-invalid]="fieldError(professionalFormRef, 'dni') ? 'true' : null" aria-describedby="dni-error" (ngModelChange)="clearServerError('dni')">
+          @if (fieldError(professionalFormRef, 'dni'); as error) { <small id="dni-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="correo">Correo electrónico
+          <input id="correo" name="correo" type="email" email [(ngModel)]="professionalForm.correo" required maxlength="70" [class.invalid-field]="fieldError(professionalFormRef, 'correo')" [attr.aria-invalid]="fieldError(professionalFormRef, 'correo') ? 'true' : null" aria-describedby="correo-error" (ngModelChange)="clearServerError('correo')">
+          @if (fieldError(professionalFormRef, 'correo'); as error) { <small id="correo-error" class="form-error">{{ error }}</small> }
+        </label>
+        <label for="tipo_profesional">Tipo de profesional
+          <select id="tipo_profesional" name="tipo_profesional" [(ngModel)]="professionalForm.tipo_profesional" required [class.invalid-field]="fieldError(professionalFormRef, 'tipo_profesional')" [attr.aria-invalid]="fieldError(professionalFormRef, 'tipo_profesional') ? 'true' : null" aria-describedby="tipo_profesional-error" (ngModelChange)="clearServerError('tipo_profesional')">
             <option value="MEDICO">Médico</option>
             <option value="TERAPISTA">Terapista</option>
           </select>
+          @if (fieldError(professionalFormRef, 'tipo_profesional'); as error) { <small id="tipo_profesional-error" class="form-error">{{ error }}</small> }
         </label>
-        <label>Especialidad (opcional)
-          <select name="especialidad_id" [(ngModel)]="professionalForm.especialidad_id">
+        <label for="especialidad_id">Especialidad (opcional)
+          <select id="especialidad_id" name="especialidad_id" [(ngModel)]="professionalForm.especialidad_id">
             <option value="">Sin especialidad</option>
             @for (specialty of specialties; track specialty.id) {
               <option [value]="specialty.id">{{ specialty.nombre }}</option>
@@ -56,14 +82,17 @@
         <p class="account-hint">Se creará una cuenta con el rol de médico para este profesional.</p>
       </div>
       <div class="form-grid">
-        <label>Nombre de usuario
-          <input name="username" [(ngModel)]="professionalForm.username" required maxlength="20" autocomplete="username">
+        <label for="username">Nombre de usuario
+          <input id="username" name="username" type="text" [(ngModel)]="professionalForm.username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9._-]+" autocomplete="username" [class.invalid-field]="fieldError(professionalFormRef, 'username')" [attr.aria-invalid]="fieldError(professionalFormRef, 'username') ? 'true' : null" aria-describedby="username-error" (ngModelChange)="clearServerError('username')">
+          @if (fieldError(professionalFormRef, 'username'); as error) { <small id="username-error" class="form-error">{{ error }}</small> }
         </label>
-        <label>Contraseña
-          <input name="password" type="password" [(ngModel)]="professionalForm.password" required minlength="8" autocomplete="new-password">
+        <label for="password">Contraseña
+          <input id="password" name="password" type="password" [(ngModel)]="professionalForm.password" required minlength="8" maxlength="128" autocomplete="new-password" [class.invalid-field]="fieldError(professionalFormRef, 'password')" [attr.aria-invalid]="fieldError(professionalFormRef, 'password') ? 'true' : null" aria-describedby="password-error" (ngModelChange)="clearServerError('password')">
+          @if (fieldError(professionalFormRef, 'password'); as error) { <small id="password-error" class="form-error">{{ error }}</small> }
         </label>
-        <label>Confirmar contraseña
-          <input name="password_confirmation" type="password" [(ngModel)]="professionalForm.password_confirmation" required minlength="8" autocomplete="new-password">
+        <label for="password_confirmation">Confirmar contraseña
+          <input id="password_confirmation" name="password_confirmation" type="password" [(ngModel)]="professionalForm.password_confirmation" required minlength="8" maxlength="128" autocomplete="new-password" [class.invalid-field]="fieldError(professionalFormRef, 'password_confirmation')" [attr.aria-invalid]="fieldError(professionalFormRef, 'password_confirmation') ? 'true' : null" aria-describedby="password_confirmation-error" (ngModelChange)="clearServerError('password_confirmation')">
+          @if (fieldError(professionalFormRef, 'password_confirmation'); as error) { <small id="password_confirmation-error" class="form-error">{{ error }}</small> }
         </label>
       </div>
       <button class="primary-button" type="submit" [disabled]="isSaving">
