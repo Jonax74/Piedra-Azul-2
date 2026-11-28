@@ -234,6 +234,30 @@ class CitaPacienteScopeTests(TestCase):
 		self.assertFalse(serializer.is_valid())
 		self.assertIn("estado", serializer.errors)
 
+	def test_patient_cannot_create_appointment_as_attended_or_no_show(self):
+		for estado in ("ATENDIDA", "NO_ASISTIDA"):
+			with self.subTest(estado=estado):
+				request = APIRequestFactory().post(
+					"/api/citas/",
+					{
+						"paciente": self.paciente.pk,
+						"medico": self.medico.pk,
+						"fecha_hora": "2099-01-05T10:00:00Z",
+						"estado": estado,
+					},
+					format="json",
+				)
+				force_authenticate(request, user=self.request.user)
+
+				response = CitaListCreateView.as_view()(request)
+
+				self.assertEqual(response.status_code, 400, response.data)
+				self.assertEqual(
+					str(response.data["estado"][0]),
+					"El estado inicial de una cita es PROGRAMADA.",
+				)
+				self.assertEqual(Cita.objects.count(), 0)
+
 	@patch("appointments.serializers.validar_cita_programable")
 	def test_patient_cannot_schedule_for_another_patient(self, validar_cita):
 		serializer = self.serializer_for(self.otro_paciente)
@@ -244,6 +268,118 @@ class CitaPacienteScopeTests(TestCase):
 			"Un paciente solo puede agendar citas para sí mismo.",
 			serializer.errors["non_field_errors"],
 		)
+
+	def test_patient_cannot_mark_appointment_attended_or_no_show(self):
+		for hour, estado in (
+			(10, "ATENDIDA"),
+			(11, "NO_ASISTIDA"),
+		):
+			with self.subTest(estado=estado):
+				cita = Cita.objects.create(
+					usuario=self.usuario,
+					paciente=self.paciente,
+					medico=self.medico,
+					fecha_hora=f"2099-01-05T{hour:02d}:00:00Z",
+				)
+				request = APIRequestFactory().patch(
+					f"/api/citas/{cita.pk}/",
+					{"estado": estado},
+					format="json",
+				)
+				force_authenticate(request, user=self.request.user)
+
+				response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+				self.assertEqual(response.status_code, 400)
+				self.assertIn("estado", response.data)
+				cita.refresh_from_db()
+				self.assertEqual(cita.estado, "PROGRAMADA")
+
+	def test_patient_can_update_other_fields_on_attended_appointment(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+			estado="ATENDIDA",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{"observacion": "Nota de seguimiento."},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 200, response.data)
+		self.assertNotIn(
+			"Solo el personal puede marcar una cita como atendida o no asistida.",
+			str(response.data),
+		)
+		cita.refresh_from_db()
+		self.assertEqual(cita.estado, "ATENDIDA")
+		self.assertEqual(cita.observacion, "Nota de seguimiento.")
+
+	def test_staff_can_mark_appointment_attended_or_no_show(self):
+		staff_user_id = "staff-estados"
+		Usuario.objects.create(
+			username="staff.estados",
+			keycloak_user_id=staff_user_id,
+		)
+		staff = SimpleNamespace(
+			user_id=staff_user_id,
+			roles=["AGENDADOR"],
+			is_authenticated=True,
+		)
+
+		for hour, estado in (
+			(10, "ATENDIDA"),
+			(11, "NO_ASISTIDA"),
+		):
+			with self.subTest(estado=estado):
+				cita = Cita.objects.create(
+					usuario=self.usuario,
+					paciente=self.paciente,
+					medico=self.medico,
+					fecha_hora=f"2099-01-05T{hour:02d}:00:00Z",
+				)
+				request = APIRequestFactory().patch(
+					f"/api/citas/{cita.pk}/",
+					{"estado": estado},
+					format="json",
+				)
+				force_authenticate(request, user=staff)
+
+				response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+				self.assertEqual(response.status_code, 200, response.data)
+				cita.refresh_from_db()
+				self.assertEqual(cita.estado, estado)
+
+	def test_patient_can_still_cancel_with_a_reason(self):
+		cita = Cita.objects.create(
+			usuario=self.usuario,
+			paciente=self.paciente,
+			medico=self.medico,
+			fecha_hora="2099-01-05T10:00:00Z",
+		)
+		request = APIRequestFactory().patch(
+			f"/api/citas/{cita.pk}/",
+			{
+				"estado": "CANCELADA",
+				"motivo_cancelacion": "No puedo asistir.",
+			},
+			format="json",
+		)
+		force_authenticate(request, user=self.request.user)
+
+		response = CitaDetailView.as_view()(request, pk=cita.pk)
+
+		self.assertEqual(response.status_code, 200, response.data)
+		cita.refresh_from_db()
+		self.assertEqual(cita.estado, "CANCELADA")
+		self.assertEqual(cita.motivo_cancelacion, "No puedo asistir.")
 
 	def test_patient_can_cancel_appointment_exactly_48_hours_ahead(self):
 		now = datetime(2099, 1, 1, 10, tzinfo=datetime_timezone.utc)

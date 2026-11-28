@@ -161,6 +161,22 @@ class CitaSerializer(serializers.ModelSerializer):
             and not roles.intersection(roles_ampliados)
         )
 
+        if (
+            es_paciente
+            and self.instance is not None
+            and "estado" in attrs
+            and estado != self.instance.estado
+            and estado in {"ATENDIDA", "NO_ASISTIDA"}
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": (
+                        "Solo el personal puede marcar una cita como "
+                        "atendida o no asistida."
+                    ),
+                },
+            )
+
         if "motivo_cancelacion" in attrs and not es_cancelacion:
             raise serializers.ValidationError(
                 {
