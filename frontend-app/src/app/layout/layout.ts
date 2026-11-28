@@ -20,7 +20,7 @@ export class Layout {
     { label: 'Historial de Citas', path: '/historial', roles: ['PACIENTE'] },
     { label: 'Agenda', path: '/agenda', roles: ['ADMIN', 'AGENDADOR', 'MEDICO'] },
     { label: 'Médicos', path: '/medicos', roles: ['ADMIN'] },
-    { label: 'Disponibilidad', path: '/disponibilidad', roles: ['ADMIN', 'MEDICO'] },
+    { label: 'Disponibilidad', path: '/disponibilidad', roles: ['ADMIN'] },
     { label: 'Configuración', path: '/configuracion', roles: ['ADMIN'] },
   ];
 
