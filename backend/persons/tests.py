@@ -5,9 +5,23 @@ from unittest.mock import patch
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from persons.models import Especialidad, Medico, Paciente, Persona
+from persons.models import (
+	Disponibilidad,
+	Especialidad,
+	Medico,
+	MedicoDisponibilidad,
+	Paciente,
+	Persona,
+)
 from persons.serializers import MedicoSerializer, PacienteSerializer
-from persons.views import MedicoListCreateView, PacienteListCreateView
+from persons.views import (
+	DisponibilidadDetailView,
+	DisponibilidadListCreateView,
+	MedicoDisponibilidadDetailView,
+	MedicoDisponibilidadListCreateView,
+	MedicoListCreateView,
+	PacienteListCreateView,
+)
 from users.models import Rol, Usuario, UsuarioRol
 
 
@@ -72,6 +86,182 @@ class PersonaSearchTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(len(response.data), 1)
 		self.assertEqual(response.data[0]["persona"], self.medico_persona.id)
+
+
+class AvailabilityWritePermissionTests(TestCase):
+	def setUp(self):
+		self.factory = APIRequestFactory()
+		self.persona = Persona.objects.create(
+			primer_nombre="Carlos",
+			primer_apellido="Gomez",
+			genero="HOMBRE",
+			fecha_nacimiento=date(1985, 1, 1),
+			telefono="3007654321",
+			dni=123456789,
+		)
+		self.medico = Medico.objects.create(
+			persona=self.persona,
+			tipo_profesional="MEDICO",
+			estado="ACTIVO",
+		)
+		self.disponibilidad = Disponibilidad.objects.create(
+			dia_semana="LUNES",
+			hora_inicio="09:00",
+			hora_fin="12:00",
+			intervalo=30,
+		)
+		self.relacion = MedicoDisponibilidad.objects.create(
+			medico=self.medico,
+			disponibilidad=self.disponibilidad,
+		)
+		self.admin = SimpleNamespace(
+			roles=["ADMIN"],
+			is_authenticated=True,
+		)
+		self.doctor = SimpleNamespace(
+			roles=["MEDICO"],
+			is_authenticated=True,
+		)
+
+	def request(self, method, path, view, user, data=None, pk=None):
+		request = getattr(self.factory, method.lower())(
+			path,
+			data=data,
+			format="json",
+		)
+		force_authenticate(request, user=user)
+		if pk is None:
+			return view.as_view()(request)
+		return view.as_view()(request, pk=pk)
+
+	def test_doctor_can_read_but_cannot_create_or_modify_availability(self):
+		response = self.request(
+			"get",
+			"/api/disponibilidades/",
+			DisponibilidadListCreateView,
+			self.doctor,
+		)
+		self.assertEqual(response.status_code, 200)
+
+		for method, view, path, data, pk in (
+			(
+				"post",
+				DisponibilidadListCreateView,
+				"/api/disponibilidades/",
+				{
+					"dia_semana": "MARTES",
+					"hora_inicio": "09:00",
+					"hora_fin": "12:00",
+					"intervalo": 30,
+				},
+				None,
+			),
+			(
+				"patch",
+				DisponibilidadDetailView,
+				f"/api/disponibilidades/{self.disponibilidad.pk}/",
+				{"hora_fin": "13:00"},
+				self.disponibilidad.pk,
+			),
+			(
+				"delete",
+				DisponibilidadDetailView,
+				f"/api/disponibilidades/{self.disponibilidad.pk}/",
+				None,
+				self.disponibilidad.pk,
+			),
+			(
+				"post",
+				MedicoDisponibilidadListCreateView,
+				"/api/medico-disponibilidades/",
+				{
+					"medico": self.medico.pk,
+					"disponibilidad": self.disponibilidad.pk,
+				},
+				None,
+			),
+			(
+				"delete",
+				MedicoDisponibilidadDetailView,
+				f"/api/medico-disponibilidades/{self.relacion.pk}/",
+				None,
+				self.relacion.pk,
+			),
+		):
+			with self.subTest(method=method, path=path):
+				response = self.request(
+					method,
+					path,
+					view,
+					self.doctor,
+					data=data,
+					pk=pk,
+				)
+				self.assertEqual(response.status_code, 403)
+
+	def test_admin_can_create_availability_and_associate_it(self):
+		response = self.request(
+			"post",
+			"/api/disponibilidades/",
+			DisponibilidadListCreateView,
+			self.admin,
+			data={
+				"dia_semana": "MARTES",
+				"hora_inicio": "09:00",
+				"hora_fin": "12:00",
+				"intervalo": 30,
+			},
+		)
+		self.assertEqual(response.status_code, 201)
+		disponibilidad_id = response.data["id"]
+
+		response = self.request(
+			"post",
+			"/api/medico-disponibilidades/",
+			MedicoDisponibilidadListCreateView,
+			self.admin,
+			data={
+				"medico": self.medico.pk,
+				"disponibilidad": disponibilidad_id,
+			},
+		)
+		self.assertEqual(response.status_code, 201)
+		nueva_relacion = MedicoDisponibilidad.objects.get(
+			disponibilidad_id=disponibilidad_id,
+		)
+
+		response = self.request(
+			"put",
+			f"/api/disponibilidades/{disponibilidad_id}/",
+			DisponibilidadDetailView,
+			self.admin,
+			data={
+				"dia_semana": "MARTES",
+				"hora_inicio": "09:00",
+				"hora_fin": "13:00",
+				"intervalo": 30,
+			},
+			pk=disponibilidad_id,
+		)
+		self.assertEqual(response.status_code, 200)
+
+		response = self.request(
+			"delete",
+			f"/api/medico-disponibilidades/{nueva_relacion.pk}/",
+			MedicoDisponibilidadDetailView,
+			self.admin,
+			pk=nueva_relacion.pk,
+		)
+		self.assertEqual(response.status_code, 204)
+
+		response = self.request(
+			"delete",
+			f"/api/disponibilidades/{disponibilidad_id}/",
+			DisponibilidadDetailView,
+			self.admin,
+			pk=disponibilidad_id,
+		)
+		self.assertEqual(response.status_code, 204)
 
 
 class PersonaUsuarioLinkTests(TestCase):

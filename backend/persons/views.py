@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q
+from config.security.permissions import IsAdminRole
 
 from persons.models import (
     Disponibilidad,
@@ -176,11 +177,27 @@ class DisponibilidadListCreateView(generics.ListCreateAPIView):
     serializer_class = DisponibilidadSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        permission_class = (
+            IsAdminRole
+            if self.request.method == "POST"
+            else IsAuthenticated
+        )
+        return [permission_class()]
+
 
 class DisponibilidadDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Disponibilidad.objects.all()
     serializer_class = DisponibilidadSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        permission_class = (
+            IsAdminRole
+            if self.request.method in {"PUT", "PATCH", "DELETE"}
+            else IsAuthenticated
+        )
+        return [permission_class()]
 
 
 class MedicoDisponibilidadListCreateView(generics.ListCreateAPIView):
@@ -191,10 +208,26 @@ class MedicoDisponibilidadListCreateView(generics.ListCreateAPIView):
     serializer_class = MedicoDisponibilidadSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        permission_class = (
+            IsAdminRole
+            if self.request.method == "POST"
+            else IsAuthenticated
+        )
+        return [permission_class()]
+
 
 class MedicoDisponibilidadDetailView(
     generics.RetrieveDestroyAPIView,
 ):
     queryset = MedicoDisponibilidad.objects.all()
     serializer_class = MedicoDisponibilidadSerializer
-    permission_classes = [IsAuthenticated]    
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        permission_class = (
+            IsAdminRole
+            if self.request.method == "DELETE"
+            else IsAuthenticated
+        )
+        return [permission_class()]

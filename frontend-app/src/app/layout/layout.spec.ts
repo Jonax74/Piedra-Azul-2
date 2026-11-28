@@ -52,4 +52,14 @@ describe('Layout', () => {
     expect(element.textContent).toContain('Registrar Paciente');
     expect(element.querySelector('a[href="/registrar-paciente"]')).not.toBeNull();
   });
+
+  it('hides availability management from doctors', () => {
+    roles = ['MEDICO'];
+    fixture.destroy();
+    fixture = TestBed.createComponent(Layout);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('a[href="/disponibilidad"]')).toBeNull();
+  });
 });
